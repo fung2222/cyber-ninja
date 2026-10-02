@@ -1,0 +1,32 @@
+/* CYBER NINJA HUD on top of cyber-kit/ui/hud.css */
+.hp-pips { display: flex; gap: 4px; margin-top: 6px; }
+.hp-pips i { width: 14px; height: 10px; border: 1px solid rgba(59,255,138,.5); transform: skewX(-20deg); }
+.hp-pips i.on { background: #3bff8a; box-shadow: 0 0 8px #3bff8a; }
+#hud-power { color: var(--c3); }
+.boss-bar { position: absolute; top: max(16px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(420px, 40vw); text-align: center; }
+.bb-name { font-family: var(--font-zh); font-size: 13px; letter-spacing: 4px; color: #ff9ad8; text-shadow: 0 0 8px #ff2bd6; margin-bottom: 4px; }
+.bb-name em { font-style: normal; font-family: 'Orbitron', sans-serif; font-size: 9px; opacity: .7; }
+.bb-track { height: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,43,214,.6); clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+.bb-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2bd6, #a66bff); box-shadow: 0 0 12px #ff2bd6; transition: width .15s; }
+.ult-btn { position: absolute; right: max(18px, env(safe-area-inset-right)); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 66px); width: 92px; height: 92px; border-radius: 50%; pointer-events: auto; cursor: pointer; overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--c1) 60%, transparent); background: rgba(10,4,30,.6); color: #fff; padding: 0; touch-action: none; }
+.ult-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(0deg, color-mix(in srgb, var(--c1) 70%, transparent), color-mix(in srgb, var(--c2) 40%, transparent)); transition: height .2s; }
+.ult-txt { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1.15; }
+.ult-txt b { font-family: var(--font-zh); font-size: 17px; letter-spacing: 2px; text-shadow: 0 0 8px var(--c1); }
+.ult-txt small { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2px; color: var(--c1); }
+.ult-btn.ready { border-color: #fff; box-shadow: 0 0 22px var(--c1), 0 0 44px var(--c2), inset 0 0 18px var(--c1); animation: ultPulse .8s ease-in-out infinite; }
+@keyframes ultPulse { 50% { transform: scale(1.07); } }
+.subtitle { font-family: var(--font-zh); letter-spacing: 6px; color: var(--c3); text-shadow: 0 0 8px var(--c3); margin: 4px 0 10px; font-size: 15px; }
+.title { font-size: clamp(56px, 10vw, 124px); }
+.screen.hero .panel { max-width: 560px; }
+.hud-buttons { pointer-events: auto; }
+@media (max-width: 760px) {
+  .boss-bar { top: calc(max(10px, env(safe-area-inset-top)) + 74px); width: 80vw; }
+  .ult-btn { width: 80px; height: 80px; left: auto; right: max(16px, env(safe-area-inset-right)); transform: none; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 62px); }
+  @keyframes ultPulse { 50% { transform: scale(1.07); } }
+  .demo-tag { top: auto !important; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 8px) !important; left: max(16px, env(safe-area-inset-left)) !important; transform: none !important; }
+  .screen.hero { align-items: flex-end; padding-bottom: max(36px, env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(5,1,15,0) 0%, rgba(5,1,15,.35) 35%, rgba(5,1,15,.92) 72%); }
+  .title { font-size: 64px; letter-spacing: 8px; }
+  .tagline { font-size: 13px; margin-bottom: 14px; }
+  .controls div:not(.touch-hint) { display: none; }
+}
