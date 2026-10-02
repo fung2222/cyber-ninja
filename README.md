@@ -12,6 +12,13 @@
 - 每 5 波迎戰**星海魔獸**：環形彈幕、螺旋彈、瞄準連射，血量低於 40% 會暴走。
 - 拾取道具：**火力 P**（最多 5 級散射）、**護盾 S**（+1 護盾）、**能量 E**。
 - 被擊中會失去 1 格護盾同 1 級火力；護盾歸零就任務失敗，可以睇廣告**復活一次**（網頁版免費）。
+- **無盡模式**：波數永遠唔會完。每個巨獸週期都會出新品種（深淵魔眼、等離子海妖……之後 Mk.2、Mk.3 變種），難度曲線有上限（敵機 HP 最多 ×3.5、巨獸 HP 最多 1100、射速最多 ×1.6），確保一直玩得落去。每 10 波係**里程碑**：額外分數、護盾補滿、城市主題轉色。最遠波數會記錄為無盡紀錄。
+
+## 語言 Language
+遊戲支援**繁體中文（香港）**同 **English**，喺主畫面或暫停畫面撳「EN／中」切換，會記住你嘅選擇（`localStorage cyber.lang`，所有 CYBER 遊戲共用）。網址加 `?lang=en` / `?lang=zh` 亦可。
+
+## English
+**CYBER NINJA** is a one-thumb 3D cyberpunk vertical shooter. Drag anywhere to move — the ninja fires automatically (your finger never covers the ship). Charge the **NEON IAI SLASH** to wipe every bullet and grunt on screen. Every 5 waves a **star-sea monster** boss attacks with ring, spiral and aimed barrages. **Endless mode:** waves never end — new boss species and Mk variants every cycle, a capped difficulty curve that stays playable, milestone bonuses every 10 waves (score, full shields, district theme shift) and a saved best-wave record. Bilingual (Traditional Chinese / English) with an in-game toggle.
 
 ## 操作 Controls
 | 動作 | 手機 | 鍵盤 |
@@ -22,10 +29,10 @@
 | 靜音 Mute | 🔊 | M |
 
 ## 網址參數 URL flags
-`?demo=1` AI 自動玩 · `?fps=1` · `?quality=low` · `?adsim=1` · `?reset=1` · `?mute=1`
+`?demo=1` AI 自動玩 · `?lang=en|zh` · `?fps=1` · `?quality=low` · `?adsim=1` · `?reset=1` · `?mute=1`
 
 ## 技術 Tech
-Three.js r169 + [cyber-kit](https://github.com/fung2222/cyber-kit) v0.1.0（`vendor/cyber-kit/`），冇 build step，可離線運行。所有模型（忍者、敵機、星海魔獸）都係程式生成嘅原創設計；音效同音樂全部合成。
+Three.js r169 + [cyber-kit](https://github.com/fung2222/cyber-kit) v0.2.1（`vendor/cyber-kit/`），冇 build step，可離線運行。所有模型（忍者、敵機、星海魔獸）都係程式生成嘅原創設計；音效同音樂全部合成。
 
 ## 開發 Development
 ```bash

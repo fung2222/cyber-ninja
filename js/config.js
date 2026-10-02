@@ -43,7 +43,7 @@ export const DROP_CHANCE = 0.09;      // power-up drop per kill (bosses always d
  * or {boss:true} for boss waves.
  */
 export function waveSpec(n, rng = Math.random) {
-  if (n % BOSS_EVERY === 0) return { boss: true, hp: ENEMIES.boss.hp + (n / BOSS_EVERY - 1) * 90, events: [] };
+  if (n % BOSS_EVERY === 0) return { boss: true, hp: bossHp(n), variant: bossVariant(n / BOSS_EVERY), events: [] };
   const types = ['drone'];
   if (n >= 2) types.push('weaver');
   if (n >= 3) types.push('turret');
@@ -70,6 +70,19 @@ export function waveSpec(n, rng = Math.random) {
   return { boss: false, events };
 }
 export const speedScale = (n) => 1 + Math.min(0.6, (n - 1) * 0.04);
-export const hpScale = (n) => 1 + Math.floor((n - 1) / 5) * 0.5;
+export const hpScale = (n) => 1 + Math.min(2.5, Math.floor((n - 1) / 5) * 0.5);   // capped at ×3.5 (endless stays playable)
 
 export const ADS = { interstitialCooldownSec: 200, breaksBetweenInterstitials: 3, graceSec: 150, units: { android: {} } };
+
+// ---------------------------------------------------------------- endless
+/** boss HP for wave n: +90 per cycle, capped at 1100 so late bosses stay killable */
+export const bossHp = (n) => Math.min(1100, ENEMIES.boss.hp + (n / BOSS_EVERY - 1) * 90);
+const SPECIES = [['星海魔獸', 'COSMIC MONSTER'], ['深淵魔眼', 'ABYSS EYE'], ['等離子海妖', 'PLASMA KRAKEN'], ['虛空水母', 'VOID JELLY'], ['晶棘巨獸', 'CRYSTAL BEHEMOTH'], ['極光龍', 'AURORA WYRM']];
+/** boss species for cycle c (1-based): authored names, then numbered Mk variants forever; fire-rate multiplier capped at 1.6 */
+export function bossVariant(c) {
+  const sp = SPECIES[(c - 1) % SPECIES.length], mk = Math.floor((c - 1) / SPECIES.length);
+  return { zh: mk ? `${sp[0]} Mk.${mk + 1}` : sp[0], en: mk ? `${sp[1]} MK.${mk + 1}` : sp[1], hue: ((c - 1) * 0.13) % 1, rate: Math.min(1.6, 1 + (c - 1) * 0.06) };
+}
+/** every 10 waves = milestone: bonus score, full shields, district theme shift */
+export const MILESTONE_EVERY = 10;
+export const milestoneBonus = (n) => 5000 * (n / MILESTONE_EVERY);

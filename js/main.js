@@ -1,7 +1,8 @@
 // CYBER NINJA 賽博忍者：星海魔獸 — controller: drag-to-move auto-fire shooter, waves, cosmic monster bosses, ultimate, continue.
 import * as THREE from 'three';
-import { flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds } from 'cyber-kit';
-import { GAME_ID, FIELD, PLAYER, VOLLEYS, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS } from './config.js';
+import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds } from 'cyber-kit';
+import { GAME_ID, FIELD, PLAYER, VOLLEYS, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
+import './strings.js';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, PICKUPS } from './entities.js';
 import { NinjaAudio } from './audio.js';
@@ -73,15 +74,23 @@ function resetRun() {
 function nextWave() {
   S.wave++; S.spec = waveSpec(S.wave); S.waveT = 0; S.nextEv = 0; S.betweenT = 0;
   if (S.spec.boss) {
-    spawnBoss(S.spec.hp);
-    if (S.state !== 'attract') { ui.banner('星海魔獸來襲', `WAVE ${S.wave} · COSMIC MONSTER`, '⚠ WARNING ⚠'); audio.warn(); fx.kick({ glitch: 0.6, aberr: 1 }); }
-  } else if (S.state !== 'attract' && S.wave > 1) ui.banner(`第 ${S.wave} 波`, `WAVE ${S.wave}`, S.wave % 5 === 4 ? '下一波：巨獸！ BOSS NEXT' : '');
+    spawnBoss(S.spec.hp, S.spec.variant);
+    if (S.state !== 'attract') { ui.banner(t('bossIncoming', { name: bossName() }), t('waveN', { n: S.wave }), t('warning')); audio.warn(); fx.kick({ glitch: 0.6, aberr: 1 }); }
+  } else if (S.state !== 'attract' && S.wave > 1 && (S.wave - 1) % MILESTONE_EVERY === 0) milestone(S.wave - 1);
+  else if (S.state !== 'attract' && S.wave > 1) ui.banner(t('waveN', { n: S.wave }), '', S.wave % 5 === 4 ? t('bossNext') : '');
   audio.setLevel(1 + Math.floor((S.wave - 1) / 2));
+}
+function bossName(b = S.boss) { const v = b && b.variant; return v ? (i18n.isZh() ? v.zh : v.en) : ''; }
+function refreshBossName() { ui.setText('bb-name', bossName()); ui.setText('bb-sub', S.boss ? t('waveN', { n: S.wave }) : ''); }
+function milestone(n) {
+  const pts = milestoneBonus(n); S.score += pts; S.hp = PLAYER.maxHp; theme.set(Math.floor(3 + n / MILESTONE_EVERY * 2));
+  ui.banner(t('milestone', { n }), t('milestoneS', { pts: pts.toLocaleString('en-US') }), t('waveN', { n: S.wave }));
+  audio.ready(); fx.kick({ aberr: 1, glitch: 0.4 }); Platform.haptic('success'); updateHUD();
 }
 function beginRun() {
   audio.init(); audio.startMusic(); audio.unduckMusic();
   resetRun(); setState('playing'); audio.confirm();
-  ui.banner('第 1 波', 'WAVE 1', '拖動移動 · 自動開火  DRAG TO MOVE');
+  ui.banner(t('waveN', { n: 1 }), '', t('firstHint'));
 }
 function showAttract() { setState('attract'); resetRun(); refreshStart(); }
 
@@ -91,9 +100,10 @@ function spawnEnemy(ev) {
   const e = { type: ev.type, def, g, x: ev.x, baseX: ev.x, z: FIELD.top - 1, t: 0, phase: ev.phase, hp: Math.ceil(def.hp * hpScale(S.wave)), fireT: 0.8 + Math.random(), flash: 0, mode: 0, stopZ: -15 + Math.random() * 5, vx: 0, vz: def.speed * speedScale(S.wave) };
   g.position.set(e.x, 0, e.z); S.enemies.push(e);
 }
-function spawnBoss(hp) {
+function spawnBoss(hp, variant = { zh: '星海魔獸', en: 'COSMIC MONSTER', rate: 1 }) {
   const g = makeBoss(); g.scale.setScalar(1.15); scene.add(g);
-  S.boss = { g, x: 0, z: FIELD.top - 4, hp, maxHp: hp, t: 0, atk: 0, atkT: 2.5, spiralA: 0, entering: true };
+  S.boss = { g, x: 0, z: FIELD.top - 4, hp, maxHp: hp, t: 0, atk: 0, atkT: 2.5, spiralA: 0, entering: true, variant };
+  refreshBossName();
   g.position.set(0, 0, S.boss.z);
 }
 function enemyFire(x, z, ang, speed = ENEMY_BULLET_SPEED) { ebullets.add(x, z, Math.sin(ang) * speed, Math.cos(ang) * speed); }
@@ -106,7 +116,7 @@ function killEnemy(e, i) {
   particles.burst(p, c, 34, { speed: 7, up: 2, life: 0.7, size: 1, grav: 0, color2: new THREE.Color(0xffffff) });
   waves.spawn(p, c, { r0: 0.2, r1: 2.2, h: 0.5, dur: 0.4 });
   S.score += e.def.score; S.kills++; S.ult = Math.min(100, S.ult + ULT.perKill);
-  if (S.ult >= 100 && !S.ultReadyShown) { S.ultReadyShown = true; if (S.state === 'playing') { audio.ready(); ui.toast('居合斬準備好！ IAI READY', 1300); } }
+  if (S.ult >= 100 && !S.ultReadyShown) { S.ultReadyShown = true; if (S.state === 'playing') { audio.ready(); ui.toast(t('ultReady'), 1300); } }
   if (S.state !== 'attract') { audio.boom(false); if (e.def.score >= 120) { const sp = stage.toScreen(p); ui.popup(sp.x, sp.y, '+' + e.def.score); } }
   if (Math.random() < DROP_CHANCE) dropPickup(e.x, e.z);
   fx.kick({ trauma: 0.05 });
@@ -131,7 +141,7 @@ function bossDown() {
   fx.kick({ trauma: 0.8, aberr: 1.5, glitch: 0.8, slowmo: 0.9 }); ui.flash('rgba(255,255,255,0.6)', 600); Platform.haptic('success');
   S.score += ENEMIES.boss.score * (S.wave / 5); for (let i = 0; i < 3; i++) dropPickup(b.x + (i - 1) * 1.5, b.z, ['P', 'S', 'E'][i]);
   scene.remove(b.g); S.boss = null; ebullets.clear();
-  if (S.state !== 'attract') ui.banner('巨獸擊破！', `COSMIC MONSTER DOWN · +${(ENEMIES.boss.score * (S.wave / 5)).toLocaleString('en-US')}`, '');
+  if (S.state !== 'attract') ui.banner(t('bossDown'), `${bossName(b)} · +${(ENEMIES.boss.score * (S.wave / 5)).toLocaleString('en-US')}`, '');
   theme.set(1 + S.wave / 5);
 }
 function doUlt() {
@@ -139,7 +149,7 @@ function doUlt() {
   S.ult = 0; S.ultReadyShown = false; S.ultT = 0; S.slashZ = FIELD.bottom; slash.visible = true; S.ultBossHit = false;
   for (const b of ebullets.list) { particles.emit(new THREE.Vector3(b.x, 0, b.z), new THREE.Vector3(0, 2, 0), new THREE.Color(0xffffff), { life: 0.4, size: 0.8 }); }
   ebullets.clear();
-  if (S.state !== 'attract') { audio.ult(); ui.banner('霓虹居合斬', 'NEON IAI SLASH', ''); Platform.haptic('heavy'); }
+  if (S.state !== 'attract') { audio.ult(); ui.banner(t('ultName'), '', ''); Platform.haptic('heavy'); }
   fx.kick({ slowmo: 0.7, aberr: 1.5, fovKick: 1, trauma: 0.3 }); ui.flash('rgba(0,229,255,0.35)', 500);
   updateHUD();
 }
@@ -155,15 +165,15 @@ function gameOver() {
     ui.setText('over-score', S.score.toLocaleString('en-US')); ui.setText('over-wave', S.wave); ui.setText('over-kills', S.kills); ui.setText('over-best', store.best.toLocaleString('en-US'));
     $('newrecord').classList.toggle('hidden', !S.newRecord);
     $('btn-revive').classList.toggle('hidden', S.continued || !ads.rewardedAvailable());
-    ui.setText('revive-sub', ads.isNative ? 'CONTINUE · 睇段廣告' : 'CONTINUE · 免費 FREE');
+    ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree'));
     setState('over'); audio.duckMusic();
   }, 1300);
 }
 async function revive() {
   if (S.state !== 'over' || S.continued) return; audio.click();
-  const r = await ads.rewarded('continue'); if (!r.rewarded) { ui.toast('冇攞到獎勵 · NO REWARD'); return; }
+  const r = await ads.rewarded('continue'); if (!r.rewarded) { ui.toast(t('noReward')); return; }
   S.continued = true; S.hp = PLAYER.hp; S.invuln = 3; ebullets.clear(); ninja.visible = true; S.ult = 100;
-  setState('playing'); audio.unduckMusic(); ui.banner('復活！', 'CONTINUE', '居合斬已充滿 IAI READY');
+  setState('playing'); audio.unduckMusic(); ui.banner(t('revived'), '', t('ultFull'));
 }
 async function retry() { if (S.state !== 'over') return; audio.click(); await ads.naturalBreak('gameover'); ninja.visible = true; beginRun(); }
 async function overToMenu() { if (S.state !== 'over') return; await ads.naturalBreak('gameover'); ninja.visible = true; showAttract(); }
@@ -197,10 +207,12 @@ ui.on('btn-start', () => { audio.init(); beginRun(); });
 ui.on('btn-resume', resume); ui.on('btn-quit', () => { audio.back(); showAttract(); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
+i18n.bindToggle($('btn-lang')); i18n.bindToggle($('btn-lang2'));
+i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); });
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
 Platform.onBack(() => { if (ui.closeModal()) return true; if (S.state === 'playing') { pause(); return true; } if (S.state === 'paused') { resume(); return true; } if (S.state === 'over') { overToMenu(); return true; } return false; });
 Platform.onPause(() => { if (!S.demo) pause(); });
-S.api = { ult: () => { S.ult = 100; doUlt(); }, kill: () => { S.hp = 1; S.invuln = 0; hurtPlayer(); }, boss: () => { clearField(); S.wave = 4; nextWave(); } };
+S.api = { wave: (n) => { clearField(); S.wave = n - 1; nextWave(); }, ult: () => { S.ult = 100; doUlt(); }, kill: () => { S.hp = 1; S.invuln = 0; hurtPlayer(); }, boss: () => { clearField(); S.wave = 4; nextWave(); } };
 
 // ---------------------------------------------------------------- autopilot (demo / attract)
 function autopilot(dt) {
@@ -271,7 +283,7 @@ function sim(dt) {
     B.t += dt; const rage = B.hp < B.maxHp * 0.4 ? 1 : 0;
     if (B.entering) { B.z += 3 * dt; if (B.z >= -15) B.entering = false; }
     else { B.x = Math.sin(B.t * 0.5) * (FIELD.halfW - 2.5); B.z = -15 + Math.sin(B.t * 0.8) * 1.2; }
-    B.atkT -= dt * (1 + rage * 0.5);
+    B.atkT -= dt * (1 + rage * 0.5) * (B.variant.rate || 1);
     if (!B.entering) {
       if (B.atk === 0 && B.atkT <= 0) { const n = 14 + rage * 6; for (let i = 0; i < n; i++) enemyFire(B.x, B.z, (i / n) * Math.PI * 2 + B.t, ENEMY_BULLET_SPEED * 0.8); B.atk = 1; B.atkT = 1.8; if (S.state === 'playing') audio.enemyShot(); }
       else if (B.atk === 1) { B.spiralA += dt * 5; if ((B.t * 12 | 0) !== ((B.t - dt) * 12 | 0)) { enemyFire(B.x, B.z, B.spiralA, 6.5); enemyFire(B.x, B.z, B.spiralA + Math.PI, 6.5); if (rage) enemyFire(B.x, B.z, B.spiralA + Math.PI / 2, 6.5); } if (B.atkT <= 0) { B.atk = 2; B.atkT = 1.4; } }
@@ -312,14 +324,14 @@ function sim(dt) {
     if (d < 0.9) {
       scene.remove(p.g); S.pickups.splice(i, 1);
       if (p.kind === 'P') S.power = Math.min(PLAYER.maxPower, S.power + 1); else if (p.kind === 'S') S.hp = Math.min(PLAYER.maxHp, S.hp + 1); else S.ult = Math.min(100, S.ult + 35);
-      if (S.state === 'playing') { audio.pickup(); const sp = stage.toScreen(new THREE.Vector3(S.x, 0.8, S.z)); ui.popup(sp.x, sp.y - 30, PICKUPS[p.kind].zh, PICKUPS[p.kind].en); Platform.haptic('light'); }
+      if (S.state === 'playing') { audio.pickup(); const sp = stage.toScreen(new THREE.Vector3(S.x, 0.8, S.z)); ui.popup(sp.x, sp.y - 30, t(p.kind), ''); Platform.haptic('light'); }
     } else if (p.z > FIELD.bottom + 2) { scene.remove(p.g); S.pickups.splice(i, 1); }
   }
 }
 
 // ---------------------------------------------------------------- camera
 const camPos = new THREE.Vector3(0, 20, 8), camLook = new THREE.Vector3(0, 0, -9), tP = new THREE.Vector3(), tL = new THREE.Vector3();
-function frameCamera(dt, t, instant = false) {
+function frameCamera(dt, now, instant = false) {
   const aspect = stage.width / stage.height, portrait = aspect < 0.9;
   const vfov = 50; camera.fov = vfov + fx.fovKick * 4; camera.updateProjectionMatrix();
   const pitch = THREE.MathUtils.degToRad(portrait ? 62 : 56);
@@ -328,11 +340,11 @@ function frameCamera(dt, t, instant = false) {
   const dW = hw / tanH + hd * Math.cos(pitch) * 0.6, dH = hd * Math.sin(pitch) / (tanV * (portrait ? 0.95 : 0.98));
   let d = portrait ? Math.max(dW, dH * 0.8) : dH;
   const att = S.state === 'attract';
-  const yaw = att ? Math.sin(t * 0.15) * 0.25 : S.x * 0.006;
+  const yaw = att ? Math.sin(now * 0.15) * 0.25 : S.x * 0.006;
   tL.set(S.x * 0.12 + (att && !portrait ? -4 : 0), 0, zc + (att ? 0 : 0));
   tP.set(Math.sin(yaw) * Math.cos(pitch) * d, Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d).add(tL);
   const k = instant ? 1 : 1 - Math.exp(-dt * 4);
-  camPos.lerp(tP, k); camLook.lerp(tL, k); camera.position.copy(camPos); camera.lookAt(camLook); fx.shake(camera, t, 0.8);
+  camPos.lerp(tP, k); camLook.lerp(tL, k); camera.position.copy(camPos); camera.lookAt(camLook); fx.shake(camera, now, 0.8);
 }
 
 // ---------------------------------------------------------------- loop
@@ -359,4 +371,4 @@ async function boot() {
   if (flags.fps) $('fps').classList.remove('hidden');
   ads.init().catch(() => {});
 }
-boot().catch((e) => { console.error(e); ui.fatal('載入失敗 Failed to start: ' + e.message); });
+boot().catch((e) => { console.error(e); ui.fatal(t('fatal') + ': ' + e.message); });

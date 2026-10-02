@@ -1,7 +1,8 @@
 """Headless smoke test for CYBER NINJA.
 Usage: python tests/smoke.py [base_url] [out_dir]   (serve the parent folder: python3 -m http.server 18940)
 Checks: zero console errors, start, drag moves the ninja, keyboard moves, auto-fire kills enemies (score rises),
-ultimate, boss wave spawns, pause/resume, game over + continue, demo autoplay.
+ultimate, boss wave spawns, pause/resume, game over + continue, demo autoplay,
+language toggle zh-HK/en (persisted in cyber.lang), endless waves beyond the authored cycle (milestone + Mk boss variants).
 """
 import sys, os
 from playwright.sync_api import sync_playwright
@@ -20,7 +21,17 @@ def run(p, name, w, h, mobile):
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto(BASE + '?reset=1'); pg.wait_for_timeout(4500)
-    pg.screenshot(path=f'{OUT}/{name}-start.png')
+    pg.screenshot(path=f'{OUT}/{name}-start-en.png')
+    lang = lambda: pg.evaluate('document.documentElement.dataset.lang')
+    check(lang() == 'en', f'{name}: default language from navigator (en)')
+    pg.click('#btn-lang'); pg.wait_for_timeout(400)
+    check(lang() == 'zh' and pg.inner_text('#btn-start').find('出擊') >= 0, f'{name}: toggle -> zh-HK live')
+    pg.reload(); pg.wait_for_timeout(3500)
+    check(lang() == 'zh' and pg.evaluate("localStorage.getItem('cyber.lang')") == 'zh-HK', f'{name}: language persisted')
+    pg.screenshot(path=f'{OUT}/{name}-start-zh.png')
+    if name == 'desktop':
+        pg.click('#btn-lang'); pg.wait_for_timeout(300)
+        check(lang() == 'en' and 'LAUNCH' in pg.inner_text('#btn-start'), f'{name}: toggle back -> en')
     st = lambda: pg.evaluate('({s: __ninja.state, x: __ninja.x, z: __ninja.z, score: __ninja.score, wave: __ninja.wave, hp: __ninja.hp, ult: __ninja.ult, boss: !!__ninja.boss, kills: __ninja.kills})')
     pg.click('#btn-start'); pg.wait_for_timeout(800)
     check(st()['s'] == 'playing', f'{name}: start -> playing')
@@ -42,6 +53,12 @@ def run(p, name, w, h, mobile):
     pg.evaluate('__ninja.api.boss()'); pg.wait_for_timeout(6000)
     check(st()['boss'], f'{name}: boss wave spawns')
     pg.screenshot(path=f'{OUT}/{name}-boss.png')
+    pg.evaluate('__ninja.api.wave(31)'); pg.wait_for_timeout(1200)
+    check(st()['wave'] == 31 and st()['s'] == 'playing', f'{name}: endless wave 31 (authored cycle ends at 10)')
+    pg.screenshot(path=f'{OUT}/{name}-endless-milestone.png')
+    pg.evaluate('__ninja.api.wave(40)'); pg.wait_for_timeout(5000)
+    bn = pg.inner_text('#bb-name'); check(st()['boss'] and len(bn) > 0, f'{name}: endless boss variant at wave 40 ({bn})')
+    pg.screenshot(path=f'{OUT}/{name}-endless-boss.png')
     pg.keyboard.press('p'); pg.wait_for_timeout(300); check(st()['s'] == 'paused', f'{name}: pause')
     pg.keyboard.press('p'); pg.wait_for_timeout(300); check(st()['s'] == 'playing', f'{name}: resume')
     pg.evaluate('__ninja.invuln = 0; __ninja.api.kill()'); pg.wait_for_timeout(2600)

@@ -26,8 +26,16 @@ Drag · arrows/WASD · Space/Enter/X/J ult · P/Esc pause · M mute · Enter ret
 | `ENEMIES` | drone 2hp/50 · weaver 3/80 · turret 7/150 · dasher 2/120 · boss 160+90 per cycle/3000×cycle |
 | `ENEMY_BULLET_SPEED` / `BOSS_EVERY` / `DROP_CHANCE` | 7.5 / 5 / 0.09 |
 | `waveSpec(n)` | groups = min(4+0.8n, 12); types unlock at waves 1/2/3/4; formations line / V / column / scatter |
-| `speedScale` / `hpScale` | +4 %/wave (max +60 %) / +50 % HP per 5 waves |
+| `speedScale` / `hpScale` | +4 %/wave (max +60 %) / +50 % HP per 5 waves (capped at ×3.5) |
+| `bossHp(n)` | 160 + 90 per cycle, capped at 1100 |
+| `bossVariant(c)` | 6 species (星海魔獸, 深淵魔眼, 等離子海妖, 虛空水母, 晶棘巨獸, 極光龍), then `Mk.N` variants forever; attack-rate ×(1+0.06(c−1)) capped at 1.6 |
+| `MILESTONE_EVERY` / `milestoneBonus(n)` | 10 waves / 5000 × (n/10); shown at the start of wave 11, 21…: bonus, shields → max, theme shift |
 | `ADS` | interstitial cooldown 200 s, every 3rd game over, 150 s grace |
+
+## 3b. Endless mode & i18n (v1.1)
+- Waves never end; there is no final boss. After the authored first cycle (waves 1–10) everything keeps scaling procedurally through `waveSpec`/`bossHp`/`bossVariant` with capped curves. Best wave = endless record (`store bestWave`, shown on the start screen).
+- Test hook: `__ninja.api.wave(n)` jumps to wave n.
+- Strings: `js/strings.js` (`{key: [zh-HK, en]}` via cyber-kit v0.2.1 i18n). HTML uses `data-i18n*`; dynamic banners use `t()`. Toggles: `#btn-lang` (start), `#btn-lang2` (pause). Language persists in `localStorage cyber.lang`; `?lang=en|zh` forces.
 
 ## 4. File map
 ```
@@ -44,7 +52,7 @@ tests/           waves.test.mjs, smoke.py
 Test hook: `window.__ninja` (state, x, z, score, wave, hp, ult, boss, `api.ult/kill/boss`).
 
 ## 5. Tests
-`node tests/waves.test.mjs` · `python tests/smoke.py [url] [out]` — 412×915 touch + 1280×800: start, drag, keyboard, auto-fire kills, ultimate, boss wave, pause/resume, game over, continue, demo, zero console errors. Last run 2026-10-02: ALL PASSED.
+`node tests/waves.test.mjs` · `python tests/smoke.py [url] [out]` — 412×915 touch + 1280×800: start, drag, keyboard, auto-fire kills, ultimate, boss wave, pause/resume, game over, continue, demo, language toggle/persist (en + zh screenshots), endless wave 31 milestone + wave 40 boss variant, zero console errors. Last run 2026-10-02 (v1.1): ALL PASSED.
 
 ## 6. Android packaging
 As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `hk.fung2222.cyberninja`; lock portrait).
@@ -55,6 +63,8 @@ As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `
 | `gameover` | interstitial | `retry()` / `overToMenu()` → `ads.naturalBreak('gameover')` | only after the player taps Retry/Menu; capped; never at launch or wave start |
 | `continue` | rewarded | `revive()` | opt-in, once per run |
 
+Natural break points in endless: the game-over screen (above) and, optionally in future, the milestone banner every 10 waves (never mid-wave).
+
 ## 8. Known issues / ideas
 - Headless SwiftShader ≈ 3 FPS, so tests wait on game state instead of wall time; phones run 60 FPS with auto-quality.
-- Ideas: more boss species per cycle, weapon types (homing kunai), haptics intensity setting.
+- Ideas: distinct boss meshes per species (currently same model, new name/rate + theme shift), weapon types (homing kunai), haptics intensity setting.
