@@ -32,7 +32,7 @@
 `?demo=1` AI 自動玩 · `?lang=en|zh` · `?fps=1` · `?quality=low` · `?adsim=1` · `?reset=1` · `?mute=1`
 
 ## 技術 Tech
-Three.js r169 + [cyber-kit](https://github.com/fung2222/cyber-kit) v0.2.1（`vendor/cyber-kit/`），冇 build step，可離線運行。所有模型（忍者、敵機、星海魔獸）都係程式生成嘅原創設計；音效同音樂全部合成。
+Three.js r169 + [cyber-kit](https://github.com/fung2222/cyber-kit) v0.3.0（`vendor/cyber-kit/`），冇 build step，可離線運行。所有模型（忍者、敵機、星海魔獸）都係程式生成嘅原創設計；音效同音樂全部合成。
 
 ## 開發 Development
 ```bash

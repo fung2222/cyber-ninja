@@ -68,3 +68,7 @@ Natural break points in endless: the game-over screen (above) and, optionally in
 ## 8. Known issues / ideas
 - Headless SwiftShader ≈ 3 FPS, so tests wait on game state instead of wall time; phones run 60 FPS with auto-quality.
 - Ideas: distinct boss meshes per species (currently same model, new name/rate + theme shift), weapon types (homing kunai), haptics intensity setting.
+
+## Audio loudness + glow (cyber-kit v0.3.0, 2026-10-03)
+- Audio: kit loudness model (music ≈ −20 LUFS integrated, median SFX ≈ music level). This game: music 'drive', sfxTrimDb -4.5 in `js/audio.js`. Re-measure after changing sounds: `python3 ../cyber-kit/tests/loudness.py http://127.0.0.1:18940 <dir>:<AudioClass> --kit /cyber-kit` (see kit docs/API.md "Loudness"). Keep music −20 ± 1 LUFS and SFX/BGM 0 ± 2 dB.
+- Glow: `createStage` values are the HIGH look; default is LOW (crisp). Shared pref `localStorage cyber.glow`, `?glow=low|high`. Pause screen has a GLOW: LOW/HIGH button (`ui.glowToggle(stage)`). Scene fog 0.012 → 0.009.

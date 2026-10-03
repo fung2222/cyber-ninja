@@ -1,7 +1,7 @@
 // CYBER NINJA sounds — punchy synth SFX + 'drive' synthwave music (all generated in code).
 import { SynthAudio, mtof } from 'cyber-kit/audio/synth.js';
 export class NinjaAudio extends SynthAudio {
-  constructor(store) { super({ store, music: 'drive' }); this._shot = 0; }
+  constructor(store) { super({ store, music: 'drive', sfxTrimDb: -4.5 }); this._shot = 0; }
   shot() { if (++this._shot % 2) return; this.osc({ type: 'square', f: 1800, f2: 900, dur: 0.035, vol: 0.018, lp: 5000 }); }
   hit() { this.osc({ type: 'triangle', f: 700, f2: 400, dur: 0.04, vol: 0.03 }); }
   boom(big = false) {

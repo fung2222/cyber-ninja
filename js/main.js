@@ -12,6 +12,7 @@ const store = createStore(GAME_ID);
 if (flags.reset) store.clear();
 const ui = new CyberUI({ screens: ['start', 'pause', 'over'] });
 const stage = createStage({ canvas: $('scene'), bloom: 0.95, bloomRadius: 0.5, bloomThreshold: 0.75, fov: 50, exposure: 1.05, onFatal: (m) => ui.fatal(m) });
+ui.glowToggle(stage);   // cyber-kit v0.3.0: GLOW LOW/HIGH button in the pause screen (shared preference, LOW = crisp default)
 const { scene, camera } = stage;
 const theme = new ThemeController(); theme.set(1, true);
 const world = new World(scene);

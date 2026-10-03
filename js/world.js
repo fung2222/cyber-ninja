@@ -7,7 +7,7 @@ const HASH = /* glsl */`float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); 
 export class World {
   constructor(scene) {
     this.scene = scene; this.speed = 1; this.scroll = 0;
-    scene.fog = new THREE.FogExp2(0x0a0418, 0.012);
+    scene.fog = new THREE.FogExp2(0x0a0418, 0.009);   // was 0.012: less haze over the play field
     this.uScroll = { value: 0 };
     // sky dome
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(420, 32, 16), new THREE.ShaderMaterial({
