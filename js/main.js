@@ -1,6 +1,6 @@
 // CYBER NINJA 賽博忍者：星海魔獸 — controller: drag-to-move auto-fire shooter, waves, cosmic monster bosses, ultimate, continue.
 import * as THREE from 'three';
-import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds } from 'cyber-kit';
+import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, VOLLEYS, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
 import './strings.js';
 import { World } from './world.js';
@@ -205,6 +205,10 @@ createInput({
   },
 }, { swipe: 'once', actions: { KeyX: 'ult', KeyJ: 'ult', KeyK: 'ult' } });
 ui.on('btn-start', () => { audio.init(); beginRun(); });
+const __hub = readHub();
+if (shouldShowArcadeMenu(__hub)) { const b = document.getElementById('btn-arcade-menu'); if (b) b.classList.remove('hidden'); }
+ui.on('btn-arcade-menu', () => { try { audio.back(); } catch {} returnToHub({ gameId: 'cyber-ninja', openStore: false }); });
+
 ui.on('btn-resume', resume); ui.on('btn-quit', () => { audio.back(); showAttract(); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });

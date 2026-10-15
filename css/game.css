@@ -30,3 +30,5 @@
   .tagline { font-size: 13px; margin-bottom: 14px; }
   .controls div:not(.touch-hint) { display: none; }
 }
+
+/* hub return */ #btn-arcade-menu { margin-top: 10px; animation: none; }
