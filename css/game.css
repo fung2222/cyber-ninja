@@ -31,4 +31,4 @@
   .controls div:not(.touch-hint) { display: none; }
 }
 
-/* hub return */ #btn-arcade-menu { margin-top: 10px; animation: none; }
+/* hub return */ #btn-arcade-menu { margin-top: 0; animation: none; }
