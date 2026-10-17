@@ -213,6 +213,19 @@ ui.on('btn-resume', resume); ui.on('btn-quit', () => { audio.back(); showAttract
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
 i18n.bindToggle($('btn-lang')); i18n.bindToggle($('btn-lang2'));
+
+ui.mountHowto({
+  onOpen: () => { try { audio.click(); } catch (_) {} },
+  getContent: () => ({
+    kicker: 'CYBER NINJA',
+    title: t('kit.howto'),
+    sections: [
+      { heading: t('kit.rules'), body: t('help.rules') },
+      { heading: t('kit.controls'), body: t('help.controls') },
+    ],
+  }),
+});
+
 i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); });
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
 Platform.onBack(() => { if (ui.closeModal()) return true; if (S.state === 'playing') { pause(); return true; } if (S.state === 'paused') { resume(); return true; } if (S.state === 'over') { overToMenu(); return true; } return false; });
