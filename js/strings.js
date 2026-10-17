@@ -180,8 +180,7 @@ i18n.add({
 "E": [
 "能量",
 "ENERGY"
-]
-
-  'help.rules': ['<ul><li>賽博忍者潛行／暗殺：避開視野、用技能清目標。</li><li>關卡推進；被發現會有警報壓力。</li><li>善用掩體同技能冷卻。</li></ul>', '<ul><li>Cyber ninja stealth: avoid sight cones, eliminate targets.</li><li>Progress through missions; detection raises alarm pressure.</li><li>Use cover and ability cooldowns wisely.</li></ul>'],
-  'help.controls': ['<ul><li>移動：拖動 · <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd></li><li>攻擊／技能：畫面掣或對應鍵（見主畫面）</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Move: drag · <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd></li><li>Attack / skills: on-screen or keys (see home)</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
+],
+  "help.rules": ['<ul><li>賽博忍者潛行／暗殺：避開視野、用技能清目標。</li><li>關卡推進；被發現會有警報壓力。</li><li>善用掩體同技能冷卻。</li></ul>', '<ul><li>Cyber ninja stealth: avoid sight cones, eliminate targets.</li><li>Progress through missions; detection raises alarm pressure.</li><li>Use cover and ability cooldowns wisely.</li></ul>'],
+  "help.controls": ['<ul><li>移動：拖動 · <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd></li><li>攻擊／技能：畫面掣或對應鍵（見主畫面）</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Move: drag · <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd></li><li>Attack / skills: on-screen or keys (see home)</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
 });

@@ -215,6 +215,7 @@ $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.pre
 i18n.bindToggle($('btn-lang')); i18n.bindToggle($('btn-lang2'));
 
 ui.mountHowto({
+  privacyUrl: './privacy.html',
   onOpen: () => { try { audio.click(); } catch (_) {} },
   getContent: () => ({
     kicker: 'CYBER NINJA',
@@ -225,6 +226,11 @@ ui.mountHowto({
     ],
   }),
 });
+ui.mountSettings({
+  audio, stage,
+  onOpen: () => { try { audio.click(); } catch (_) {} },
+});
+
 
 i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); });
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
