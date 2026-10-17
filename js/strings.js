@@ -182,5 +182,5 @@ i18n.add({
 "ENERGY"
 ],
   "help.rules": ['<ul><li>賽博忍者潛行／暗殺：避開視野、用技能清目標。</li><li>關卡推進；被發現會有警報壓力。</li><li>善用掩體同技能冷卻。</li></ul>', '<ul><li>Cyber ninja stealth: avoid sight cones, eliminate targets.</li><li>Progress through missions; detection raises alarm pressure.</li><li>Use cover and ability cooldowns wisely.</li></ul>'],
-  "help.controls": ['<ul><li>移動：拖動 · <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd></li><li>攻擊／技能：畫面掣或對應鍵（見主畫面）</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Move: drag · <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd></li><li>Attack / skills: on-screen or keys (see home)</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
+  "help.controls": ['<ul><li>手機：喺任何位置拖動移動（手指唔遮忍者）；自動開火</li><li>鍵盤：<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> 移動　<kbd>Space</kbd> 霓虹居合斬</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Touch: drag anywhere to move (finger never covers the ninja); auto-fire</li><li>Keys: <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> move　<kbd>Space</kbd> Neon Iai Slash</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
 });
