@@ -1,6 +1,6 @@
 # CYBER NINJA 賽博忍者：星海魔獸 — Handoff
 
-Status: **web build done (v1.0)** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+Status: **web build v0.3.13** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
 
 ## 1. Design
@@ -35,7 +35,7 @@ Drag · arrows/WASD · Space/Enter/X/J ult · P/Esc pause · M mute · Enter ret
 ## 3b. Endless mode & i18n (v1.1)
 - Waves never end; there is no final boss. After the authored first cycle (waves 1–10) everything keeps scaling procedurally through `waveSpec`/`bossHp`/`bossVariant` with capped curves. Best wave = endless record (`store bestWave`, shown on the start screen).
 - Test hook: `__ninja.api.wave(n)` jumps to wave n.
-- Strings: `js/strings.js` (`{key: [zh-HK, en]}` via cyber-kit v0.2.1 i18n). HTML uses `data-i18n*`; dynamic banners use `t()`. Toggles: `#btn-lang` (start), `#btn-lang2` (pause). Language persists in `localStorage cyber.lang`; `?lang=en|zh` forces.
+- Strings: `js/strings.js` (`{key: [zh-HK, en]}` via cyber-kit v0.3.19 i18n). HTML uses `data-i18n*`; dynamic banners use `t()`. Language lives in the gear settings sheet; pause also has `#btn-lang2`. Language persists in `localStorage cyber.lang`; `?lang=en|zh` forces.
 
 ## 4. File map
 ```
@@ -46,7 +46,7 @@ js/world.js      sky dome (stars + nebula), scrolling megacity shader, haze, ins
 js/entities.js   ninja model + scarf ribbon, enemy models (neon edge wireframes), boss, instanced bullet pools, pickups
 js/audio.js      NinjaAudio (cyber-kit SynthAudio, 'drive' music)
 js/main.js       states, relative drag input, simulation (movement, fire, waves, AI patterns, collisions), ult, camera, ads hooks
-vendor/cyber-kit cyber-kit v0.1.0
+vendor/cyber-kit cyber-kit v0.3.19
 tests/           waves.test.mjs, smoke.py
 ```
 Test hook: `window.__ninja` (state, x, z, score, wave, hp, ult, boss, `api.ult/kill/boss`).
