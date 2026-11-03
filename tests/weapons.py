@@ -53,7 +53,7 @@ with sync_playwright() as p:
     print('W idling', still)
     check(still['w'] == 'pulse' and still['n'] > 0, 'W pickup does not auto-absorb')
     pg.evaluate("() => { const p=__ninja.pickups[__ninja.pickups.length-1]; __ninja.tx=p.x; __ninja.tz=p.z; }")
-    pg.wait_for_timeout(900)
+    pg.wait_for_function("() => __ninja.weapon === 'nova'", timeout=8000)
     got = pg.evaluate("() => ({w:__ninja.weapon,p:__ninja.power})")
     print('pickup', got)
     check(got['w'] == 'nova', 'W pickup swaps to the dropped weapon')
@@ -70,7 +70,7 @@ with sync_playwright() as p:
 
     # pulse ultimate must be a 180° forward fan, never a radial/backward storm
     pg.evaluate("() => { __ninja.state = 'playing'; __ninja.hp = 3; __ninja.invuln = 999; __ninja.ultT = -1; __ninja.ultMode = null; __ninja.odT = -1; __ninja.noFireT = 0; __ninja.api.weapon('pulse', 4); __ninja.api.charge(100); __ninja.api.clearShots(); __ninja.api.ult(); }")
-    pg.wait_for_timeout(700)
+    pg.wait_for_function("() => __ninja.api.pulseVectors().length > 0", timeout=8000)
     vec = pg.evaluate("() => __ninja.api.pulseVectors()")
     print('pulse fan', len(vec), vec[:2])
     check(len(vec) > 0, 'pulse ultimate fires bullets')
