@@ -38,6 +38,8 @@ Three.js r169 + [cyber-kit](https://github.com/fung2222/cyber-kit) v0.3.19（`ve
 ```bash
 cd .. && python3 -m http.server 18940     # http://127.0.0.1:18940/cyber-ninja/
 node cyber-ninja/tests/waves.test.mjs
+node --test cyber-ninja/tests/audio.test.mjs
+python cyber-ninja/tests/ult-reset.py
 python cyber-ninja/tests/smoke.py
 ```
-文件：[docs/HANDOFF.md](docs/HANDOFF.md) · [privacy.html](privacy.html) · 屬於 [CYBER ARCADE](https://github.com/fung2222/cyber-arcade) 系列。
+文件：[docs/HANDOFF.md](docs/HANDOFF.md) · [docs/DEEP-AUDIT-2026-11-03.md](docs/DEEP-AUDIT-2026-11-03.md) · [privacy.html](privacy.html) · 屬於 [CYBER ARCADE](https://github.com/fung2222/cyber-arcade) 系列。

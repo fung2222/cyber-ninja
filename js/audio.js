@@ -1,7 +1,20 @@
 // CYBER NINJA sounds — punchy synth SFX + 'drive' synthwave music (all generated in code).
 import { SynthAudio, mtof } from 'cyber-kit/audio/synth.js';
 export class NinjaAudio extends SynthAudio {
-  constructor(store) { super({ store, music: 'drive', sfxTrimDb: -4.5 }); this._shot = 0; }
+  constructor(store) {
+    super({ store, music: 'drive', sfxTrimDb: -4.5 });
+    // Roy's audio rule: the BGM must not carry a continuous noise bed.
+    // Keep the drive preset's tonal kick/bass/pad/arp, but drop noise hats.
+    this.preset = { ...this.preset, hats: false };
+    this._shot = 0;
+  }
+  // The base drive preset adds a noise snare at steps 4/12 and noise hats.
+  // Suppress only noise during the music step; SFX keep their transients.
+  playStep(step, time, s16) {
+    const n = this.noiseHit;
+    this.noiseHit = () => {};
+    try { super.playStep(step, time, s16); } finally { this.noiseHit = n; }
+  }
   shot() { if (++this._shot % 2) return; this.osc({ type: 'square', f: 1800, f2: 900, dur: 0.035, vol: 0.018, lp: 5000 }); }
   hit() { this.osc({ type: 'triangle', f: 700, f2: 400, dur: 0.04, vol: 0.03 }); }
   boom(big = false) {

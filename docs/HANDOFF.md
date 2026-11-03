@@ -1,6 +1,7 @@
 # CYBER NINJA 賽博忍者：星海魔獸 — Handoff
 
 Status: **web build v0.3.13** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+Deep pass 2026-11-03: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md) — BGM noise removed; new-run ult-ready reset.
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
 
 ## 1. Design
@@ -52,7 +53,7 @@ tests/           waves.test.mjs, smoke.py
 Test hook: `window.__ninja` (state, x, z, score, wave, hp, ult, boss, `api.ult/kill/boss`).
 
 ## 5. Tests
-`node tests/waves.test.mjs` · `python tests/smoke.py [url] [out]` — 412×915 touch + 1280×800: start, drag, keyboard, auto-fire kills, ultimate, boss wave, pause/resume, game over, continue, demo, language toggle/persist (en + zh screenshots), endless wave 31 milestone + wave 40 boss variant, zero console errors. Last run 2026-10-02 (v1.1): ALL PASSED.
+`node tests/waves.test.mjs` · `node --test tests/audio.test.mjs` · `python tests/ult-reset.py [url]` · `python tests/smoke.py [url] [out]` — 412×915 touch + 1280×800: start, drag, keyboard, auto-fire kills, ultimate, boss wave, pause/resume, game over, continue, demo, language toggle/persist (en + zh screenshots), endless wave 31 milestone + wave 40 boss variant, zero console errors. Last run 2026-11-03: waves 1–30 pass, audio PASS, ult-reset PASS; full smoke pending.
 
 ## 6. Android packaging
 As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `hk.fung2222.cyberninja`; lock portrait).
@@ -70,5 +71,5 @@ Natural break points in endless: the game-over screen (above) and, optionally in
 - Ideas: distinct boss meshes per species (currently same model, new name/rate + theme shift), weapon types (homing kunai), haptics intensity setting.
 
 ## Audio loudness + glow (cyber-kit v0.3.0, 2026-10-03)
-- Audio: kit loudness model (music ≈ −20 LUFS integrated, median SFX ≈ music level). This game: music 'drive', sfxTrimDb -4.5 in `js/audio.js`. Re-measure after changing sounds: `python3 ../cyber-kit/tests/loudness.py http://127.0.0.1:18940 <dir>:<AudioClass> --kit /cyber-kit` (see kit docs/API.md "Loudness"). Keep music −20 ± 1 LUFS and SFX/BGM 0 ± 2 dB.
+- Audio: kit loudness model (music ≈ −20 LUFS integrated, median SFX ≈ music level). This game: music 'drive' with **noise hats/snare suppressed** (tonal kick/bass/pad/arp only), sfxTrimDb -4.5 in `js/audio.js`. Re-measure after changing sounds: `python3 ../cyber-kit/tests/loudness.py http://127.0.0.1:18940 <dir>:<AudioClass> --kit /cyber-kit` (see kit docs/API.md "Loudness"). Keep music −20 ± 1 LUFS and SFX/BGM 0 ± 2 dB.
 - Glow: `createStage` values are the HIGH look; default is LOW (crisp). Shared pref `localStorage cyber.glow`, `?glow=low|high`. Pause screen has a GLOW: LOW/HIGH button (`ui.glowToggle(stage)`). Scene fog 0.012 → 0.009.

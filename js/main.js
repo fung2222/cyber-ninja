@@ -5,7 +5,7 @@ import { GAME_ID, FIELD, PLAYER, VOLLEYS, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP
 import './strings.js';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, PICKUPS } from './entities.js';
-import { NinjaAudio } from './audio.js';
+import { NinjaAudio } from './audio.js?v=0.3.14';
 
 const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
@@ -69,7 +69,8 @@ function clearField() {
 }
 function resetRun() {
   clearField();
-  Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.hp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false });
+  Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.hp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false, slashZ: 0 });
+  slash.visible = false;
   theme.set(1); nextWave();
 }
 function nextWave() {
