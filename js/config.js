@@ -8,7 +8,7 @@ export const PLAYER = {
   radius: 0.42,            // hit radius (small, generous)
   hp: 3, maxHp: 3,
   invuln: 1.6,             // seconds after a hit
-  dragGain: 1.15,          // finger travel -> ninja travel (relative drag)
+  dragGain: 1.35,          // finger travel -> ninja travel (relative drag)
   keySpeed: 11,            // units / s with keyboard
   fireRate: 0.12,          // seconds between volleys
   boltSpeed: 30, boltDamage: 1,

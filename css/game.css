@@ -11,7 +11,9 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .hw-line b { font-size: 13px; letter-spacing: 1.5px; font-weight: 600; color: #fff; }
 .hw-line span { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: .5px; color: var(--c3); }
 .hw-line .hw-ult { color: var(--c1); opacity: .8; overflow: hidden; text-overflow: ellipsis; max-width: 64px; }
-.hud-center .hp-pips { gap: 3px; margin-top: 4px; }
+.hp-line { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+.hp-label { font-family: var(--font-zh); font-size: 7px; letter-spacing: 1px; opacity: .62; white-space: nowrap; }
+.hud-center .hp-pips { gap: 3px; margin-top: 0; }
 .hud-center .hp-pips i { width: 10px; height: 7px; }
 .hud-center .wh-bar { width: 100%; height: 3px; margin-top: 4px; }
 .hud-top .hud-right { position: static; right: auto; border: 0; box-shadow: none; clip-path: none; background: none; padding: 0; backdrop-filter: none; justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; }
@@ -34,7 +36,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .wh-ult { margin-top: 4px; font-size: 10px; letter-spacing: 1.5px; color: var(--c1); opacity: .8; }
 .od-btn { position: absolute; right: max(18px, env(safe-area-inset-right)); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 184px); width: 70px; height: 70px; border-radius: 50%; pointer-events: auto; cursor: pointer; overflow: hidden;
   border: 2px solid color-mix(in srgb, #ff7a3b 55%, transparent); background: rgba(24,8,10,.65); color: #fff; padding: 0; touch-action: none; }
-.od-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(0deg, rgba(255,122,59,.72), rgba(255,43,214,.3)); transition: height .2s; }
+.od-fill { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(0deg, rgba(255,122,59,.72), rgba(255,43,214,.3)); transition: height .2s; }
 .od-txt { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1.1; }
 .od-txt b { font-family: var(--font-zh); font-size: 11px; letter-spacing: 1px; text-shadow: 0 0 8px #ff7a3b; }
 .od-txt small { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 1px; color: #ffb38a; }
@@ -49,7 +51,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .bb-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2bd6, #a66bff); box-shadow: 0 0 12px #ff2bd6; transition: width .15s; }
 .ult-btn { position: absolute; right: max(18px, env(safe-area-inset-right)); bottom: calc(max(18px, env(safe-area-inset-bottom)) + 66px); width: 92px; height: 92px; border-radius: 50%; pointer-events: auto; cursor: pointer; overflow: hidden;
   border: 2px solid color-mix(in srgb, var(--c1) 60%, transparent); background: rgba(10,4,30,.6); color: #fff; padding: 0; touch-action: none; }
-.ult-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(0deg, color-mix(in srgb, var(--c1) 70%, transparent), color-mix(in srgb, var(--c2) 40%, transparent)); transition: height .2s; }
+.ult-fill { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(0deg, color-mix(in srgb, var(--c1) 70%, transparent), color-mix(in srgb, var(--c2) 40%, transparent)); transition: height .2s; }
 .ult-txt { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1.15; }
 .ult-txt b { font-family: var(--font-zh); font-size: 17px; letter-spacing: 2px; text-shadow: 0 0 8px var(--c1); }
 .ult-txt small { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2px; color: var(--c1); }
@@ -76,12 +78,12 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 
 
 /* action dock: both ultimates horizontally centred, away from the right thumb */
-.action-dock { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: flex-end; gap: 12px; pointer-events: none; z-index: 4; }
+.action-dock { position: absolute; left: max(12px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; pointer-events: none; z-index: 4; opacity: .86; }
 .action-dock .od-btn, .action-dock .ult-btn { position: static; transform: none; left: auto; right: auto; bottom: auto; pointer-events: auto; }
 @media (max-width: 760px) {
   .action-dock { bottom: max(12px, env(safe-area-inset-bottom)); gap: 10px; }
-  .action-dock .od-btn { width: 62px; height: 62px; }
-  .action-dock .ult-btn { width: 80px; height: 80px; }
+  .action-dock .od-btn { width: 48px; height: 48px; }
+  .action-dock .ult-btn { width: 64px; height: 64px; }
 }
 
 /* pause + settings: same angular HUD language as the game */
@@ -108,3 +110,11 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .ck-settings .ck-set-label { font-size: 14px; }
 .ck-settings .neon-btn { min-height: 48px; margin-top: 6px; }
 .ck-settings .ck-seg button, .ck-settings .ck-toggle { min-height: 34px; }
+
+/* compact action dock: left edge, clear of the right thumb and centre play lane */
+.action-dock .od-btn { width: 48px; height: 48px; opacity: .86; }
+.action-dock .ult-btn { width: 64px; height: 64px; opacity: .9; }
+.action-dock .od-txt b { font-size: 9px; }
+.action-dock .ult-txt b { font-size: 13px; }
+.action-dock .ult-txt small, .action-dock .od-txt small { font-size: 7px; }
+@media (max-width: 760px) { .action-dock .od-btn { width: 46px; height: 46px; } .action-dock .ult-btn { width: 62px; height: 62px; } }

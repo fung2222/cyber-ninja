@@ -2,11 +2,11 @@
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import './strings.js?v=0.3.24';
+import './strings.js?v=0.3.25';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js';
-import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.24';
-import { NinjaAudio } from './audio.js?v=0.3.24';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.25';
+import { NinjaAudio } from './audio.js?v=0.3.25';
 
 const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
@@ -60,7 +60,7 @@ function updateHUD() {
   $('hud-wfill').style.width = Math.min(100, S.ult).toFixed(0) + '%';
   $('hud-wult').textContent = ultName(S.weapon, lang);
   $('ult-label').textContent = ultShort(S.weapon, lang);
-  $('ult-sub').textContent = S.ult >= 100 ? (lang === 'zh' ? '就緒' : 'READY') : 'SPACE';
+  $('ult-sub').textContent = S.ult >= 100 ? (lang === 'zh' ? '就緒' : 'READY') : Math.round(S.ult) + '%';
   $('ult-fill').style.height = Math.min(100, S.ult).toFixed(0) + '%';
   $('btn-ult').classList.toggle('ready', S.ult >= 100 && S.ultT < 0 && S.odT < 0);
   const odReady = S.od >= 100 && S.odT < 0 && S.noFireT <= 0 && S.ultT < 0;
@@ -381,7 +381,7 @@ function sim(dt) {
   let kx = 0, kz = 0; if (keys.has('ArrowLeft') || keys.has('KeyA')) kx--; if (keys.has('ArrowRight') || keys.has('KeyD')) kx++; if (keys.has('ArrowUp') || keys.has('KeyW')) kz--; if (keys.has('ArrowDown') || keys.has('KeyS')) kz++;
   const px = S.x;
   if ((kx || kz) && S.state === 'playing' && !S.demo) { S.x += kx * PLAYER.keySpeed * dt; S.z += kz * PLAYER.keySpeed * dt; S.tx = S.x; S.tz = S.z; }
-  else if (S.tx !== undefined) { const k = 1 - Math.exp(-dt * (drag ? 22 : 9)); S.x += (S.tx - S.x) * k; S.z += (S.tz - S.z) * k; }
+  else if (S.tx !== undefined) { const k = 1 - Math.exp(-dt * (drag ? 28 : 9)); S.x += (S.tx - S.x) * k; S.z += (S.tz - S.z) * k; }
   S.x = THREE.MathUtils.clamp(S.x, -FIELD.halfW + 0.4, FIELD.halfW - 0.4); S.z = THREE.MathUtils.clamp(S.z, FIELD.playerMinZ, FIELD.playerMaxZ);
   if (S.tx !== undefined) { S.tx = THREE.MathUtils.clamp(S.tx, -FIELD.halfW + 0.4, FIELD.halfW - 0.4); S.tz = THREE.MathUtils.clamp(S.tz, FIELD.playerMinZ, FIELD.playerMaxZ); }
   S.vx = (S.x - px) / Math.max(dt, 1e-4);
