@@ -2,7 +2,7 @@
 export const GAME_ID = 'cyber-ninja';
 
 // Play field (world units, xz plane). Far = -z = top of screen.
-export const FIELD = { halfW: 6, top: -24, bottom: 3.2, playerMinZ: -8, playerMaxZ: 2.4 };
+export const FIELD = { halfW: 6, top: -24, bottom: 3.2, playerMinZ: -21, playerMaxZ: 2.4 };
 
 export const PLAYER = {
   radius: 0.42,            // hit radius (small, generous)

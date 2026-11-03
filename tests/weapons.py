@@ -27,6 +27,11 @@ with sync_playwright() as p:
     check(st['weapon'] == 'pulse' and st['power'] == 1, 'starts with pulse L1')
     check(st['hud'] == '脈衝' and st['lv'] == 'LV.1', 'weapon HUD is wired')
 
+    hud = pg.evaluate("""() => {const q=s=>document.querySelector(s)?.getBoundingClientRect(); const top=q('.hud-top'), w=q('#hud-weapon'), hp=q('#hud-hp'), wave=q('#hud-wave'), pause=q('#btn-pause'), mute=q('#btn-mute'); return {top:top&&top.y, w:w&&w.y, hp:hp&&hp.y, wave:wave&&wave.y, pause:pause&&pause.y, mute:mute&&mute.y, old:!!document.querySelector('#weapon-hud')};}""")
+    print('hud', hud)
+    check(hud['top'] is not None and hud['w'] < 80 and hud['hp'] < 80 and hud['wave'] < 80 and hud['pause'] < 80 and hud['mute'] < 80, 'HUD is consolidated at the top')
+    check(hud['old'] is False, 'old bottom-left weapon HUD is gone')
+
     for key, short in [('pulse', '脈衝'), ('lance', '相位'), ('nova', '震波')]:
         pg.evaluate(f"() => __ninja.api.weapon('{key}', 3)")
         pg.wait_for_timeout(250)
@@ -39,7 +44,12 @@ with sync_playwright() as p:
     # a W drop must replace the current weapon
     pg.evaluate("() => __ninja.api.weapon('pulse', 2)")
     pg.evaluate("() => __ninja.api.drop('W', 'nova')")
-    pg.wait_for_timeout(2600)
+    pg.wait_for_timeout(1000)
+    still = pg.evaluate("() => ({w:__ninja.weapon,n:__ninja.pickups.length})")
+    print('W idling', still)
+    check(still['w'] == 'pulse' and still['n'] > 0, 'W pickup does not auto-absorb')
+    pg.evaluate("() => { const p=__ninja.pickups[__ninja.pickups.length-1]; __ninja.tx=p.x; __ninja.tz=p.z; }")
+    pg.wait_for_timeout(900)
     got = pg.evaluate("() => ({w:__ninja.weapon,p:__ninja.power})")
     print('pickup', got)
     check(got['w'] == 'nova', 'W pickup swaps to the dropped weapon')

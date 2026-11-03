@@ -143,11 +143,43 @@ export function makePickup(kind, weaponKey) {
   const g = new THREE.Group();
   const w = kind === 'W' ? WEAPONS[weaponKey] : null;
   const c = w ? w.color : PICKUPS[kind].color;
-  const geo = kind === 'W' ? new THREE.IcosahedronGeometry(0.5, 0) : new THREE.OctahedronGeometry(0.42, 0);
+  let geo;
+  if (kind === 'W' && weaponKey === 'pulse') {
+    // pulse = three compact chevron shards, reads as a bullet cluster
+    geo = new THREE.TetrahedronGeometry(0.34, 0);
+    for (let i = 0; i < 3; i++) {
+      const shard = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.72), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.4) }));
+      shard.position.set((i - 1) * 0.28, 0, 0); shard.rotation.y = (i - 1) * 0.08; g.add(shard);
+    }
+  } else if (kind === 'W' && weaponKey === 'lance') {
+    // lance = a long needle with a bright core
+    geo = new THREE.OctahedronGeometry(0.22, 0);
+    const needle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.5, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.4) }));
+    needle.rotation.z = Math.PI / 2; g.add(needle);
+  } else if (kind === 'W' && weaponKey === 'nova') {
+    // nova = a ring with a heavy core
+    geo = new THREE.IcosahedronGeometry(0.3, 0);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.09, 8, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.2) }));
+    ring.rotation.x = Math.PI / 2; g.add(ring);
+  } else {
+    geo = kind === 'W' ? new THREE.IcosahedronGeometry(0.5, 0) : new THREE.OctahedronGeometry(0.42, 0);
+  }
   g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(0.5), transparent: true, opacity: 0.6 })));
   g.add(neonEdges(geo, c, 3));
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(kind === 'W' ? 0.72 : 0.6, 0.035, 6, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2) }));
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(kind === 'W' ? 0.72 : 0.6, 0.03, 6, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2) }));
   ring.rotation.x = Math.PI / 2; g.add(ring);
   g.userData.kind = kind; g.userData.weapon = weaponKey || null;
+  return g;
+}
+
+// GEM = auto-collected score/charge shard. Tier 0 common, 1 elite, 2 boss.
+const GEM_COLORS = [0x00e5ff, 0xff2bd6, 0xffc22b];
+export function makeGem(tier = 0) {
+  const c = GEM_COLORS[Math.min(2, tier)] || GEM_COLORS[0];
+  const geo = new THREE.OctahedronGeometry(0.2 + tier * 0.035, 0); geo.scale(1, 1.55, 1);
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(0.8), transparent: true, opacity: 0.9 })));
+  g.add(neonEdges(geo, c, 3.2));
+  g.userData.tier = tier;
   return g;
 }

@@ -1,16 +1,19 @@
 # XENO NIGHTMARE 異域凶間 — Handoff
 
-Status: **web build v0.3.18** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+Status: **web build v0.3.19** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
 2026-11-03 core pass: three-weapon system + per-weapon ultimates + OVERDRIVE; authored wave formations, aimed enemy fire, map laser hazards, three-phase bosses, dynamic boss music. Earlier deep pass: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md).
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
 
 ## 1. Design
 - Vertical shooter seen from a high chase camera: the pilot rides a hover-glider above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
 - **Relative drag** anywhere moves the craft (finger never covers it), keyboard alternative. **Auto-fire** always on.
-- **Three weapons × six levels** (`js/weapons.js`): PULSE REPEATER (spread), PHASE LANCE (piercing line), NOVA SURGE (AoE). A **W** drop replaces the current weapon; each weapon keeps its own level and charge. **P** raises the current level.
+- **Three weapons × six levels** (`js/weapons.js`): PULSE REPEATER (spread), PHASE LANCE (piercing line), NOVA SURGE (AoE). **W** canisters only drop from elites, turrets (low chance) and bosses; they do **not** magnetise, and switching also raises that weapon by one level. **P** raises the current level.
 - **Per-weapon ultimate** on Space / blue button: BULLET STORM (radial storm), PRISM PIERCE (wide lane beam), SINGULARITY (expanding nova). Charge comes from kills, boss hits and E pickups.
 - **OVERDRIVE** on Q / orange button: ascends the current weapon for 4 s (effective level +2, faster and stronger), then forces a **3 s cease-fire**. This is the risk/reward replacement for standing still at max power.
 - Enemies arrive in authored formations (`line`, `pincer`, `wall`, `crossfire`, `rush`, `weave`, `elite`), fire aimed patterns (drones single, weavers 3-way, turrets 5-way, elites denser), and scale speed/HP with the wave. Telegraphed **laser lanes** cut one lane of the map every 8–13 s.
+- **Gems** drop on every death and home into the craft automatically; count scales with enemy tier/level (boss burst 18–32). Gems add score plus a small amount of ultimate/OVERDRIVE charge.
+- **HUD**: HP, weapon name/level/charge, score, wave and pause/mute are in the top strip. The lower-left is empty; OVERDRIVE and weapon ultimate remain stacked at the lower-right.
+- **Full-field movement**: `FIELD.playerMinZ = -21`, so the craft can fly from the bottom to the top of the play field.
 - **Boss every 5 waves — the cosmic monster**: phase 1 ring/aimed, phase 2 adds spiral + gap walls, phase 3 adds crossfire and tighter timings; phases change at 66 % / 33 % HP. Drops P/S/E on death; zone colour shifts.
 - 3 shields (max 5); a hit costs a shield + 1 power level, 1.6 s invulnerability, nearby bullets cleared (fair).
 - Game over → **continue once** via rewarded hook (full shields, ult charged) or retry.
@@ -36,6 +39,8 @@ Drag · arrows/WASD · Space/Enter/X/J weapon ultimate · Q/O OVERDRIVE · P/Esc
 | `bossVariant(c)` | 6 species, then Mk.N variants; attack-rate ×(1+0.06(c−1)) capped at 1.6 |
 | `boss phases` | 66 % / 33 % HP; ring, spiral, gap wall, crossfire |
 | `hazard` | lane sweep every 8–13 s, 1.1 s warning then 1 s active |
+| `gems` | tier 0/1/2 = 8/18/40 score; boss burst 18–32; auto-home |
+| `W` drops | elite 60 %, turret 14 %, boss 1 guaranteed; no magnet; +1 level on pickup |
 | `MILESTONE_EVERY` / `milestoneBonus(n)` | 10 waves / 5000 × (n/10) |
 | `ADS` | interstitial cooldown 200 s, every 3rd game over, 150 s grace |
 

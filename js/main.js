@@ -2,11 +2,11 @@
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import './strings.js?v=0.3.18';
+import './strings.js?v=0.3.19';
 import { World } from './world.js';
-import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup } from './entities.js';
-import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.18';
-import { NinjaAudio } from './audio.js?v=0.3.18';
+import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem } from './entities.js';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.19';
+import { NinjaAudio } from './audio.js?v=0.3.19';
 
 const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
@@ -43,7 +43,7 @@ const S = {
   od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0,
   score: 0, wave: 1, spec: null, waveT: 0, nextEv: 0, enemies: [], boss: null, pickups: [], kills: 0,
   continued: false, betweenT: 0, t: 0, newRecord: false,
-  hazards: [], hazardT: 7,
+  hazards: [], hazardT: 7, gems: [],
 };
 window.__ninja = S;  // test hook
 
@@ -86,13 +86,14 @@ function clearField() {
   if (S.boss) { scene.remove(S.boss.g); S.boss = null; }
   for (const p of S.pickups) scene.remove(p.g); S.pickups = [];
   for (const h of S.hazards) scene.remove(h.g); S.hazards = [];
+  for (const g of (S.gems || [])) scene.remove(g.g); S.gems = [];
   for (const k of WEAPON_KEYS) pools[k].clear();
   ebullets.clear(); beam.visible = false; beam.material.opacity = 0;
 }
 function resetRun() {
   clearField();
   Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.hp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
-    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7 });
+    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [] });
   beam.visible = false; beam.material.opacity = 0;
   theme.set(1); audio.setBoss(false); nextWave();
 }
@@ -128,7 +129,7 @@ function spawnEnemy(ev) {
     hp: Math.ceil(def.hp * hpScale(S.wave) * (elite ? 1.8 : 1)), fireT: 0.7 + Math.random() * 0.8,
     flash: 0, mode: 0, stopZ: ev.type === 'turret' ? -17 + Math.random() * 4 : -15 + Math.random() * 5,
     vx: 0, vz: def.speed * speedScale(S.wave) * (elite ? 1.12 : 1),
-    pattern: ev.pattern || 'dive', elite, score: def.score * (elite ? 2.5 : 1),
+    pattern: ev.pattern || 'dive', elite, level: S.wave, score: def.score * (elite ? 2.5 : 1),
   };
   if (elite && e.g.userData.mat) e.g.userData.mat.emissive = new THREE.Color(def.color).multiplyScalar(0.18);
   g.position.set(e.x, 0, e.z); S.enemies.push(e);
@@ -152,9 +153,27 @@ function killEnemy(e, i) {
   S.od = Math.min(100, S.od + OD.perKill);
   if (S.ult >= 100 && !S.ultReadyShown) { S.ultReadyShown = true; if (S.state === 'playing') { audio.ready(); ui.toast(t('ultReady'), 1300); } }
   if (S.state !== 'attract') { audio.boom(false); if ((e.score || e.def.score) >= 120) { const sp = stage.toScreen(p); ui.popup(sp.x, sp.y, '+' + (e.score || e.def.score)); } }
-  if (S.kills % 8 === 0 || Math.random() < 0.035) dropPickup(e.x, e.z, 'W', randomOtherWeapon(S.weapon));
+  dropGems(e);
+  const wChance = e.elite ? 0.6 : e.type === 'turret' ? 0.14 : 0;
+  if (wChance && Math.random() < wChance) dropPickup(e.x, e.z, 'W', randomOtherWeapon(S.weapon));
   else if (Math.random() < DROP_CHANCE) dropPickup(e.x, e.z);
   fx.kick({ trauma: 0.05 });
+}
+function spawnGem(x, z, tier = 0) {
+  const g = makeGem(tier); g.scale.setScalar(1.25); g.position.set(x, 0.35, z); scene.add(g);
+  S.gems.push({
+    g, x, z, t: 0, tier,
+    vx: (Math.random() - 0.5) * 4.2, vz: (Math.random() - 0.5) * 4.2 + 1.6,
+    value: tier === 2 ? 40 : tier === 1 ? 18 : 8,
+    energy: tier === 2 ? 2.2 : tier === 1 ? 1.1 : 0.45,
+  });
+}
+function dropGems(e, boss = false) {
+  const level = e.level || S.wave;
+  const base = boss ? 18 + Math.min(14, Math.floor(level / 2)) : e.type === 'turret' ? 3 : e.type === 'dasher' ? 2 : 1;
+  const count = base + Math.floor(level / 3) + (e.elite ? 4 : 0);
+  const tier = boss ? 2 : e.elite ? 1 : 0;
+  for (let i = 0; i < count; i++) spawnGem(e.x, e.z, tier);
 }
 function dropPickup(x, z, kind, weaponKey) {
   kind = kind || (S.power < 6 && Math.random() < 0.55 ? 'P' : Math.random() < 0.5 ? 'S' : 'E');
@@ -196,7 +215,9 @@ function bossDown() {
   for (let i = 0; i < 4; i++) setTimeout(() => { particles.burst(p.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3, 0, (Math.random() - 0.5) * 3)), new THREE.Color().setHSL(Math.random(), 1, 0.6), 80, { speed: 10, up: 3, life: 1.2, size: 1.4, grav: 0 }); audio.boom(true); }, i * 160);
   waves.spawn(p, new THREE.Color(0xa66bff), { r0: 1, r1: 18, h: 2.5, dur: 1.2, a: 3 });
   fx.kick({ trauma: 0.8, aberr: 1.5, glitch: 0.8, slowmo: 0.9 }); ui.flash('rgba(255,255,255,0.6)', 600); Platform.haptic('success');
-  S.score += ENEMIES.boss.score * (S.wave / 5); for (let i = 0; i < 3; i++) dropPickup(b.x + (i - 1) * 1.5, b.z, ['P', 'S', 'E'][i]);
+  S.score += ENEMIES.boss.score * (S.wave / 5); dropGems({ x: b.x, z: b.z, level: S.wave, elite: false }, true);
+  for (let i = 0; i < 3; i++) dropPickup(b.x + (i - 1) * 1.5, b.z, ['P', 'S', 'E'][i]);
+  dropPickup(b.x, b.z - 1.2, 'W', randomOtherWeapon(S.weapon));
   scene.remove(b.g); S.boss = null; ebullets.clear();
   if (S.state !== 'attract') ui.banner(t('bossDown'), `${bossName(b)} · +${(ENEMIES.boss.score * (S.wave / 5)).toLocaleString('en-US')}`, '');
   theme.set(1 + S.wave / 5); audio.setBoss(false);
@@ -310,10 +331,12 @@ S.api = {
   overdrive: () => { S.od = 100; doOverdrive(); },
   weapon: (key, level = 1) => { if (!WEAPONS[key]) return; S.ults[S.weapon] = S.ult; S.weapon = key; S.weaponLevels[key] = Math.max(1, Math.min(6, level)); S.power = S.weaponLevels[key]; S.ult = S.ults[key]; S.fireT = 0; updateHUD(); },
   drop: (kind, key) => dropPickup(S.x, S.z - 1.2, kind, key),
+  dropAt: (x, z, kind, key) => dropPickup(x, z, kind, key),
   shots: () => ({ pulse: pools.pulse.list.length, lance: pools.lance.list.length, nova: pools.nova.list.length }),
-  threat: () => ({ enemies: S.enemies.length, bullets: ebullets.list.length, hazards: S.hazards.length, bossPhase: S.boss ? S.boss.phase : null }),
+  threat: () => ({ enemies: S.enemies.length, bullets: ebullets.list.length, hazards: S.hazards.length, gems: S.gems.length, bossPhase: S.boss ? S.boss.phase : null }),
   hazard: () => spawnHazard(),
   spawn: (ev) => spawnEnemy(ev),
+  killOne: () => { const e = S.enemies[0]; if (e) { e.hp = 0; killEnemy(e, 0); } },
   enemyFire: (x, z, ang, speed) => enemyFire(x, z, ang, speed),
   bossHurt: (dmg) => hurtBoss(dmg),
   charge: (n = 100) => { S.ult = Math.min(100, S.ult + n); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + n); updateHUD(); },
@@ -391,7 +414,27 @@ function sim(dt) {
     if (!warn && h.t < 2.1 && S.state === 'playing' && Math.abs(S.x - h.x) < 0.55) hurtPlayer();
     if (h.t > 2.2) { scene.remove(h.g); S.hazards.splice(i, 1); }
   }
-  // enemies
+  // gems: scatter briefly, then home into the craft automatically
+  for (let i = S.gems.length - 1; i >= 0; i--) {
+    const gm = S.gems[i]; gm.t += dt;
+    if (gm.t < 0.35) {
+      gm.x += gm.vx * dt; gm.z += gm.vz * dt; gm.vx *= 0.94; gm.vz *= 0.94;
+    } else {
+      const dx = S.x - gm.x, dz = S.z - gm.z, d = Math.max(0.001, Math.hypot(dx, dz));
+      const pull = 26 + Math.min(40, gm.t * 10);
+      gm.vx += (dx / d) * pull * dt; gm.vz += (dz / d) * pull * dt;
+      gm.vx *= 0.97; gm.vz *= 0.97;
+      gm.x += gm.vx * dt; gm.z += gm.vz * dt;
+      if (d < 0.9) {
+        S.score += gm.value; S.ult = Math.min(100, S.ult + gm.energy); S.ults[S.weapon] = S.ult;
+        S.od = Math.min(100, S.od + gm.energy * 0.6);
+        if (S.state === 'playing' && Math.random() < 0.18) audio.pickup();
+        particles.emit(new THREE.Vector3(gm.x, 0.3, gm.z), new THREE.Vector3(0, 1.5, 0), new THREE.Color(gm.tier === 2 ? 0xffc22b : gm.tier === 1 ? 0xff2bd6 : 0x00e5ff), { life: 0.3, size: 0.5 });
+        scene.remove(gm.g); S.gems.splice(i, 1); continue;
+      }
+    }
+    gm.g.position.set(gm.x, 0.35 + Math.sin(gm.t * 8) * 0.08, gm.z); gm.g.rotation.y = gm.t * 4;
+  }
   const sc = speedScale(S.wave);
   for (let i = S.enemies.length - 1; i >= 0; i--) {
     const e = S.enemies[i]; e.t += dt; e.flash = Math.max(0, e.flash - dt * 6);
@@ -574,12 +617,18 @@ function sim(dt) {
     }
     if (k >= 1) { S.ultT = -1; S.ultMode = null; beam.visible = false; beam.material.opacity = 0; }
   }
-  // pickups
+  // pickups: P/S/E magnetise; weapon canisters never do — the player must choose to fly into them
   for (let i = S.pickups.length - 1; i >= 0; i--) {
-    const p = S.pickups[i]; p.t += dt; const d = Math.hypot(p.x - S.x, p.z - S.z);
-    if (d < 2.6) { p.x += (S.x - p.x) * dt * 6; p.z += (S.z - p.z) * dt * 6; } else p.z += 2.4 * dt;
+    const p = S.pickups[i]; p.t += dt;
+    let d = Math.hypot(p.x - S.x, p.z - S.z);
+    if (p.kind === 'W') {
+      // weapon canisters stay where they dropped; no magnet and no drift
+    } else if (d < 2.6) {
+      p.x += (S.x - p.x) * dt * 6; p.z += (S.z - p.z) * dt * 6;
+      d = Math.hypot(p.x - S.x, p.z - S.z);
+    } else p.z += 2.4 * dt;
     p.g.position.set(p.x, 0.3 + Math.sin(p.t * 4) * 0.15, p.z); p.g.rotation.y = p.t * 2;
-    if (d < 0.9) {
+    if (d < (p.kind === 'W' ? 1.05 : 0.9)) {
       scene.remove(p.g); S.pickups.splice(i, 1);
       if (p.kind === 'P') {
         if (S.power < 6) { S.power++; S.weaponLevels[S.weapon] = S.power; } else { S.od = Math.min(100, S.od + 12); }
@@ -587,7 +636,14 @@ function sim(dt) {
       else if (p.kind === 'E') { S.ult = Math.min(100, S.ult + 35); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + 10); }
       else if (p.kind === 'W' && p.weaponKey) {
         S.ults[S.weapon] = S.ult;
-        S.weapon = p.weaponKey; S.power = S.weaponLevels[S.weapon] || 1; S.ult = S.ults[S.weapon] || 0;
+        if (p.weaponKey === S.weapon) {
+          S.power = Math.min(6, S.power + 1); S.weaponLevels[S.weapon] = S.power;
+        } else {
+          S.weapon = p.weaponKey;
+          S.power = Math.min(6, (S.weaponLevels[S.weapon] || 1) + 1);
+          S.weaponLevels[S.weapon] = S.power;
+          S.ult = S.ults[S.weapon] || 0;
+        }
         S.fireT = 0; S.od = Math.min(100, S.od + OD.perWeaponPickup);
         if (S.state === 'playing') ui.banner(WEAPONS[S.weapon].name[i18n.isZh() ? 'zh' : 'en'], `LV.${S.power}`, t('weaponSwap'));
       }

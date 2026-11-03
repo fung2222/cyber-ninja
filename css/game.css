@@ -1,5 +1,24 @@
 /* XENO NIGHTMARE HUD on top of cyber-kit/ui/hud.css */
 html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3px; }
+.hud-top { position: absolute; top: max(10px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); z-index: 4; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: start; pointer-events: none; font-family: var(--font-zh); }
+.hud-score { min-width: 0; }
+.hud-score .label { font-size: 8px; letter-spacing: 2px; opacity: .62; }
+.hud-score .value { font-family: 'Orbitron', sans-serif; font-size: 20px; line-height: 1.05; color: #fff; text-shadow: 0 0 8px var(--c1); }
+.hud-score .best { font-size: 8px; letter-spacing: .5px; opacity: .55; white-space: nowrap; }
+.hud-score .best b { font-family: 'Orbitron', sans-serif; font-weight: 400; }
+.hud-top .hud-center { position: static; top: auto; left: auto; bottom: auto; transform: none; text-align: initial; width: min(172px, 44vw); justify-self: center; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.hw-line { display: flex; align-items: baseline; gap: 5px; max-width: 100%; white-space: nowrap; text-shadow: 0 0 8px var(--c1); }
+.hw-line b { font-size: 13px; letter-spacing: 1.5px; font-weight: 600; color: #fff; }
+.hw-line span { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: .5px; color: var(--c3); }
+.hw-line .hw-ult { color: var(--c1); opacity: .8; overflow: hidden; text-overflow: ellipsis; max-width: 64px; }
+.hud-center .hp-pips { gap: 3px; margin-top: 4px; }
+.hud-center .hp-pips i { width: 10px; height: 7px; }
+.hud-center .wh-bar { width: 100%; height: 3px; margin-top: 4px; }
+.hud-top .hud-right { position: static; right: auto; border: 0; box-shadow: none; clip-path: none; background: none; padding: 0; backdrop-filter: none; justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; }
+.hud-wave { display: flex; align-items: baseline; gap: 4px; font-size: 8px; letter-spacing: 1.5px; opacity: .7; }
+.hud-wave b { font-family: 'Orbitron', sans-serif; font-size: 16px; line-height: 1; color: #fff; opacity: 1; }
+.hud-buttons { position: static; display: flex; gap: 4px; pointer-events: auto; }
+.hud-buttons .icon-btn { width: 26px; height: 26px; }
 .hp-pips { display: flex; gap: 4px; margin-top: 6px; }
 .hp-pips i { width: 14px; height: 10px; border: 1px solid rgba(59,255,138,.5); transform: skewX(-20deg); }
 .hp-pips i.on { background: #3bff8a; box-shadow: 0 0 8px #3bff8a; }
@@ -21,7 +40,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .od-btn.active { border-color: #fff; box-shadow: 0 0 22px #ff7a3b, inset 0 0 18px rgba(255,122,59,.5); }
 .od-btn.venting { border-color: rgba(255,255,255,.35); opacity: .72; }
 @keyframes odPulse { 50% { transform: scale(1.06); } }
-.boss-bar { position: absolute; top: max(16px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(420px, 40vw); text-align: center; }
+.boss-bar { position: absolute; top: max(82px, calc(env(safe-area-inset-top) + 72px)); left: 50%; transform: translateX(-50%); width: min(420px, 40vw); text-align: center; }
 .bb-name { font-family: var(--font-zh); font-size: 13px; letter-spacing: 4px; color: #ff9ad8; text-shadow: 0 0 8px #ff2bd6; margin-bottom: 4px; }
 .bb-name em { font-style: normal; font-family: 'Orbitron', sans-serif; font-size: 9px; opacity: .7; }
 .bb-track { height: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,43,214,.6); clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
@@ -39,7 +58,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .screen.hero .panel { max-width: 560px; }
 .hud-buttons { pointer-events: auto; }
 @media (max-width: 760px) {
-  .boss-bar { top: calc(max(10px, env(safe-area-inset-top)) + 74px); width: 80vw; }
+  .boss-bar { top: calc(max(10px, env(safe-area-inset-top)) + 82px); width: 80vw; }
   .ult-btn { width: 80px; height: 80px; left: auto; right: max(16px, env(safe-area-inset-right)); transform: none; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 62px); }
   .od-btn { width: 62px; height: 62px; right: max(16px, env(safe-area-inset-right)); bottom: calc(max(16px, env(safe-area-inset-bottom)) + 166px); }
   .weapon-hud { left: max(16px, env(safe-area-inset-left)); bottom: calc(max(16px, env(safe-area-inset-bottom)) + 62px); width: 136px; }
