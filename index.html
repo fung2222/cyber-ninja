@@ -9,7 +9,7 @@
 <title data-i18n="doc.title">XENO NIGHTMARE</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%2305010f%22/%3E%3Cpath d=%22M16 4l4 9 9 3-9 3-4 9-4-9-9-3 9-3z%22 fill=%22none%22 stroke=%22%2300e5ff%22 stroke-width=%222%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222.5%22 fill=%22%23ff2bd6%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="./vendor/cyber-kit/ui/hud.css?v=0.3.17">
-<link rel="stylesheet" href="./css/game.css?v=0.3.23">
+<link rel="stylesheet" href="./css/game.css?v=0.3.24">
 <script type="importmap">
 {
   "imports": {
@@ -41,23 +41,26 @@
     <div class="hud-right">
       <div class="hud-wave"><span data-i18n="wave"></span><b id="hud-wave">1</b></div>
       <div class="hud-buttons">
-        <button id="btn-pause" class="icon-btn" data-i18n-attr="title:pauseTip,aria-label:pauseTip"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg></button>
-        <button id="btn-mute" class="icon-btn" data-i18n-attr="title:muteTip,aria-label:muteTip">
+        <button id="btn-pause" class="icon-btn util-btn" data-i18n-attr="title:pauseTip,aria-label:pauseTip"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg><span class="util-label" data-i18n="pauseLabel">暫停</span></button>
+        <button id="btn-mute" class="icon-btn util-btn" data-i18n-attr="title:muteTip,aria-label:muteTip">
           <svg class="ico-on" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke-width="2"/></svg>
           <svg class="ico-off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l6 6M22 9l-6 6" fill="none" stroke-width="2"/></svg>
+          <span class="util-label" data-i18n="muteLabel">靜音</span>
         </button>
       </div>
     </div>
   </div>
   <div id="boss-bar" class="boss-bar hidden"><div class="bb-name"><span id="bb-name"></span> <em id="bb-sub"></em></div><div class="bb-track"><div class="bb-fill" id="boss-fill"></div></div></div>
-  <button id="btn-od" class="od-btn" data-i18n-attr="aria-label:od" data-no-input>
-    <span class="od-fill" id="od-fill"></span>
-    <span class="od-txt"><b id="od-label" data-i18n="od">最大火力</b><small id="od-sub" data-i18n="odS">昇華</small></span>
-  </button>
-  <button id="btn-ult" class="ult-btn" data-i18n-attr="aria-label:ultName" data-no-input>
-    <span class="ult-fill" id="ult-fill"></span>
-    <span class="ult-txt"><b id="ult-label" data-i18n="ult"></b><small id="ult-sub" data-i18n="ultS"></small></span>
-  </button>
+  <div class="action-dock">
+    <button id="btn-od" class="od-btn" data-i18n-attr="aria-label:od" data-no-input>
+      <span class="od-fill" id="od-fill"></span>
+      <span class="od-txt"><b id="od-label" data-i18n="od">最大火力</b><small id="od-sub" data-i18n="odS">昇華</small></span>
+    </button>
+    <button id="btn-ult" class="ult-btn" data-i18n-attr="aria-label:ultName" data-no-input>
+      <span class="ult-fill" id="ult-fill"></span>
+      <span class="ult-txt"><b id="ult-label" data-i18n="ult"></b><small id="ult-sub" data-i18n="ultS"></small></span>
+    </button>
+  </div>
   <div id="demo-tag" class="demo-tag hidden" data-i18n="kit.demo"></div>
   <div id="fps" class="fps hidden">-- FPS</div>
 </div>
@@ -92,6 +95,7 @@
     <div class="title-en" data-i18n="pausedS"></div>
     <button class="neon-btn" id="btn-resume"><span data-i18n="kit.resume"></span><small>P</small></button>
     <button class="neon-btn ghost" id="btn-quit"><span data-i18n="abort"></span><small data-i18n="kit.menu"></small></button>
+    <button class="neon-btn ghost" id="btn-settings-pause"><span data-i18n="kit.settings"></span><small>SETTINGS</small></button>
     <button class="lang-btn" id="btn-lang2"></button>
   </div>
 </div>
@@ -114,6 +118,6 @@
   </div>
 </div>
 
-<script type="module" src="./js/main.js?v=0.3.23"></script>
+<script type="module" src="./js/main.js?v=0.3.24"></script>
 </body>
 </html>

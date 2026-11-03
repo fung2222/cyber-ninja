@@ -1,6 +1,6 @@
 # XENO NIGHTMARE 異域凶間 — Handoff
 
-Status: **web build v0.3.23** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+Status: **web build v0.3.24** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
 2026-11-03 core pass: three-weapon system + per-weapon ultimates + OVERDRIVE; authored wave formations, aimed enemy fire, map laser hazards, three-phase bosses, dynamic boss music. Earlier deep pass: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md).
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
 
@@ -8,7 +8,7 @@ Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from 
 - Vertical shooter seen from a high chase camera: the pilot rides a hover-glider above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
 - **Relative drag** anywhere moves the craft (finger never covers it), keyboard alternative. **Auto-fire** always on.
 - **Three weapons × six levels** (`js/weapons.js`): PULSE REPEATER (spread), PHASE LANCE (piercing line), NOVA SURGE (AoE). **W** canisters only drop from elites and bosses; they do **not** magnetise, and switching also raises that weapon by one level. **P** raises the current level.
-- **Per-weapon ultimate** on Space / blue button: BULLET STORM (radial storm), PRISM PIERCE (wide lane beam), SINGULARITY (expanding nova). Charge comes from kills, boss hits and E pickups. Each weapon has its own shot and ultimate timbre.
+- **Per-weapon ultimate** on Space / blue button: BULLET STORM (180° forward fan), PRISM PIERCE (wide lane beam), SINGULARITY (expanding nova). The craft is invulnerable while the ultimate is active; charge comes from kills, boss hits and E pickups. Each weapon has its own shot and ultimate timbre.
 - **OVERDRIVE** on Q / orange button: ascends the current weapon for 4 s (effective level +2, faster and stronger), then forces a **3 s cease-fire**. This is the risk/reward replacement for standing still at max power.
 - Enemies arrive in authored formations (`line`, `pincer`, `wall`, `crossfire`, `rush`, `weave`, `elite`), fire aimed patterns (drones single, weavers 3-way, turrets 5-way, elites denser), and scale speed/HP with the wave. Telegraphed **laser lanes** cut one lane of the map every 8–13 s.
 - **Gems** are gold/white crystals (deliberately not magenta like enemy bullets or cyan like player shots); they wait 0.55 s, then spiral-home into the craft. Counts scale with enemy tier/level (boss burst 18–32). Gems add score plus a small amount of ultimate/OVERDRIVE charge.
@@ -17,7 +17,7 @@ Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from 
 - **HUD**: HP, weapon name/level/charge, score, wave and pause/mute are in the top strip. The lower-left is empty; OVERDRIVE and weapon ultimate remain stacked at the lower-right.
 - **Full-field movement**: `FIELD.playerMinZ = -21`, so the craft can fly from the bottom to the top of the play field.
 - **Boss every 5 waves — the cosmic monster**: phase 1 ring/aimed, phase 2 adds spiral + gap walls, phase 3 adds crossfire and tighter timings; phases change at 66 % / 33 % HP. The boss visually unfolds armour plates and a phase ring at phase 2, then exposes the core in phase 3. Drops P/S/E on death; zone colour shifts.
-- 3 shields (max 5); a hit costs a shield + 1 power level, 1.6 s invulnerability, nearby bullets cleared (fair).
+- 3 shields (max 3); a hit costs a shield + 1 power level, 1.6 s invulnerability, nearby bullets cleared (fair). Shield pickups top up automatically; there is no manual shield key. The two action buttons sit in a horizontal dock at the bottom centre; pause/mute are labelled at the top right.
 - Game over → **continue once** via rewarded hook (full shields, ult charged) or retry.
 - Attract mode = the AI flies behind the start screen (invulnerable). `?demo=1` = the AI plays real runs on a loop.
 
@@ -28,7 +28,7 @@ Drag · arrows/WASD · Space/Enter/X/J weapon ultimate · Q/O OVERDRIVE · P/Esc
 | Constant | Value |
 |---|---|
 | `FIELD` | halfW 6, top −24, bottom 3.2, player z −8…2.4 |
-| `PLAYER` | radius 0.42, hp 3/max 5, invuln 1.6 s, dragGain 1.15, keySpeed 11 |
+| `PLAYER` | radius 0.42, hp 3/max 3, invuln 1.6 s, dragGain 1.15, keySpeed 11 |
 | `WEAPONS` | 3 weapons × 6 levels; pulse 1→5 shots, lance pierce 2→7, nova AoE 2.2→3.8 |
 | `WEAPON_ULT` | pulse 2.2 s, lance 1.3 s, nova 2.0 s |
 | `OD` | duration 4 s, no-fire 3 s, +3.5/kill, +18/weapon pickup, +20/E |

@@ -2,11 +2,11 @@
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import './strings.js?v=0.3.23';
+import './strings.js?v=0.3.24';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js';
-import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.23';
-import { NinjaAudio } from './audio.js?v=0.3.23';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.24';
+import { NinjaAudio } from './audio.js?v=0.3.24';
 
 const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
@@ -238,20 +238,20 @@ function bossDown() {
 function doUlt() {
   if (S.ult < 100 || S.ultT >= 0 || S.odT >= 0 || S.noFireT > 0 || !(S.state === 'playing' || S.state === 'attract')) return;
   const mode = S.weapon;
-  S.ult = 0; S.ults[mode] = 0; S.ultReadyShown = false; S.ultT = 0; S.ultFireT = 0; S.ultMode = mode; S.novaR = 2;
+  S.ult = 0; S.ults[mode] = 0; S.ultReadyShown = false; S.ultT = 0; S.ultFireT = 0; S.ultMode = mode; S.novaR = 2; S.invuln = Math.max(S.invuln, 0.35);
   beam.visible = mode === 'lance';
   if (mode === 'lance') { beam.position.x = S.x; beam.material.color.setHex(WEAPONS.lance.color).multiplyScalar(2.4); }
   for (const b of ebullets.list) particles.emit(new THREE.Vector3(b.x, 0, b.z), new THREE.Vector3(0, 2, 0), new THREE.Color(0xffffff), { life: 0.4, size: 0.8 });
   ebullets.clear();
   if (S.state !== 'attract') { audio.ult(mode); ui.banner(ultName(mode, i18n.isZh() ? 'zh' : 'en'), '', ''); Platform.haptic('heavy'); }
-  fx.kick({ slowmo: 0.7, aberr: 1.5, fovKick: 1, trauma: 0.3 }); ui.flash('rgba(0,229,255,0.35)', 500);
+  const up = new THREE.Vector3(S.x, 0.5, S.z); particles.burst(up, new THREE.Color(WEAPONS[mode].color), 150, { speed: 14, up: 4, life: 1.1, size: 1.5, grav: 0 }); waves.spawn(up, new THREE.Color(WEAPONS[mode].color), { r0: 1, r1: 16, h: 2.4, dur: 1.0, a: 3 }); fx.kick({ slowmo: 0.7, aberr: 1.5, fovKick: 1, trauma: 0.4 }); ui.flash('rgba(255,255,255,0.42)', 620);
   updateHUD();
 }
 function doOverdrive() {
   if (S.od < 100 || S.odT >= 0 || S.noFireT > 0 || S.ultT >= 0 || !(S.state === 'playing' || S.state === 'attract')) return;
-  S.od = 0; S.odT = 0; S.fireT = 0;
+  S.od = 0; S.odT = 0; S.fireT = 0; S.invuln = Math.max(S.invuln, 0.6);
   if (S.state !== 'attract') { audio.ready(); ui.banner(t('odActive'), '', t('odS')); Platform.haptic('heavy'); }
-  fx.kick({ aberr: 1, fovKick: 0.8, trauma: 0.2 }); ui.flash('rgba(255,122,59,0.28)', 420);
+  particles.burst(new THREE.Vector3(S.x, 0.5, S.z), new THREE.Color(0xff8a4d), 70, { speed: 10, up: 3, life: 0.8, size: 1.2, grav: 0 }); fx.kick({ aberr: 1, fovKick: 0.8, trauma: 0.2 }); ui.flash('rgba(255,122,59,0.32)', 420);
   updateHUD();
 }
 
@@ -310,7 +310,8 @@ const __hub = readHub();
 if (shouldShowArcadeMenu(__hub)) { const b = document.getElementById('btn-arcade-menu'); if (b) b.classList.remove('hidden'); }
 ui.on('btn-arcade-menu', () => { try { audio.back(); } catch {} returnToHub({ gameId: 'cyber-ninja', openStore: false }); });
 
-ui.on('btn-resume', resume); ui.on('btn-quit', () => { audio.back(); showAttract(); }); ui.on('btn-pause', pause);
+ui.on('btn-resume', resume); ui.on('btn-quit', () => { audio.back(); showAttract(); });
+ui.on('btn-settings-pause', () => { try { audio.click(); } catch (_) {} ui.settings({ audio, stage, onOpen: () => { try { audio.click(); } catch (_) {} } }); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
 $('btn-od').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doOverdrive(); });
@@ -346,6 +347,8 @@ S.api = {
   drop: (kind, key) => dropPickup(S.x, S.z - 1.2, kind, key),
   dropAt: (x, z, kind, key) => dropPickup(x, z, kind, key),
   shots: () => ({ pulse: pools.pulse.list.length, lance: pools.lance.list.length, nova: pools.nova.list.length }),
+  pulseVectors: () => pools.pulse.list.map(b => ({ vx: b.vx, vz: b.vz })),
+  clearShots: () => { for (const k of WEAPON_KEYS) pools[k].clear(); },
   threat: () => ({ enemies: S.enemies.length, bullets: ebullets.list.length, hazards: S.hazards.length, gems: S.gems.length, rocks: S.rocks.length, bossPhase: S.boss ? S.boss.phase : null }),
   hazard: () => spawnHazard(),
   rock: () => spawnRock(),
@@ -612,10 +615,13 @@ function sim(dt) {
     S.ultFireT -= dt;
     if (mode === 'pulse') {
       while (S.ultFireT <= 0) {
-        for (let i = 0; i < 14; i++) {
-          const a = (i / 14) * Math.PI * 2 + S.t;
+        const n = 19;
+        for (let i = 0; i < n; i++) {
+          // 180° forward fan (left -> up -> right), never backwards
+          const a = Math.PI + (i / (n - 1) - 0.5) * Math.PI;
           pools.pulse.add(S.x, S.z - 0.4, Math.sin(a) * 24, Math.cos(a) * 24, { kind: 'pulse', dmg: 1.6, pierce: 1, hit: new Set(), scale: 1.15, rotX: 0 });
         }
+        particles.emit(new THREE.Vector3(S.x, 0.5, S.z - 0.5), new THREE.Vector3(0, 3, 0), new THREE.Color(0x00e5ff), { life: 0.35, size: 1.4 });
         S.ultFireT += 0.12;
       }
     } else if (mode === 'lance') {

@@ -19,7 +19,7 @@ with sync_playwright() as p:
     pg.goto(URL + '?lang=zh&reset=1', wait_until='domcontentloaded')
     pg.wait_for_timeout(1300)
     pg.click('#btn-start'); pg.wait_for_timeout(350)
-    pg.evaluate("() => { __ninja.hp = 5; __ninja.invuln = 999; }")
+    pg.evaluate("() => { __ninja.hp = 3; __ninja.invuln = 999; }")
 
     st = pg.evaluate("() => ({state:__ninja.state, weapon:__ninja.weapon, power:__ninja.power, hud:document.querySelector('#hud-weapon').textContent, lv:document.querySelector('#hud-wlv').textContent, ult:document.querySelector('#hud-wult').textContent})")
     print(st)
@@ -64,8 +64,26 @@ with sync_playwright() as p:
         check(got['mode'] == key and got['t'] >= 0, f'{key}: own ultimate starts')
         pg.evaluate("() => { __ninja.ultT = -1; __ninja.ultMode = null; }")
 
+    # pulse ultimate must be a 180° forward fan, never a radial/backward storm
+    pg.evaluate("() => { __ninja.ultT = -1; __ninja.ultMode = null; __ninja.api.weapon('pulse', 4); __ninja.api.charge(100); __ninja.api.clearShots(); __ninja.api.ult(); }")
+    pg.wait_for_timeout(700)
+    vec = pg.evaluate("() => __ninja.api.pulseVectors()")
+    print('pulse fan', len(vec), vec[:2])
+    check(len(vec) > 0, 'pulse ultimate fires bullets')
+    check(all(v['vz'] <= 0.1 for v in vec), 'pulse ultimate never fires backwards')
+    check(any(v['vx'] < -1 for v in vec) and any(v['vx'] > 1 for v in vec), 'pulse ultimate fans across both sides')
+    pg.evaluate("() => { __ninja.ultT = -1; __ninja.ultMode = null; }")
+
+    # weapon ultimate must protect the craft for its active window
+    pg.evaluate("() => { __ninja.ultT = -1; __ninja.ultMode = null; __ninja.api.weapon('pulse', 4); __ninja.api.charge(100); __ninja.api.ult(); __ninja.invuln = 0; __ninja.hp = 3; __ninja.api.kill(); }")
+    pg.wait_for_timeout(250)
+    ult_hp = pg.evaluate("() => ({hp:__ninja.hp, t:__ninja.ultT})")
+    print('ult invuln', ult_hp)
+    check(ult_hp['hp'] == 1 and ult_hp['t'] >= 0, 'weapon ultimate grants invincibility while active')
+    pg.evaluate("() => { __ninja.ultT = -1; __ninja.ultMode = null; }")
+
     # overdrive starts and then forces a cease-fire window
-    pg.evaluate("() => { __ninja.api.weapon('pulse', 1); __ninja.od = 100; __ninja.ultT = -1; __ninja.ultMode = null; __ninja.odT = -1; __ninja.noFireT = 0; __ninja.hp = 5; __ninja.invuln = 999; __ninja.api.overdrive(); }")
+    pg.evaluate("() => { __ninja.api.weapon('pulse', 1); __ninja.od = 100; __ninja.ultT = -1; __ninja.ultMode = null; __ninja.odT = -1; __ninja.noFireT = 0; __ninja.hp = 3; __ninja.invuln = 999; __ninja.api.overdrive(); }")
     pg.wait_for_timeout(250)
     got = pg.evaluate("() => ({odT:__ninja.odT, od:__ninja.od, cls:document.querySelector('#btn-od').className})")
     print('od start', got)

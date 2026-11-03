@@ -6,7 +6,7 @@ export const FIELD = { halfW: 6, top: -24, bottom: 3.2, playerMinZ: -21, playerM
 
 export const PLAYER = {
   radius: 0.42,            // hit radius (small, generous)
-  hp: 3, maxHp: 5,
+  hp: 3, maxHp: 3,
   invuln: 1.6,             // seconds after a hit
   dragGain: 1.15,          // finger travel -> ninja travel (relative drag)
   keySpeed: 11,            // units / s with keyboard

@@ -18,7 +18,7 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto(URL + '?lang=zh&reset=1', wait_until='domcontentloaded'); pg.wait_for_timeout(1200)
     pg.click('#btn-start'); pg.wait_for_timeout(300)
-    pg.evaluate("() => { __ninja.hp = 5; __ninja.invuln = 999; }")
+    pg.evaluate("() => { __ninja.hp = 3; __ninja.invuln = 999; }")
 
     pg.evaluate("() => { __ninja.api.wave(4); __ninja.api.spawn({type:'drone', x:0, phase:0, pattern:'dive', elite:false}); const e=__ninja.enemies[__ninja.enemies.length-1]; e.z=-8; e.hp=999; e.fireT=0; }")
     pg.wait_for_timeout(1800)
