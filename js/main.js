@@ -1,11 +1,12 @@
 // XENO NIGHTMARE 異域凶間 — controller: drag-to-move auto-fire shooter, waves, cosmic monster bosses, ultimate, continue.
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
-import { GAME_ID, FIELD, PLAYER, VOLLEYS, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import './strings.js?v=0.3.15';
+import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
+import './strings.js?v=0.3.18';
 import { World } from './world.js';
-import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, PICKUPS } from './entities.js';
-import { NinjaAudio } from './audio.js?v=0.3.14';
+import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup } from './entities.js';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.18';
+import { NinjaAudio } from './audio.js?v=0.3.18';
 
 const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
@@ -24,33 +25,52 @@ const audio = new NinjaAudio(store); ui.setMuted(audio.muted);
 const ads = createAds({ gameId: GAME_ID, ...ADS, onAdOpen: (on) => audio.duckAll(on) });
 
 const ninja = makeNinja(); ninja.scale.setScalar(1.55); scene.add(ninja);
-const bolts = new BulletPool(scene, 260, new THREE.BoxGeometry(0.09, 0.09, 0.75), 0x00e5ff);
+const pools = {
+  pulse: new BulletPool(scene, 320, new THREE.BoxGeometry(0.09, 0.09, 0.75), WEAPONS.pulse.color),
+  lance: new BulletPool(scene, 100, new THREE.BoxGeometry(0.16, 0.16, 3.2), WEAPONS.lance.color),
+  nova: new BulletPool(scene, 100, new THREE.TorusGeometry(0.5, 0.09, 8, 24), WEAPONS.nova.color),
+};
 const ebullets = new BulletPool(scene, 500, new THREE.SphereGeometry(0.17, 10, 8), 0xff2bd6);
 const ecores = new BulletPool(scene, 500, new THREE.SphereGeometry(0.08, 6, 4), 0xffffff);
-// ultimate slash wave
-const slash = new THREE.Mesh(new THREE.PlaneGeometry(40, 2.4), new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-  uniforms: { uA: { value: 0 }, uC: U.uC1 },
-  vertexShader: /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-  fragmentShader: /* glsl */`uniform float uA; uniform vec3 uC; varying vec2 vUv; void main(){ float d = abs(vUv.y - 0.5) * 2.0; float core = exp(-d * 10.0); float a = (core * 1.6 + exp(-d * 3.0) * 0.5) * uA; gl_FragColor = vec4(mix(uC, vec3(1.0), core) * a * 2.5, 1.0); }` }));
-slash.rotation.x = -Math.PI / 2; slash.visible = false; scene.add(slash);
+// weapon-ultimate beam (laser) — a wide plane over the play field
+const beam = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 38), new THREE.MeshBasicMaterial({ color: new THREE.Color(WEAPONS.lance.color).multiplyScalar(2.4), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+beam.rotation.x = -Math.PI / 2; beam.position.set(0, 0.35, -10); beam.visible = false; scene.add(beam);
 
 const S = {
   state: 'attract', demo: !!flags.demo,
-  x: 0, z: 1, vx: 0, hp: PLAYER.hp, invuln: 0, power: 1, fireT: 0, ult: 0, ultT: -1, slashZ: 0,
+  x: 0, z: 1, vx: 0, hp: PLAYER.hp, invuln: 0, power: 1, fireT: 0, ult: 0, ultT: -1,
+  weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 },
+  od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0,
   score: 0, wave: 1, spec: null, waveT: 0, nextEv: 0, enemies: [], boss: null, pickups: [], kills: 0,
   continued: false, betweenT: 0, t: 0, newRecord: false,
+  hazards: [], hazardT: 7,
 };
 window.__ninja = S;  // test hook
 
 // ---------------------------------------------------------------- HUD
 function updateHUD() {
+  const lang = i18n.isZh() ? 'zh' : 'en';
   ui.setText('hud-score', S.score.toLocaleString('en-US'));
   ui.setText('hud-best', Math.max(store.best, S.score).toLocaleString('en-US'));
   ui.setText('hud-wave', S.wave);
   const pips = $('hud-hp'); let h = ''; for (let i = 0; i < PLAYER.maxHp; i++) h += `<i class="${i < S.hp ? 'on' : ''}"></i>`; if (pips.innerHTML !== h) pips.innerHTML = h;
-  ui.setText('hud-power', 'P' + S.power);
+  if ($('hud-power')) $('hud-power').textContent = 'W' + S.power;
+  $('hud-weapon').textContent = weaponShort(S.weapon, lang);
+  $('hud-wlv').textContent = 'LV.' + S.power;
+  $('hud-wfill').style.width = Math.min(100, S.ult).toFixed(0) + '%';
+  $('hud-wult').textContent = ultName(S.weapon, lang);
+  $('ult-label').textContent = ultShort(S.weapon, lang);
+  $('ult-sub').textContent = S.ult >= 100 ? (lang === 'zh' ? '就緒' : 'READY') : 'SPACE';
   $('ult-fill').style.height = Math.min(100, S.ult).toFixed(0) + '%';
-  $('btn-ult').classList.toggle('ready', S.ult >= 100);
+  $('btn-ult').classList.toggle('ready', S.ult >= 100 && S.ultT < 0 && S.odT < 0);
+  const odReady = S.od >= 100 && S.odT < 0 && S.noFireT <= 0 && S.ultT < 0;
+  $('btn-od').classList.toggle('ready', odReady);
+  $('btn-od').classList.toggle('active', S.odT >= 0);
+  $('btn-od').classList.toggle('venting', S.noFireT > 0);
+  const odPct = S.odT >= 0 ? Math.max(0, 100 - (S.odT / OD.duration) * 100) : S.od;
+  $('od-fill').style.height = Math.min(100, odPct).toFixed(0) + '%';
+  $('od-label').textContent = S.noFireT > 0 ? t('odVent') : S.odT >= 0 ? t('odActive') : t('odShort');
+  $('od-sub').textContent = S.noFireT > 0 ? Math.ceil(S.noFireT) + 's' : S.odT >= 0 ? t('odS') : Math.min(100, S.od).toFixed(0) + '%';
   const bb = $('boss-bar'); bb.classList.toggle('hidden', !S.boss);
   if (S.boss) $('boss-fill').style.width = (Math.max(0, S.boss.hp / S.boss.maxHp) * 100).toFixed(1) + '%';
 }
@@ -65,13 +85,16 @@ function clearField() {
   for (const e of S.enemies) scene.remove(e.g); S.enemies = [];
   if (S.boss) { scene.remove(S.boss.g); S.boss = null; }
   for (const p of S.pickups) scene.remove(p.g); S.pickups = [];
-  bolts.clear(); ebullets.clear();
+  for (const h of S.hazards) scene.remove(h.g); S.hazards = [];
+  for (const k of WEAPON_KEYS) pools[k].clear();
+  ebullets.clear(); beam.visible = false; beam.material.opacity = 0;
 }
 function resetRun() {
   clearField();
-  Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.hp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false, slashZ: 0 });
-  slash.visible = false;
-  theme.set(1); nextWave();
+  Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.hp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
+    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7 });
+  beam.visible = false; beam.material.opacity = 0;
+  theme.set(1); audio.setBoss(false); nextWave();
 }
 function nextWave() {
   S.wave++; S.spec = waveSpec(S.wave); S.waveT = 0; S.nextEv = 0; S.betweenT = 0;
@@ -80,7 +103,7 @@ function nextWave() {
     if (S.state !== 'attract') { ui.banner(t('bossIncoming', { name: bossName() }), t('waveN', { n: S.wave }), t('warning')); audio.warn(); fx.kick({ glitch: 0.6, aberr: 1 }); }
   } else if (S.state !== 'attract' && S.wave > 1 && (S.wave - 1) % MILESTONE_EVERY === 0) milestone(S.wave - 1);
   else if (S.state !== 'attract' && S.wave > 1) ui.banner(t('waveN', { n: S.wave }), '', S.wave % 5 === 4 ? t('bossNext') : '');
-  audio.setLevel(1 + Math.floor((S.wave - 1) / 2));
+  audio.setBoss(!!S.spec.boss); audio.setLevel(S.spec.boss ? 10 : 1 + Math.floor((S.wave - 1) / 2));
 }
 function bossName(b = S.boss) { const v = b && b.variant; return v ? (i18n.isZh() ? v.zh : v.en) : ''; }
 function refreshBossName() { ui.setText('bb-name', bossName()); ui.setText('bb-sub', S.boss ? t('waveN', { n: S.wave }) : ''); }
@@ -98,13 +121,21 @@ function showAttract() { setState('attract'); resetRun(); refreshStart(); }
 
 // ---------------------------------------------------------------- spawning
 function spawnEnemy(ev) {
-  const def = ENEMIES[ev.type]; const g = makeEnemy(ev.type); g.scale.setScalar(1.45); scene.add(g);
-  const e = { type: ev.type, def, g, x: ev.x, baseX: ev.x, z: FIELD.top - 1, t: 0, phase: ev.phase, hp: Math.ceil(def.hp * hpScale(S.wave)), fireT: 0.8 + Math.random(), flash: 0, mode: 0, stopZ: -15 + Math.random() * 5, vx: 0, vz: def.speed * speedScale(S.wave) };
+  const def = ENEMIES[ev.type]; const g = makeEnemy(ev.type); const elite = !!ev.elite;
+  g.scale.setScalar(1.45 * (elite ? 1.18 : 1)); scene.add(g);
+  const e = {
+    type: ev.type, def, g, x: ev.x, baseX: ev.x, z: FIELD.top - 1, t: 0, phase: ev.phase,
+    hp: Math.ceil(def.hp * hpScale(S.wave) * (elite ? 1.8 : 1)), fireT: 0.7 + Math.random() * 0.8,
+    flash: 0, mode: 0, stopZ: ev.type === 'turret' ? -17 + Math.random() * 4 : -15 + Math.random() * 5,
+    vx: 0, vz: def.speed * speedScale(S.wave) * (elite ? 1.12 : 1),
+    pattern: ev.pattern || 'dive', elite, score: def.score * (elite ? 2.5 : 1),
+  };
+  if (elite && e.g.userData.mat) e.g.userData.mat.emissive = new THREE.Color(def.color).multiplyScalar(0.18);
   g.position.set(e.x, 0, e.z); S.enemies.push(e);
 }
 function spawnBoss(hp, variant = { zh: '星海魔獸', en: 'COSMIC MONSTER', rate: 1 }) {
   const g = makeBoss(); g.scale.setScalar(1.15); scene.add(g);
-  S.boss = { g, x: 0, z: FIELD.top - 4, hp, maxHp: hp, t: 0, atk: 0, atkT: 2.5, spiralA: 0, entering: true, variant };
+  S.boss = { g, x: 0, z: FIELD.top - 4, hp, maxHp: hp, t: 0, atk: 0, atkT: 2.5, spiralA: 0, spiralN: 0, seq: 0, phase: 1, entering: true, variant };
   refreshBossName();
   g.position.set(0, 0, S.boss.z);
 }
@@ -117,20 +148,44 @@ function killEnemy(e, i) {
   const c = new THREE.Color(e.def.color); const p = new THREE.Vector3(e.x, 0, e.z);
   particles.burst(p, c, 34, { speed: 7, up: 2, life: 0.7, size: 1, grav: 0, color2: new THREE.Color(0xffffff) });
   waves.spawn(p, c, { r0: 0.2, r1: 2.2, h: 0.5, dur: 0.4 });
-  S.score += e.def.score; S.kills++; S.ult = Math.min(100, S.ult + ULT.perKill);
+  S.score += e.score || e.def.score; S.kills++; S.ult = Math.min(100, S.ult + ULT.perKill); S.ults[S.weapon] = S.ult;
+  S.od = Math.min(100, S.od + OD.perKill);
   if (S.ult >= 100 && !S.ultReadyShown) { S.ultReadyShown = true; if (S.state === 'playing') { audio.ready(); ui.toast(t('ultReady'), 1300); } }
-  if (S.state !== 'attract') { audio.boom(false); if (e.def.score >= 120) { const sp = stage.toScreen(p); ui.popup(sp.x, sp.y, '+' + e.def.score); } }
-  if (Math.random() < DROP_CHANCE) dropPickup(e.x, e.z);
+  if (S.state !== 'attract') { audio.boom(false); if ((e.score || e.def.score) >= 120) { const sp = stage.toScreen(p); ui.popup(sp.x, sp.y, '+' + (e.score || e.def.score)); } }
+  if (S.kills % 8 === 0 || Math.random() < 0.035) dropPickup(e.x, e.z, 'W', randomOtherWeapon(S.weapon));
+  else if (Math.random() < DROP_CHANCE) dropPickup(e.x, e.z);
   fx.kick({ trauma: 0.05 });
 }
-function dropPickup(x, z, kind) {
-  kind = kind || (S.power < PLAYER.maxPower && Math.random() < 0.55 ? 'P' : Math.random() < 0.5 ? 'S' : 'E');
-  const g = makePickup(kind); g.scale.setScalar(1.4); g.position.set(x, 0, z); scene.add(g); S.pickups.push({ g, kind, x, z, t: 0 });
+function dropPickup(x, z, kind, weaponKey) {
+  kind = kind || (S.power < 6 && Math.random() < 0.55 ? 'P' : Math.random() < 0.5 ? 'S' : 'E');
+  const g = makePickup(kind, weaponKey); g.scale.setScalar(1.4); g.position.set(x, 0, z); scene.add(g); S.pickups.push({ g, kind, weaponKey, x, z, t: 0 });
+}
+function spawnHazard() {
+  let x = (Math.random() * 2 - 1) * (FIELD.halfW - 1);
+  if (Math.abs(x - S.x) < 1.6) x = x > 0 ? x - 2.8 : x + 2.8;
+  x = THREE.MathUtils.clamp(x, -FIELD.halfW + 0.8, FIELD.halfW - 0.8);
+  const g = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.06, 34), new THREE.MeshBasicMaterial({ color: 0xff7a3b, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false }));
+  g.position.set(x, 0.18, -10.5); scene.add(g);
+  S.hazards.push({ g, x, t: 0 });
+  if (S.state === 'playing') { audio.warn(); fx.kick({ trauma: 0.12 }); }
+}
+function hurtEnemy(e, i, dmg) {
+  e.hp -= dmg; e.flash = 1;
+  if (S.state === 'playing') audio.hit();
+  particles.emit(new THREE.Vector3(e.x, 0, e.z + 0.3), new THREE.Vector3((Math.random() - 0.5) * 3, 1, 2), new THREE.Color(e.def.color), { life: 0.25, size: 0.6 });
+  if (e.hp <= 0) killEnemy(e, i);
+}
+function hurtBoss(dmg) {
+  const B = S.boss; if (!B || B.entering || B.hp <= 0) return;
+  B.hp -= dmg; B.g.userData.eyeU.uHurt.value = 0.4;
+  S.ult = Math.min(100, S.ult + ULT.perBossHit); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + OD.perBossHit);
+  particles.emit(new THREE.Vector3(B.x, 0.5, B.z + 0.5), new THREE.Vector3((Math.random() - 0.5) * 4, 2, 3), new THREE.Color(0xa66bff), { life: 0.3, size: 0.7 });
+  if (B.hp <= 0) bossDown();
 }
 function hurtPlayer() {
   if (S.invuln > 0 || S.ultT >= 0) return;
   if (S.state === 'attract') { S.invuln = 1; return; }
-  S.hp--; S.invuln = PLAYER.invuln; S.power = Math.max(1, S.power - 1);
+  S.hp--; S.invuln = PLAYER.invuln; S.power = Math.max(1, S.power - 1); S.weaponLevels[S.weapon] = S.power;
   audio.hurt(); fx.kick({ trauma: 0.5, aberr: 1.2, glitch: 0.5 }); ui.flash('rgba(255,40,90,0.4)', 380); Platform.haptic('heavy');
   for (const b of ebullets.list) if (Math.hypot(b.x - S.x, b.z - S.z) < 3.5) b.dead = true;
   updateHUD();
@@ -144,15 +199,25 @@ function bossDown() {
   S.score += ENEMIES.boss.score * (S.wave / 5); for (let i = 0; i < 3; i++) dropPickup(b.x + (i - 1) * 1.5, b.z, ['P', 'S', 'E'][i]);
   scene.remove(b.g); S.boss = null; ebullets.clear();
   if (S.state !== 'attract') ui.banner(t('bossDown'), `${bossName(b)} · +${(ENEMIES.boss.score * (S.wave / 5)).toLocaleString('en-US')}`, '');
-  theme.set(1 + S.wave / 5);
+  theme.set(1 + S.wave / 5); audio.setBoss(false);
 }
 function doUlt() {
-  if (S.ult < 100 || S.ultT >= 0 || !(S.state === 'playing' || S.state === 'attract')) return;
-  S.ult = 0; S.ultReadyShown = false; S.ultT = 0; S.slashZ = FIELD.bottom; slash.visible = true; S.ultBossHit = false;
-  for (const b of ebullets.list) { particles.emit(new THREE.Vector3(b.x, 0, b.z), new THREE.Vector3(0, 2, 0), new THREE.Color(0xffffff), { life: 0.4, size: 0.8 }); }
+  if (S.ult < 100 || S.ultT >= 0 || S.odT >= 0 || S.noFireT > 0 || !(S.state === 'playing' || S.state === 'attract')) return;
+  const mode = S.weapon;
+  S.ult = 0; S.ults[mode] = 0; S.ultReadyShown = false; S.ultT = 0; S.ultFireT = 0; S.ultMode = mode; S.novaR = 2;
+  beam.visible = mode === 'lance';
+  if (mode === 'lance') { beam.position.x = S.x; beam.material.color.setHex(WEAPONS.lance.color).multiplyScalar(2.4); }
+  for (const b of ebullets.list) particles.emit(new THREE.Vector3(b.x, 0, b.z), new THREE.Vector3(0, 2, 0), new THREE.Color(0xffffff), { life: 0.4, size: 0.8 });
   ebullets.clear();
-  if (S.state !== 'attract') { audio.ult(); ui.banner(t('ultName'), '', ''); Platform.haptic('heavy'); }
+  if (S.state !== 'attract') { audio.ult(); ui.banner(ultName(mode, i18n.isZh() ? 'zh' : 'en'), '', ''); Platform.haptic('heavy'); }
   fx.kick({ slowmo: 0.7, aberr: 1.5, fovKick: 1, trauma: 0.3 }); ui.flash('rgba(0,229,255,0.35)', 500);
+  updateHUD();
+}
+function doOverdrive() {
+  if (S.od < 100 || S.odT >= 0 || S.noFireT > 0 || S.ultT >= 0 || !(S.state === 'playing' || S.state === 'attract')) return;
+  S.od = 0; S.odT = 0; S.fireT = 0;
+  if (S.state !== 'attract') { audio.ready(); ui.banner(t('odActive'), '', t('odS')); Platform.haptic('heavy'); }
+  fx.kick({ aberr: 1, fovKick: 0.8, trauma: 0.2 }); ui.flash('rgba(255,122,59,0.28)', 420);
   updateHUD();
 }
 
@@ -174,7 +239,7 @@ function gameOver() {
 async function revive() {
   if (S.state !== 'over' || S.continued) return; audio.click();
   const r = await ads.rewarded('continue'); if (!r.rewarded) { ui.toast(t('noReward')); return; }
-  S.continued = true; S.hp = PLAYER.hp; S.invuln = 3; ebullets.clear(); ninja.visible = true; S.ult = 100;
+  S.continued = true; S.hp = PLAYER.hp; S.invuln = 3; ebullets.clear(); ninja.visible = true; S.ult = 100; S.ults[S.weapon] = 100; S.od = 100;
   setState('playing'); audio.unduckMusic(); ui.banner(t('revived'), '', t('ultFull'));
 }
 async function retry() { if (S.state !== 'over') return; audio.click(); await ads.naturalBreak('gameover'); ninja.visible = true; beginRun(); }
@@ -201,10 +266,11 @@ createInput({
     else if (a === 'pause') { if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
     else if (a === 'mute') { audio.init(); ui.setMuted(audio.toggleMute()); }
     else if (a === 'ult') doUlt();
+    else if (a === 'overdrive') doOverdrive();
     else if (a === 'restart' && S.state === 'over') retry();
     else if (a === 'fps') $('fps').classList.toggle('hidden');
   },
-}, { swipe: 'once', actions: { KeyX: 'ult', KeyJ: 'ult', KeyK: 'ult' } });
+}, { swipe: 'once', actions: { KeyX: 'ult', KeyJ: 'ult', KeyK: 'ult', KeyQ: 'overdrive', KeyO: 'overdrive' } });
 ui.on('btn-start', () => { audio.init(); beginRun(); });
 const __hub = readHub();
 if (shouldShowArcadeMenu(__hub)) { const b = document.getElementById('btn-arcade-menu'); if (b) b.classList.remove('hidden'); }
@@ -213,6 +279,7 @@ ui.on('btn-arcade-menu', () => { try { audio.back(); } catch {} returnToHub({ ga
 ui.on('btn-resume', resume); ui.on('btn-quit', () => { audio.back(); showAttract(); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
+$('btn-od').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doOverdrive(); });
 i18n.bindToggle($('btn-lang')); i18n.bindToggle($('btn-lang2'));
 
 ui.mountHowto({
@@ -237,7 +304,22 @@ i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('rev
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
 Platform.onBack(() => { if (ui.closeModal()) return true; if (S.state === 'playing') { pause(); return true; } if (S.state === 'paused') { resume(); return true; } if (S.state === 'over') { overToMenu(); return true; } return false; });
 Platform.onPause(() => { if (!S.demo) pause(); });
-S.api = { wave: (n) => { clearField(); S.wave = n - 1; nextWave(); }, ult: () => { S.ult = 100; doUlt(); }, kill: () => { S.hp = 1; S.invuln = 0; hurtPlayer(); }, boss: () => { clearField(); S.wave = 4; nextWave(); } };
+S.api = {
+  wave: (n) => { clearField(); S.wave = n - 1; nextWave(); },
+  ult: () => { S.ult = 100; doUlt(); },
+  overdrive: () => { S.od = 100; doOverdrive(); },
+  weapon: (key, level = 1) => { if (!WEAPONS[key]) return; S.ults[S.weapon] = S.ult; S.weapon = key; S.weaponLevels[key] = Math.max(1, Math.min(6, level)); S.power = S.weaponLevels[key]; S.ult = S.ults[key]; S.fireT = 0; updateHUD(); },
+  drop: (kind, key) => dropPickup(S.x, S.z - 1.2, kind, key),
+  shots: () => ({ pulse: pools.pulse.list.length, lance: pools.lance.list.length, nova: pools.nova.list.length }),
+  threat: () => ({ enemies: S.enemies.length, bullets: ebullets.list.length, hazards: S.hazards.length, bossPhase: S.boss ? S.boss.phase : null }),
+  hazard: () => spawnHazard(),
+  spawn: (ev) => spawnEnemy(ev),
+  enemyFire: (x, z, ang, speed) => enemyFire(x, z, ang, speed),
+  bossHurt: (dmg) => hurtBoss(dmg),
+  charge: (n = 100) => { S.ult = Math.min(100, S.ult + n); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + n); updateHUD(); },
+  kill: () => { S.hp = 1; S.invuln = 0; hurtPlayer(); },
+  boss: () => { clearField(); S.wave = 4; nextWave(); },
+};
 
 // ---------------------------------------------------------------- autopilot (demo / attract)
 function autopilot(dt) {
@@ -265,11 +347,27 @@ function sim(dt) {
   S.vx = (S.x - px) / Math.max(dt, 1e-4);
   S.invuln = Math.max(0, S.invuln - dt);
   ninja.position.set(S.x, 0, S.z);
-  // auto-fire
+  // overdrive burn / forced cease-fire
+  if (S.odT >= 0) {
+    S.odT += dt;
+    if (S.odT >= OD.duration) {
+      S.odT = -1; S.noFireT = OD.noFire;
+      if (S.state === 'playing') { audio.warn(); ui.toast(t('odVent'), 1200); }
+    }
+  }
+  S.noFireT = Math.max(0, S.noFireT - dt);
+  // auto-fire through the current weapon
   S.fireT -= dt;
-  if (S.fireT <= 0 && S.ultT < 0) {
-    S.fireT = PLAYER.fireRate * (S.power >= 4 ? 0.85 : 1);
-    for (const [ox, ang] of VOLLEYS[S.power]) bolts.add(S.x + ox, S.z - 0.6, Math.sin(ang) * PLAYER.boltSpeed, -Math.cos(ang) * PLAYER.boltSpeed);
+  if (S.fireT <= 0 && S.noFireT <= 0 && S.ultT < 0) {
+    const sol = fireSolution(S.weapon, S.power, S.odT >= 0);
+    S.fireT = sol.rate;
+    const pool = pools[S.weapon];
+    for (const [ox, ang] of sol.shots) {
+      pool.add(S.x + ox, S.z - 0.6, Math.sin(ang) * sol.speed, -Math.cos(ang) * sol.speed, {
+        kind: S.weapon, dmg: sol.dmg, pierce: sol.pierce || 0, aoe: sol.aoe || 0, hit: new Set(),
+        scale: (sol.scale || 1) * (S.odT >= 0 ? 1.22 : 1), rotX: S.weapon === 'nova' ? Math.PI / 2 : 0,
+      });
+    }
     if (S.state === 'playing') audio.shot();
   }
   // waves
@@ -279,22 +377,67 @@ function sim(dt) {
     while (S.nextEv < evs.length && evs[S.nextEv].t <= S.waveT) spawnEnemy(evs[S.nextEv++]);
     if (S.nextEv >= evs.length && !S.enemies.length) { S.betweenT += dt; if (S.betweenT > 1.4) nextWave(); }
   } else if (!S.boss) { S.betweenT += dt; if (S.betweenT > 2.2) nextWave(); }
+  // terrain hazard: a telegraphed vertical sweep cuts one lane of the map
+  S.hazardT -= dt;
+  if (S.hazardT <= 0 && S.state === 'playing' && !S.demo && S.wave > 1) {
+    spawnHazard(); S.hazardT = 8 + Math.random() * 5;
+  }
+  for (let i = S.hazards.length - 1; i >= 0; i--) {
+    const h = S.hazards[i]; h.t += dt;
+    const warn = h.t < 1.1;
+    h.g.material.color.setHex(warn ? 0xffc22b : 0xff2b5c);
+    h.g.material.opacity = warn ? 0.10 + 0.10 * Math.sin(h.t * 18) : 0.42;
+    h.g.scale.x = warn ? 0.55 : 1;
+    if (!warn && h.t < 2.1 && S.state === 'playing' && Math.abs(S.x - h.x) < 0.55) hurtPlayer();
+    if (h.t > 2.2) { scene.remove(h.g); S.hazards.splice(i, 1); }
+  }
   // enemies
   const sc = speedScale(S.wave);
   for (let i = S.enemies.length - 1; i >= 0; i--) {
     const e = S.enemies[i]; e.t += dt; e.flash = Math.max(0, e.flash - dt * 6);
-    if (e.type === 'drone') { e.z += e.vz * dt; e.x = e.baseX + Math.sin(e.t * 1.5 + e.phase) * 0.6; }
-    else if (e.type === 'weaver') { e.z += e.vz * dt; e.x = THREE.MathUtils.clamp(e.baseX + Math.sin(e.t * 2 + e.phase) * 2.4, -FIELD.halfW + 0.6, FIELD.halfW - 0.6); }
-    else if (e.type === 'turret') {
+    if (e.type === 'drone') {
+      e.z += e.vz * dt;
+      const chase = e.pattern === 'dive' ? 0.85 : 0.25;
+      e.x += (S.x - e.x) * dt * chase;
+      e.x += Math.sin(e.t * 2.2 + e.phase) * dt * (e.pattern === 'strafe' ? 2.4 : 0.5);
+      e.x = THREE.MathUtils.clamp(e.x, -FIELD.halfW + 0.5, FIELD.halfW - 0.5);
+    } else if (e.type === 'weaver') {
+      e.z += e.vz * dt;
+      e.x = THREE.MathUtils.clamp(e.baseX + Math.sin(e.t * 2.6 + e.phase) * 3.0, -FIELD.halfW + 0.5, FIELD.halfW - 0.5);
+    } else if (e.type === 'turret') {
       if (e.mode === 0) { e.z += e.vz * dt; if (e.z >= e.stopZ) { e.mode = 1; e.holdT = 0; } }
-      else if (e.mode === 1) { e.holdT += dt; e.fireT -= dt; if (e.fireT <= 0) { e.fireT = e.def.fire / sc; const a = aimAt(e.x, e.z); for (const o of (S.wave > 6 ? [-0.18, 0, 0.18] : [0])) enemyFire(e.x, e.z + 0.5, a + o); if (S.state === 'playing') audio.enemyShot(); } if (e.holdT > 6) e.mode = 2; }
-      else e.z += e.vz * 1.5 * dt;
+      else if (e.mode === 1) {
+        e.holdT += dt;
+        e.fireT -= dt * sc;
+        if (e.fireT <= 0) {
+          e.fireT = e.def.fire / sc;
+          const a = aimAt(e.x, e.z);
+          for (const o of (e.elite || S.wave > 7 ? [-0.22, -0.11, 0, 0.11, 0.22] : [-0.16, 0, 0.16])) enemyFire(e.x, e.z + 0.5, a + o, ENEMY_BULLET_SPEED * 1.02);
+          if (S.state === 'playing') audio.enemyShot();
+        }
+        if (e.holdT > 7) e.mode = 2;
+      } else e.z += e.vz * 1.5 * dt;
       if (e.g.userData.head) e.g.userData.head.rotation.y = aimAt(e.x, e.z);
     } else if (e.type === 'dasher') {
-      if (e.mode === 0) { e.z += e.vz * 0.6 * dt; e.x += (S.x - e.x) * dt * 0.5; if (e.z > -12) { e.mode = 1; e.chargeT = 0.6; } }
-      else if (e.mode === 1) { e.chargeT -= dt; e.flash = 0.6; if (e.chargeT <= 0) { e.mode = 2; const a = aimAt(e.x, e.z); e.dvx = Math.sin(a) * e.vz * 4.5; e.dvz = Math.cos(a) * e.vz * 4.5; } }
+      if (e.mode === 0) { e.z += e.vz * 0.7 * dt; e.x += (S.x - e.x) * dt * 0.6; if (e.z > -12) { e.mode = 1; e.chargeT = 0.55; } }
+      else if (e.mode === 1) { e.chargeT -= dt; e.flash = 0.6; if (e.chargeT <= 0) { e.mode = 2; const a = aimAt(e.x, e.z); e.dvx = Math.sin(a) * e.vz * 5.0; e.dvz = Math.cos(a) * e.vz * 5.0; } }
       else { e.x += e.dvx * dt; e.z += e.dvz * dt; }
       e.g.rotation.y = e.mode === 2 ? Math.atan2(e.dvx, e.dvz) : aimAt(e.x, e.z);
+    }
+    // Drone/weaver fire aimed pressure; without this the player only ever dodges Dashers.
+    if ((e.type === 'drone' || e.type === 'weaver') && S.state === 'playing' && e.z > FIELD.top + 1 && e.z < S.z + 1) {
+      e.fireT -= dt * sc;
+      if (e.fireT <= 0) {
+        e.fireT = e.def.fire / sc;
+        const a = aimAt(e.x, e.z);
+        if (e.type === 'weaver') {
+          for (const o of (e.elite ? [-0.24, -0.12, 0, 0.12, 0.24] : [-0.18, 0, 0.18])) enemyFire(e.x, e.z + 0.4, a + o, ENEMY_BULLET_SPEED * 0.95);
+        } else {
+          enemyFire(e.x, e.z + 0.4, a, ENEMY_BULLET_SPEED * 1.05);
+          if (e.elite || S.wave > 6) { enemyFire(e.x, e.z + 0.4, a - 0.12, ENEMY_BULLET_SPEED); enemyFire(e.x, e.z + 0.4, a + 0.12, ENEMY_BULLET_SPEED); }
+        }
+        if (S.state === 'playing') audio.enemyShot();
+      }
     }
     if (e.g.userData.spin) e.g.userData.spin.rotation.z += dt * 3;
     e.g.position.set(e.x, Math.sin(e.t * 3 + e.phase) * 0.15, e.z);
@@ -302,30 +445,88 @@ function sim(dt) {
     if (e.z > FIELD.bottom + 2 || Math.abs(e.x) > FIELD.halfW + 4) { scene.remove(e.g); S.enemies.splice(i, 1); continue; }
     if (Math.hypot(e.x - S.x, e.z - S.z) < e.def.radius + PLAYER.radius) { hurtPlayer(); e.hp = 0; killEnemy(e, i); }
   }
-  // boss
+  // boss: three phases, each with a different pressure pattern
   const B = S.boss;
   if (B) {
-    B.t += dt; const rage = B.hp < B.maxHp * 0.4 ? 1 : 0;
-    if (B.entering) { B.z += 3 * dt; if (B.z >= -15) B.entering = false; }
-    else { B.x = Math.sin(B.t * 0.5) * (FIELD.halfW - 2.5); B.z = -15 + Math.sin(B.t * 0.8) * 1.2; }
-    B.atkT -= dt * (1 + rage * 0.5) * (B.variant.rate || 1);
-    if (!B.entering) {
-      if (B.atk === 0 && B.atkT <= 0) { const n = 14 + rage * 6; for (let i = 0; i < n; i++) enemyFire(B.x, B.z, (i / n) * Math.PI * 2 + B.t, ENEMY_BULLET_SPEED * 0.8); B.atk = 1; B.atkT = 1.8; if (S.state === 'playing') audio.enemyShot(); }
-      else if (B.atk === 1) { B.spiralA += dt * 5; if ((B.t * 12 | 0) !== ((B.t - dt) * 12 | 0)) { enemyFire(B.x, B.z, B.spiralA, 6.5); enemyFire(B.x, B.z, B.spiralA + Math.PI, 6.5); if (rage) enemyFire(B.x, B.z, B.spiralA + Math.PI / 2, 6.5); } if (B.atkT <= 0) { B.atk = 2; B.atkT = 1.4; } }
-      else if (B.atk === 2) { if (B.atkT <= 0) { const a = aimAt(B.x, B.z); for (const o of [-0.25, -0.12, 0, 0.12, 0.25]) enemyFire(B.x, B.z + 1.5, a + o, ENEMY_BULLET_SPEED * 1.1); B.atk = 0; B.atkT = 2.2; } }
+    B.t += dt;
+    if (B.entering) { B.z += 3 * dt; if (B.z >= -15) { B.entering = false; B.phase = 1; B.atk = 0; B.atkT = 1.2; } }
+    else {
+      const phase = B.hp > B.maxHp * 0.66 ? 1 : B.hp > B.maxHp * 0.33 ? 2 : 3;
+      if (phase !== B.phase) {
+        B.phase = phase; B.atkT = 0.9; B.phaseT = 0;
+        if (S.state === 'playing') { ui.banner(t('bossPhase', { n: phase }), '', t('bossPhaseS')); audio.warn(); fx.kick({ aberr: 1.2, glitch: 0.5 }); }
+      }
+      B.phaseT += dt;
+      const p = B.phase;
+      const rate = (B.variant.rate || 1) * (1 + (p - 1) * 0.2);
+      B.x = Math.sin(B.t * (0.5 + p * 0.08)) * (FIELD.halfW - 2.4);
+      B.z = -15 + Math.sin(B.t * 0.7) * 1.0;
+      B.atkT -= dt * rate;
+      if (B.atkT <= 0) {
+        const seq = p === 1 ? [0, 2, 0] : p === 2 ? [0, 1, 3, 2] : [0, 1, 3, 4, 2];
+        B.atk = seq[B.seq++ % seq.length];
+        const speed = ENEMY_BULLET_SPEED * (0.85 + p * 0.08);
+        if (B.atk === 0) {
+          const n = 12 + p * 4;
+          for (let i = 0; i < n; i++) enemyFire(B.x, B.z, (i / n) * Math.PI * 2 + B.t * 0.8, speed * 0.9);
+          B.atkT = p === 3 ? 1.1 : 1.5;
+        } else if (B.atk === 1) {
+          const n = 4 + p;
+          for (let i = 0; i < n; i++) enemyFire(B.x, B.z, B.spiralA + (i / n) * Math.PI * 2, speed);
+          B.spiralA += 0.55 + p * 0.12;
+          B.atkT = 0.42;
+          if ((B.spiralN = (B.spiralN || 0) + 1) % 4 === 0) B.atk = 2;
+        } else if (B.atk === 2) {
+          const a = aimAt(B.x, B.z);
+          for (const o of [-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3]) enemyFire(B.x, B.z + 1.2, a + o, speed * 1.08);
+          B.atkT = p === 3 ? 0.75 : 1.1;
+        } else if (B.atk === 3) {
+          // wall with a moving gap: the player has to commit to one side
+          const gap = (Math.random() * 2 - 1) * 3.4;
+          for (let x = -FIELD.halfW + 0.7; x <= FIELD.halfW - 0.7; x += 1.05) {
+            if (Math.abs(x - gap) > 1.1) enemyFire(x, B.z + 0.5, 0, speed * 0.9);
+          }
+          B.atkT = p === 3 ? 0.95 : 1.35;
+        } else {
+          // crossfire from both sides, aimed at the player's current lane
+          const a = aimAt(B.x, B.z);
+          for (const side of [-1, 1]) {
+            enemyFire(B.x + side * 2.2, B.z + 0.6, a + side * 0.34, speed);
+            enemyFire(B.x + side * 2.2, B.z + 0.6, a + side * 0.16, speed);
+          }
+          B.atkT = 0.8;
+        }
+        if (S.state === 'playing') audio.enemyShot();
+      }
     }
+    const rage = (B.phase || 1) / 3;
     B.g.position.set(B.x, 0.6, B.z);
     updateBoss(B.g, dt, T, new THREE.Vector2((S.x - B.x) / 8, -(S.z - B.z) / 20), rage);
     if (Math.hypot(B.x - S.x, B.z - S.z) < ENEMIES.boss.radius + PLAYER.radius) hurtPlayer();
   }
-  // bolts
-  for (const b of bolts.list) {
-    b.x += b.vx * dt; b.z += b.vz * dt;
-    if (b.z < FIELD.top - 3) { b.dead = true; continue; }
-    for (let i = S.enemies.length - 1; i >= 0; i--) { const e = S.enemies[i]; if (Math.abs(e.z - b.z) < e.def.radius + 0.4 && Math.abs(e.x - b.x) < e.def.radius + 0.1) { b.dead = true; e.hp -= PLAYER.boltDamage; e.flash = 1; if (S.state === 'playing') audio.hit(); particles.emit(new THREE.Vector3(b.x, 0, b.z + 0.3), new THREE.Vector3((Math.random() - 0.5) * 3, 1, 2), new THREE.Color(e.def.color), { life: 0.25, size: 0.6 }); if (e.hp <= 0) killEnemy(e, i); break; } }
-    if (!b.dead && B && !B.entering && Math.hypot(B.x - b.x, B.z - b.z) < ENEMIES.boss.radius) { b.dead = true; B.hp -= PLAYER.boltDamage; B.g.userData.eyeU.uHurt.value = 0.4; S.ult = Math.min(100, S.ult + ULT.perBossHit); particles.emit(new THREE.Vector3(b.x, 0.5, b.z + 0.5), new THREE.Vector3((Math.random() - 0.5) * 4, 2, 3), new THREE.Color(0xa66bff), { life: 0.3, size: 0.7 }); if (B.hp <= 0) bossDown(); }
+  // player bolts: pulse / lance / nova
+  for (const kind of WEAPON_KEYS) {
+    const pool = pools[kind];
+    for (const b of pool.list) {
+      b.x += b.vx * dt; b.z += b.vz * dt;
+      if (b.z < FIELD.top - 3 || Math.abs(b.x) > FIELD.halfW + 5) { b.dead = true; continue; }
+      if (b.kind === 'nova') b.scale = (b.scale || 1) + dt * 0.25;
+      for (let i = S.enemies.length - 1; i >= 0; i--) {
+        const e = S.enemies[i];
+        const rr = b.kind === 'nova' ? Math.max(0.8, b.aoe) : e.def.radius + 0.4;
+        if (!b.hit.has(e) && Math.abs(e.z - b.z) < rr && Math.abs(e.x - b.x) < rr) {
+          b.hit.add(e); hurtEnemy(e, i, b.dmg);
+          if (b.pierce > 0) b.pierce--; else b.dead = true;
+          if (b.dead) break;
+        }
+      }
+      if (!b.dead && B && !B.entering && !b.hit.has(B) && Math.hypot(B.x - b.x, B.z - b.z) < (b.kind === 'nova' ? Math.max(2.5, b.aoe) : ENEMIES.boss.radius)) {
+        b.hit.add(B); hurtBoss(b.dmg);
+        if (b.pierce > 0) b.pierce--; else b.dead = true;
+      }
+    }
+    pool.list = pool.list.filter(b => !b.dead);
   }
-  bolts.list = bolts.list.filter(b => !b.dead);
   // enemy bullets
   for (const b of ebullets.list) {
     b.x += b.vx * dt; b.z += b.vz * dt;
@@ -333,13 +534,45 @@ function sim(dt) {
     else if (Math.hypot(b.x - S.x, b.z - S.z) < PLAYER.radius + 0.12 && S.state !== 'dying') { b.dead = true; hurtPlayer(); }
   }
   ebullets.list = ebullets.list.filter(b => !b.dead);
-  // ultimate slash sweep
+  // weapon ultimate
   if (S.ultT >= 0) {
-    S.ultT += dt; const k = S.ultT / ULT.duration; S.slashZ = FIELD.bottom + (FIELD.top - 4 - FIELD.bottom) * Math.min(1, k);
-    slash.position.set(0, 0.4, S.slashZ); slash.material.uniforms.uA.value = Math.sin(Math.min(1, k) * Math.PI);
-    for (let i = S.enemies.length - 1; i >= 0; i--) if (S.enemies[i].z > S.slashZ) killEnemy(S.enemies[i], i);
-    if (B && !S.ultBossHit && B.z > S.slashZ) { S.ultBossHit = true; B.hp -= ULT.bossDamage; B.g.userData.eyeU.uHurt.value = 1; if (B.hp <= 0) bossDown(); }
-    if (k >= 1) { S.ultT = -1; slash.visible = false; }
+    S.ultT += dt;
+    const mode = S.ultMode || 'pulse';
+    const dur = (WEAPON_ULT[mode] && WEAPON_ULT[mode].duration) || ULT.duration;
+    const k = Math.min(1, S.ultT / dur);
+    S.ultFireT -= dt;
+    if (mode === 'pulse') {
+      while (S.ultFireT <= 0) {
+        for (let i = 0; i < 14; i++) {
+          const a = (i / 14) * Math.PI * 2 + S.t;
+          pools.pulse.add(S.x, S.z - 0.4, Math.sin(a) * 24, Math.cos(a) * 24, { kind: 'pulse', dmg: 1.6, pierce: 1, hit: new Set(), scale: 1.15, rotX: 0 });
+        }
+        S.ultFireT += 0.12;
+      }
+    } else if (mode === 'lance') {
+      beam.position.x = S.x; beam.material.opacity = Math.sin(k * Math.PI) * 0.8;
+      while (S.ultFireT <= 0) {
+        for (let i = S.enemies.length - 1; i >= 0; i--) {
+          const e = S.enemies[i];
+          if (Math.abs(e.x - S.x) < 2.2 && e.z < S.z + 1) hurtEnemy(e, i, 3.2);
+        }
+        if (B && !B.entering && Math.abs(B.x - S.x) < 2.8) hurtBoss(5);
+        S.ultFireT += 0.09;
+      }
+    } else if (mode === 'nova') {
+      S.novaR = 2 + k * 20;
+      while (S.ultFireT <= 0) {
+        for (let i = S.enemies.length - 1; i >= 0; i--) {
+          const e = S.enemies[i];
+          if (Math.hypot(e.x - S.x, e.z - S.z) < S.novaR) hurtEnemy(e, i, 2.5);
+        }
+        if (B && !B.entering && Math.hypot(B.x - S.x, B.z - S.z) < S.novaR) hurtBoss(3.5);
+        for (const b of ebullets.list) if (Math.hypot(b.x - S.x, b.z - S.z) < S.novaR) b.dead = true;
+        waves.spawn(new THREE.Vector3(S.x, 0, S.z), new THREE.Color(WEAPONS.nova.color), { r0: S.novaR * 0.8, r1: S.novaR, h: 0.2, dur: 0.5 });
+        S.ultFireT += 0.14;
+      }
+    }
+    if (k >= 1) { S.ultT = -1; S.ultMode = null; beam.visible = false; beam.material.opacity = 0; }
   }
   // pickups
   for (let i = S.pickups.length - 1; i >= 0; i--) {
@@ -348,8 +581,18 @@ function sim(dt) {
     p.g.position.set(p.x, 0.3 + Math.sin(p.t * 4) * 0.15, p.z); p.g.rotation.y = p.t * 2;
     if (d < 0.9) {
       scene.remove(p.g); S.pickups.splice(i, 1);
-      if (p.kind === 'P') S.power = Math.min(PLAYER.maxPower, S.power + 1); else if (p.kind === 'S') S.hp = Math.min(PLAYER.maxHp, S.hp + 1); else S.ult = Math.min(100, S.ult + 35);
+      if (p.kind === 'P') {
+        if (S.power < 6) { S.power++; S.weaponLevels[S.weapon] = S.power; } else { S.od = Math.min(100, S.od + 12); }
+      } else if (p.kind === 'S') S.hp = Math.min(PLAYER.maxHp, S.hp + 1);
+      else if (p.kind === 'E') { S.ult = Math.min(100, S.ult + 35); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + 10); }
+      else if (p.kind === 'W' && p.weaponKey) {
+        S.ults[S.weapon] = S.ult;
+        S.weapon = p.weaponKey; S.power = S.weaponLevels[S.weapon] || 1; S.ult = S.ults[S.weapon] || 0;
+        S.fireT = 0; S.od = Math.min(100, S.od + OD.perWeaponPickup);
+        if (S.state === 'playing') ui.banner(WEAPONS[S.weapon].name[i18n.isZh() ? 'zh' : 'en'], `LV.${S.power}`, t('weaponSwap'));
+      }
       if (S.state === 'playing') { audio.pickup(); const sp = stage.toScreen(new THREE.Vector3(S.x, 0.8, S.z)); ui.popup(sp.x, sp.y - 30, t(p.kind), ''); Platform.haptic('light'); }
+      updateHUD();
     } else if (p.z > FIELD.bottom + 2) { scene.remove(p.g); S.pickups.splice(i, 1); }
   }
 }
@@ -381,7 +624,8 @@ function tick(rawDt, time) {
     updateNinja(ninja, dt, S.t, S.vx, S.invuln);
     if (S.state === 'playing') updateHUD();
   }
-  bolts.sync(0.2); ebullets.sync(0.3); ecores.list = ebullets.list; ecores.sync(0.3);
+  for (const k of WEAPON_KEYS) pools[k].sync(k === 'nova' ? 0.35 : 0.2);
+  ebullets.sync(0.3); ecores.list = ebullets.list; ecores.sync(0.3);
   world.update(dt, S.t, S.state === 'paused' || S.state === 'over' ? 0.15 : 1);
   particles.update(dt); waves.update(dt);
   frameCamera(rawDt, time); fx.applyPost(stage, time); ui.tick(rawDt);

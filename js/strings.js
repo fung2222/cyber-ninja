@@ -130,8 +130,16 @@ i18n.add({
 "DRAG TO MOVE · AUTO-FIRE"
 ],
 "ultReady": [
-"裂空斬準備好！",
-"RIFT SLASH READY!"
+"武器大招準備好！",
+"WEAPON ULT READY!"
+],
+"bossPhase": [
+"巨獸第 {n} 階段",
+"MONSTER PHASE {n}"
+],
+"bossPhaseS": [
+"攻勢升級",
+"PATTERN SHIFT"
 ],
 "bossDown": [
 "巨獸擊破！",
@@ -154,8 +162,44 @@ i18n.add({
 "CONTINUE!"
 ],
 "ultFull": [
-"裂空斬已充滿",
-"RIFT READY"
+"武器大招已充滿",
+"WEAPON ULT READY"
+],
+"od": [
+"最大火力",
+"OVERDRIVE"
+],
+"odS": [
+"昇華",
+"ASCEND"
+],
+"odShort": [
+"超載",
+"BOOST"
+],
+"odReady": [
+"最大火力準備好！",
+"OVERDRIVE READY!"
+],
+"odActive": [
+"武器昇華",
+"WEAPON ASCENDED"
+],
+"odVent": [
+"停火散熱",
+"VENTING"
+],
+"odVentS": [
+"3 秒",
+"3s"
+],
+"weaponSwap": [
+"武器已換",
+"WEAPON SWAPPED"
+],
+"weaponMax": [
+"已滿級",
+"MAX"
 ],
 "milestone": [
 "里程碑：第 {n} 波！",
@@ -181,6 +225,10 @@ i18n.add({
 "能量",
 "ENERGY"
 ],
-  "help.rules": ['<ul><li>拖動畫面移動戰機，戰機會自動開火。</li><li>擊破敵機儲能量，儲滿放「裂空斬」清彈幕、重創巨獸。</li><li>每 5 波迎戰星海魔獸；護盾歸零就任務失敗，可復活一次。</li></ul>', '<ul><li>Drag anywhere to fly your craft — auto-fire is always on.</li><li>Destroy enemies to charge the RIFT SLASH: clear bullets and hurt bosses.</li><li>A star-sea monster every 5 waves; shield zero ends the run (one revive).</li></ul>'],
-  "help.controls": ['<ul><li>手機：喺任何位置拖動移動（手指唔遮戰機）；自動開火</li><li>鍵盤：<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> 移動　<kbd>Space</kbd> 裂空斬</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Touch: drag anywhere to move (finger never covers the craft); auto-fire</li><li>Keys: <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> move　<kbd>Space</kbd> Rift Slash</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
+"W": [
+"武器",
+"WEAPON"
+],
+  "help.rules": ['<ul><li>拖動移動戰機，自動開火；三種武器各有 6 級。</li><li>執拾 W 武器會即時換槍；P 提升目前武器等級。</li><li>「裂空斬」係目前武器嘅儲能大招；「最大火力」係通用昇華，用完會強制停火 3 秒。</li><li>每 5 波迎戰星海魔獸；護盾歸零就任務失敗，可復活一次。</li></ul>', '<ul><li>Drag to fly; auto-fire is always on. Three weapons, six levels each.</li><li>Grab a W drop to swap weapons instantly; P raises the current weapon level.</li><li>The big button is your weapon ultimate; OVERDRIVE is the universal ascension — it forces a 3-second cease-fire afterwards.</li><li>A star-sea monster every 5 waves; shield zero ends the run (one revive).</li></ul>'],
+  "help.controls": ['<ul><li>手機：拖動移動；自動開火；右下「裂空斬」係武器大招</li><li>鍵盤：<kbd>WASD</kbd> 移動　<kbd>Space</kbd> 武器大招　<kbd>Q</kbd> 最大火力</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Touch: drag to move; auto-fire; the lower-right button is the weapon ultimate</li><li>Keys: <kbd>WASD</kbd> move　<kbd>Space</kbd> weapon ultimate　<kbd>Q</kbd> OVERDRIVE</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
 });

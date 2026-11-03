@@ -26,51 +26,62 @@ export const VOLLEYS = [
 
 export const ULT = { perKill: 5, perBossHit: 0.15, bossDamage: 28, duration: 0.6 };
 
-// Enemy archetypes
+// Enemy archetypes. Speed is deliberately higher than the old build: the player
+// should be moving before the first wave ends, not standing under a bullet hose.
 export const ENEMIES = {
-  drone:  { hp: 2,  speed: 4.2, score: 50,  radius: 0.75, color: 0xff2bd6, fire: 0 },
-  weaver: { hp: 3,  speed: 3.4, score: 80,  radius: 0.8,  color: 0x00e5ff, fire: 0 },
-  turret: { hp: 7,  speed: 2.4, score: 150, radius: 1.0, color: 0xffc22b, fire: 1.6 },
-  dasher: { hp: 2,  speed: 3.0, score: 120, radius: 0.75, color: 0xff3b5c, fire: 0 },
-  boss:   { hp: 160, speed: 1.6, score: 3000, radius: 2.5, color: 0xa66bff, fire: 1 },
+  drone:  { hp: 4,  speed: 5.6, score: 60,  radius: 0.75, color: 0xff2bd6, fire: 2.1 },
+  weaver: { hp: 5,  speed: 4.4, score: 90,  radius: 0.8,  color: 0x00e5ff, fire: 2.3 },
+  turret: { hp: 11, speed: 3.0, score: 180, radius: 1.0, color: 0xffc22b, fire: 1.5 },
+  dasher: { hp: 4,  speed: 4.2, score: 140, radius: 0.75, color: 0xff3b5c, fire: 0 },
+  boss:   { hp: 240, speed: 1.6, score: 3000, radius: 2.5, color: 0xa66bff, fire: 1 },
 };
-export const ENEMY_BULLET_SPEED = 7.5;
+export const ENEMY_BULLET_SPEED = 9.0;
 export const BOSS_EVERY = 5;
-export const DROP_CHANCE = 0.09;      // power-up drop per kill (bosses always drop 3)
+export const DROP_CHANCE = 0.11;      // power-up drop per kill (bosses always drop 3)
 
 /**
- * Wave schedule (pure; unit-tested). Returns [{t, type, x, pattern}] spawn events for wave n (1-based)
- * or {boss:true} for boss waves.
+ * Wave director: authored formations instead of random soup. Each event carries
+ * a `pattern` that drives the enemy AI in main.js. Pure and unit-tested.
  */
 export function waveSpec(n, rng = Math.random) {
   if (n % BOSS_EVERY === 0) return { boss: true, hp: bossHp(n), variant: bossVariant(n / BOSS_EVERY), events: [] };
-  const types = ['drone'];
-  if (n >= 2) types.push('weaver');
-  if (n >= 3) types.push('turret');
-  if (n >= 4) types.push('dasher');
-  const groups = Math.min(4 + Math.floor(n * 0.8), 12);
-  const events = []; let t = 0.8;
-  for (let g = 0; g < groups; g++) {
-    const type = types[Math.floor(rng() * types.length)];
-    const count = type === 'turret' ? 1 + (n > 6 ? 1 : 0) : type === 'dasher' ? 2 : 3 + Math.min(3, Math.floor(n / 3));
-    const formation = ['line', 'v', 'column', 'scatter'][Math.floor(rng() * 4)];
-    const cx = (rng() * 2 - 1) * (FIELD.halfW - 2);
-    for (let i = 0; i < count; i++) {
-      let x = cx, dt = 0;
-      if (formation === 'line') x = (i - (count - 1) / 2) * 1.6;
-      else if (formation === 'v') { x = cx + (i - (count - 1) / 2) * 1.2; dt = Math.abs(i - (count - 1) / 2) * 0.25; }
-      else if (formation === 'column') dt = i * 0.45;
-      else { x = (rng() * 2 - 1) * (FIELD.halfW - 1); dt = rng() * 1.2; }
-      x = Math.max(-FIELD.halfW + 0.8, Math.min(FIELD.halfW - 0.8, x));
-      events.push({ t: t + dt, type, x, phase: rng() * 6.28 });
-    }
-    t += Math.max(1.1, 2.6 - n * 0.08);
+  const events = [];
+  const add = (type, x, t, pattern = 'dive', elite = false) => {
+    x = Math.max(-FIELD.halfW + 0.8, Math.min(FIELD.halfW - 0.8, x));
+    events.push({ t, type, x, phase: rng() * 6.28, pattern, elite });
+  };
+  const usable = n >= 4 ? ['line', 'pincer', 'wall', 'crossfire', 'rush', 'weave', 'elite'] : n >= 3 ? ['line', 'pincer', 'wall', 'weave'] : ['line', 'pincer'];
+  const recipe = n <= 2 ? usable[n - 1] : usable[(n + Math.floor(rng() * usable.length)) % usable.length];
+  if (recipe === 'line') {
+    const count = 7 + Math.min(4, Math.floor(n / 3));
+    for (let i = 0; i < count; i++) add('drone', (i - (count - 1) / 2) * 1.25, 0.6 + i * 0.16, 'dive');
+  } else if (recipe === 'pincer') {
+    for (let i = 0; i < 4; i++) { add('drone', -4.8 + i * 0.7, 0.5 + i * 0.25, 'dive'); add('drone', 4.8 - i * 0.7, 0.7 + i * 0.25, 'dive'); }
+    for (let i = 0; i < 2; i++) add('weaver', -2.2 + i * 4.4, 1.4 + i * 0.5, 'strafe');
+  } else if (recipe === 'wall') {
+    const count = 8;
+    for (let i = 0; i < count; i++) add('drone', (i - (count - 1) / 2) * 1.15, 0.6 + i * 0.1, i === 3 || i === 4 ? 'strafe' : 'dive');
+    for (let i = 0; i < 2; i++) add('weaver', -3.5 + i * 7, 1.4 + i * 0.35, 'strafe');
+  } else if (recipe === 'crossfire') {
+    add('turret', -4.2, 0.7, 'hold', n >= 8); add('turret', 4.2, 0.9, 'hold', n >= 8);
+    for (let i = 0; i < 5; i++) add('drone', (i - 2) * 1.4, 1.1 + i * 0.22, 'dive');
+    for (let i = 0; i < 2; i++) add('weaver', -2.4 + i * 4.8, 1.8 + i * 0.3, 'strafe');
+  } else if (recipe === 'rush') {
+    for (let i = 0; i < 6; i++) add('dasher', (i % 2 ? 1 : -1) * (1.2 + (i % 3) * 1.2), 0.5 + i * 0.32, 'charge');
+    for (let i = 0; i < 3; i++) add('drone', -2.5 + i * 2.5, 1.0 + i * 0.2, 'dive');
+  } else if (recipe === 'weave') {
+    for (let i = 0; i < 6; i++) add('weaver', (i - 2.5) * 1.5, 0.5 + i * 0.28, 'strafe');
+    for (let i = 0; i < 3; i++) add('drone', -3.2 + i * 3.2, 1.3 + i * 0.25, 'dive');
+  } else {
+    add('turret', 0, 0.8, 'hold', true);
+    for (let i = 0; i < 4; i++) add('drone', (i - 1.5) * 1.7, 1.0 + i * 0.25, 'dive');
+    for (let i = 0; i < 3; i++) add('weaver', -3.0 + i * 3.0, 1.6 + i * 0.3, 'strafe');
   }
   events.sort((a, b) => a.t - b.t);
-  return { boss: false, events };
+  return { boss: false, events, recipe };
 }
-export const speedScale = (n) => 1 + Math.min(0.6, (n - 1) * 0.04);
-export const hpScale = (n) => 1 + Math.min(2.5, Math.floor((n - 1) / 5) * 0.5);   // capped at ×3.5 (endless stays playable)
+export const speedScale = (n) => 1 + Math.min(0.85, (n - 1) * 0.05);
+export const hpScale = (n) => 1 + Math.min(2.2, Math.floor((n - 1) / 5) * 0.4);   // capped at ×3.2 (endless stays playable)
 
 export const ADS = { interstitialCooldownSec: 200, breaksBetweenInterstitials: 3, graceSec: 150, units: { android: {} } };
 

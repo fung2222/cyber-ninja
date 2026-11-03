@@ -5,15 +5,29 @@ export class NinjaAudio extends SynthAudio {
     super({ store, music: 'drive', sfxTrimDb: -4.5 });
     // Roy's audio rule: the BGM must not carry a continuous noise bed.
     // Keep the drive preset's tonal kick/bass/pad/arp, but drop noise hats.
-    this.preset = { ...this.preset, hats: false };
+    this.preset = { ...this.preset, hats: false, bpm: 112, bpmMax: 168, bpmPerLevel: 5, pad: 0.026 };
     this._shot = 0;
+    this.bossMode = false;
   }
+  setBoss(on) { this.bossMode = !!on; }
   // The base drive preset adds a noise snare at steps 4/12 and noise hats.
   // Suppress only noise during the music step; SFX keep their transients.
   playStep(step, time, s16) {
     const n = this.noiseHit;
     this.noiseHit = () => {};
     try { super.playStep(step, time, s16); } finally { this.noiseHit = n; }
+    // Boss layer: a tonal counter-line, never noise. It makes the last third of
+    // every fifth wave feel like a different track without breaking the no-hiss rule.
+    if (this.bossMode && this.ctx) {
+      const t = time - this.ctx.currentTime; if (t < -0.01) return;
+      const bar = Math.floor(step / 16) % 4, s = step % 16;
+      if (s % 2 === 0) {
+        const root = this.preset.roots[bar], chord = this.preset.chords[bar];
+        const iv = chord[(s / 2) % chord.length] + 12;
+        this.osc({ type: 'square', f: mtof(root + 36 + iv), t, dur: s16 * 1.4, vol: 0.026, lp: 4200, q: 2, out: this.musicFilter, send: 0.2 });
+      }
+      if (s === 0 || s === 6 || s === 10) this.osc({ type: 'sawtooth', f: mtof(this.preset.roots[bar] - 24), t, dur: s16 * 1.6, vol: 0.055, lp: 380, q: 4, out: this.musicFilter });
+    }
   }
   shot() { if (++this._shot % 2) return; this.osc({ type: 'square', f: 1800, f2: 900, dur: 0.035, vol: 0.018, lp: 5000 }); }
   hit() { this.osc({ type: 'triangle', f: 700, f2: 400, dur: 0.04, vol: 0.03 }); }

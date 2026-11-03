@@ -1,36 +1,42 @@
 # XENO NIGHTMARE 異域凶間 — Handoff
 
-Status: **web build v0.3.13** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
-Deep pass 2026-11-03: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md) — BGM noise removed; new-run ult-ready reset.
+Status: **web build v0.3.18** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+2026-11-03 core pass: three-weapon system + per-weapon ultimates + OVERDRIVE; authored wave formations, aimed enemy fire, map laser hazards, three-phase bosses, dynamic boss music. Earlier deep pass: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md).
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
 
 ## 1. Design
 - Vertical shooter seen from a high chase camera: the pilot rides a hover-glider above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
-- **Relative drag** anywhere moves the craft (finger never covers it), keyboard alternative. **Auto-fire** always on; power 1–5 widens the volley.
-- **Ultimate 霓虹裂空斬 NEON RIFT SLASH**: meter from kills (+5 each) / boss hits / E pickups. A slash wave sweeps bottom→top: clears all enemy bullets, kills every normal enemy it passes, 28 damage to the boss, slow-mo + flash.
-- Enemies: drone (sway), weaver (sine), turret (stops, aimed shots; triple shot after wave 6), dasher (locks on, charges). Speed and HP scale with the wave.
-- **Boss every 5 waves — the cosmic monster** (eye-orb with orbiting crystal spikes and tentacles, original design): ring burst → twin spiral → aimed 5-way fan, rage below 40 % HP. Drops P/S/E on death; the zone colour theme changes.
+- **Relative drag** anywhere moves the craft (finger never covers it), keyboard alternative. **Auto-fire** always on.
+- **Three weapons × six levels** (`js/weapons.js`): PULSE REPEATER (spread), PHASE LANCE (piercing line), NOVA SURGE (AoE). A **W** drop replaces the current weapon; each weapon keeps its own level and charge. **P** raises the current level.
+- **Per-weapon ultimate** on Space / blue button: BULLET STORM (radial storm), PRISM PIERCE (wide lane beam), SINGULARITY (expanding nova). Charge comes from kills, boss hits and E pickups.
+- **OVERDRIVE** on Q / orange button: ascends the current weapon for 4 s (effective level +2, faster and stronger), then forces a **3 s cease-fire**. This is the risk/reward replacement for standing still at max power.
+- Enemies arrive in authored formations (`line`, `pincer`, `wall`, `crossfire`, `rush`, `weave`, `elite`), fire aimed patterns (drones single, weavers 3-way, turrets 5-way, elites denser), and scale speed/HP with the wave. Telegraphed **laser lanes** cut one lane of the map every 8–13 s.
+- **Boss every 5 waves — the cosmic monster**: phase 1 ring/aimed, phase 2 adds spiral + gap walls, phase 3 adds crossfire and tighter timings; phases change at 66 % / 33 % HP. Drops P/S/E on death; zone colour shifts.
 - 3 shields (max 5); a hit costs a shield + 1 power level, 1.6 s invulnerability, nearby bullets cleared (fair).
 - Game over → **continue once** via rewarded hook (full shields, ult charged) or retry.
 - Attract mode = the AI flies behind the start screen (invulnerable). `?demo=1` = the AI plays real runs on a loop.
 
 ## 2. Controls
-Drag · arrows/WASD · Space/Enter/X/J ult · P/Esc pause · M mute · Enter retry on game over. Android back: dialog → pause → resume; game over → menu.
+Drag · arrows/WASD · Space/Enter/X/J weapon ultimate · Q/O OVERDRIVE · P/Esc pause · M mute · Enter retry on game over. Android back: dialog → pause → resume; game over → menu.
 
-## 3. Tuning (`js/config.js`)
+## 3. Tuning (`js/config.js` / `js/weapons.js`)
 | Constant | Value |
 |---|---|
 | `FIELD` | halfW 6, top −24, bottom 3.2, player z −8…2.4 |
-| `PLAYER` | radius 0.42, hp 3/max 5, invuln 1.6 s, dragGain 1.15, keySpeed 11, fireRate 0.12 s, boltSpeed 30 |
-| `VOLLEYS` | 1…5 bolts per power level |
-| `ULT` | +5 per kill, +0.15 per boss hit, 28 boss damage, 0.6 s sweep |
-| `ENEMIES` | drone 2hp/50 · weaver 3/80 · turret 7/150 · dasher 2/120 · boss 160+90 per cycle/3000×cycle |
-| `ENEMY_BULLET_SPEED` / `BOSS_EVERY` / `DROP_CHANCE` | 7.5 / 5 / 0.09 |
-| `waveSpec(n)` | groups = min(4+0.8n, 12); types unlock at waves 1/2/3/4; formations line / V / column / scatter |
-| `speedScale` / `hpScale` | +4 %/wave (max +60 %) / +50 % HP per 5 waves (capped at ×3.5) |
-| `bossHp(n)` | 160 + 90 per cycle, capped at 1100 |
-| `bossVariant(c)` | 6 species (星海魔獸, 深淵魔眼, 等離子海妖, 虛空水母, 晶棘巨獸, 極光龍), then `Mk.N` variants forever; attack-rate ×(1+0.06(c−1)) capped at 1.6 |
-| `MILESTONE_EVERY` / `milestoneBonus(n)` | 10 waves / 5000 × (n/10); shown at the start of wave 11, 21…: bonus, shields → max, theme shift |
+| `PLAYER` | radius 0.42, hp 3/max 5, invuln 1.6 s, dragGain 1.15, keySpeed 11 |
+| `WEAPONS` | 3 weapons × 6 levels; pulse 1→5 shots, lance pierce 2→7, nova AoE 2.2→3.8 |
+| `WEAPON_ULT` | pulse 2.2 s, lance 1.3 s, nova 2.0 s |
+| `OD` | duration 4 s, no-fire 3 s, +3.5/kill, +18/weapon pickup, +20/E |
+| `ULT` | +5/kill, +0.15/boss hit (legacy constants; weapon ults use their own charge) |
+| `ENEMIES` | drone 4hp/5.6spd · weaver 5/4.4 · turret 11/3.0 · dasher 4/4.2 · boss 240 |
+| `ENEMY_BULLET_SPEED` / `BOSS_EVERY` / `DROP_CHANCE` | 9.0 / 5 / 0.11 |
+| `waveSpec(n)` | authored recipes: line, pincer, wall, crossfire, rush, weave, elite; no turret before wave 3 |
+| `speedScale` / `hpScale` | +5 %/wave (max +85 %) / +40 % HP per 5 waves (capped ×3.2) |
+| `bossHp(n)` | 240 + 90 per cycle, capped at 1100 |
+| `bossVariant(c)` | 6 species, then Mk.N variants; attack-rate ×(1+0.06(c−1)) capped at 1.6 |
+| `boss phases` | 66 % / 33 % HP; ring, spiral, gap wall, crossfire |
+| `hazard` | lane sweep every 8–13 s, 1.1 s warning then 1 s active |
+| `MILESTONE_EVERY` / `milestoneBonus(n)` | 10 waves / 5000 × (n/10) |
 | `ADS` | interstitial cooldown 200 s, every 3rd game over, 150 s grace |
 
 ## 3b. Endless mode & i18n (v1.1)
@@ -40,20 +46,21 @@ Drag · arrows/WASD · Space/Enter/X/J ult · P/Esc pause · M mute · Enter ret
 
 ## 4. File map
 ```
-index.html       HUD (score, wave, shield pips, power, boss bar, ult button), start / pause / over screens
+index.html       HUD (score, wave, shield pips, weapon/level/charge, boss bar, ultimate + OVERDRIVE buttons), start / pause / over screens
 css/game.css     HUD layout
-js/config.js     constants + waveSpec (pure, unit-tested)
+js/config.js     constants + authored waveSpec (pure, unit-tested)
+js/weapons.js    weapon table, level curves, OVERDRIVE solution, pickups
 js/world.js      sky dome (stars + nebula), scrolling megacity shader, haze, instanced side towers, speed streaks, lights
 js/entities.js   craft model + scarf ribbon, enemy models (neon edge wireframes), boss, instanced bullet pools, pickups
 js/audio.js      NinjaAudio (cyber-kit SynthAudio, 'drive' music)
-js/main.js       states, relative drag input, simulation (movement, fire, waves, AI patterns, collisions), ult, camera, ads hooks
+js/main.js       states, relative drag input, simulation (movement, weapon fire, waves, AI patterns, hazards, collisions), ult/overdrive, camera, ads hooks
 vendor/cyber-kit cyber-kit v0.3.19
-tests/           waves.test.mjs, smoke.py
+tests/           weapons.test.mjs, waves.test.mjs, audio.test.mjs, weapons.py, core.py, brand.py, smoke.py
 ```
-Test hook: `window.__ninja` (state, x, z, score, wave, hp, ult, boss, `api.ult/kill/boss`).
+Test hook: `window.__ninja` (state, x, z, score, wave, hp, weapon, power, ult, od, boss, hazards; `api.wave/weapon/charge/ult/overdrive/drop/kill/boss/spawn/enemyFire/hazard/bossHurt`).
 
 ## 5. Tests
-`node tests/waves.test.mjs` · `node --test tests/audio.test.mjs` · `python tests/ult-reset.py [url]` · `python tests/brand.py [url]` · `python tests/smoke.py [url] [out]` — 412×915 touch + 1280×800: start, drag, keyboard, auto-fire kills, ultimate, boss wave, pause/resume, game over, continue, demo, language toggle/persist (en + zh screenshots), endless wave 31 milestone + wave 40 boss variant, zero console errors. Last run 2026-11-03: waves 1–30 pass, audio PASS, ult-reset PASS; full smoke pending.
+`node --test tests/` · `python tests/weapons.py [url]` · `python tests/core.py [url]` · `python tests/ult-reset.py [url]` · `python tests/brand.py [url]` · `python tests/smoke.py [url] [out]` — weapon levels/pickups/ults/overdrive, enemy aimed fire, hazards, boss phases, start/drag/keyboard/kills/pause/gameover/demo/language, zero console errors. Last run 2026-11-03: 6 node tests PASS, weapons.py PASS, core.py PASS, ult-reset PASS, brand PASS; full smoke screenshot suite pending.
 
 ## 6. Android packaging
 As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `hk.fung2222.xenonightmare`; lock portrait).
@@ -68,7 +75,7 @@ Natural break points in endless: the game-over screen (above) and, optionally in
 
 ## 8. Known issues / ideas
 - Headless SwiftShader ≈ 3 FPS, so tests wait on game state instead of wall time; phones run 60 FPS with auto-quality.
-- Ideas: distinct boss meshes per species (currently same model, new name/rate + theme shift), weapon types (homing kunai), haptics intensity setting.
+- Ideas: distinct boss meshes per species (currently same model, new name/rate + theme shift), weapon-specific models/audio, haptics intensity setting.
 
 ## Audio loudness + glow (cyber-kit v0.3.0, 2026-10-03)
 - Audio: kit loudness model (music ≈ −20 LUFS integrated, median SFX ≈ music level). This game: music 'drive' with **noise hats/snare suppressed** (tonal kick/bass/pad/arp only), sfxTrimDb -4.5 in `js/audio.js`. Re-measure after changing sounds: `python3 ../cyber-kit/tests/loudness.py http://127.0.0.1:18940 <dir>:<AudioClass> --kit /cyber-kit` (see kit docs/API.md "Loudness"). Keep music −20 ± 1 LUFS and SFX/BGM 0 ± 2 dB.

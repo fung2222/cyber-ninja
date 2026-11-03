@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { U } from 'cyber-kit/core/theme.js';
 import { ENEMIES } from './config.js';
+import { WEAPONS } from './weapons.js';
 
 const neonEdges = (geo, color, mult = 2.2, thresh = 20) => new THREE.LineSegments(new THREE.EdgesGeometry(geo, thresh), new THREE.LineBasicMaterial({ color: new THREE.Color(color).multiplyScalar(mult) }));
 const darkMetal = (tint = 0x120a24) => new THREE.MeshStandardMaterial({ color: tint, metalness: 0.75, roughness: 0.32, emissive: 0x000000 });
@@ -126,18 +127,27 @@ export class BulletPool {
   clear() { this.list.length = 0; }
   sync(y = 0) {
     const L = this.list; this.mesh.count = L.length;
-    for (let i = 0; i < L.length; i++) { const b = L[i]; this.e.set(0, Math.atan2(b.vx, b.vz), 0); this.q.setFromEuler(this.e); this.p.set(b.x, y, b.z); const sc = b.scale || 1; this.s.set(sc, sc, sc); this.m.compose(this.p, this.q, this.s); this.mesh.setMatrixAt(i, this.m); }
+    for (let i = 0; i < L.length; i++) { const b = L[i]; this.e.set(b.rotX || 0, Math.atan2(b.vx, b.vz), 0); this.q.setFromEuler(this.e); this.p.set(b.x, y, b.z); const sc = b.scale || 1; this.s.set(sc, sc, sc); this.m.compose(this.p, this.q, this.s); this.mesh.setMatrixAt(i, this.m); }
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 }
 
-// power-ups: P = power, S = shield/HP, E = energy
-export const PICKUPS = { P: { color: 0xfff35c, zh: '火力', en: 'POWER' }, S: { color: 0x3bff8a, zh: '護盾', en: 'SHIELD' }, E: { color: 0x00e5ff, zh: '能量', en: 'ENERGY' } };
-export function makePickup(kind) {
-  const g = new THREE.Group(); const c = PICKUPS[kind].color;
-  const geo = new THREE.OctahedronGeometry(0.42, 0);
+// power-ups: P = power (weapon level), S = shield/HP, E = energy, W = weapon swap
+export const PICKUPS = {
+  P: { color: 0xfff35c, zh: '火力', en: 'POWER' },
+  S: { color: 0x3bff8a, zh: '護盾', en: 'SHIELD' },
+  E: { color: 0x00e5ff, zh: '能量', en: 'ENERGY' },
+  W: { color: 0xffffff, zh: '武器', en: 'WEAPON' },
+};
+export function makePickup(kind, weaponKey) {
+  const g = new THREE.Group();
+  const w = kind === 'W' ? WEAPONS[weaponKey] : null;
+  const c = w ? w.color : PICKUPS[kind].color;
+  const geo = kind === 'W' ? new THREE.IcosahedronGeometry(0.5, 0) : new THREE.OctahedronGeometry(0.42, 0);
   g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(0.5), transparent: true, opacity: 0.6 })));
   g.add(neonEdges(geo, c, 3));
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.03, 6, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2) })); ring.rotation.x = Math.PI / 2; g.add(ring);
-  g.userData.kind = kind; return g;
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(kind === 'W' ? 0.72 : 0.6, 0.035, 6, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2) }));
+  ring.rotation.x = Math.PI / 2; g.add(ring);
+  g.userData.kind = kind; g.userData.weapon = weaponKey || null;
+  return g;
 }
