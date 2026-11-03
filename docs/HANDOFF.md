@@ -1,6 +1,6 @@
 # XENO NIGHTMARE 異域凶間 — Handoff
 
-Status: **web build v0.3.22** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+Status: **web build v0.3.23** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
 2026-11-03 core pass: three-weapon system + per-weapon ultimates + OVERDRIVE; authored wave formations, aimed enemy fire, map laser hazards, three-phase bosses, dynamic boss music. Earlier deep pass: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md).
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
 
@@ -16,7 +16,7 @@ Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from 
 - **Districts**: every 5 waves the backdrop alternates between NEON KOWLOON (`city`) and DEEP-SPACE RUINS (`ruins`); the ruins hide the city/towers and show a broken gate, orbital-ring arcs, monoliths and a ruined floor plane.
 - **HUD**: HP, weapon name/level/charge, score, wave and pause/mute are in the top strip. The lower-left is empty; OVERDRIVE and weapon ultimate remain stacked at the lower-right.
 - **Full-field movement**: `FIELD.playerMinZ = -21`, so the craft can fly from the bottom to the top of the play field.
-- **Boss every 5 waves — the cosmic monster**: phase 1 ring/aimed, phase 2 adds spiral + gap walls, phase 3 adds crossfire and tighter timings; phases change at 66 % / 33 % HP. Drops P/S/E on death; zone colour shifts.
+- **Boss every 5 waves — the cosmic monster**: phase 1 ring/aimed, phase 2 adds spiral + gap walls, phase 3 adds crossfire and tighter timings; phases change at 66 % / 33 % HP. The boss visually unfolds armour plates and a phase ring at phase 2, then exposes the core in phase 3. Drops P/S/E on death; zone colour shifts.
 - 3 shields (max 5); a hit costs a shield + 1 power level, 1.6 s invulnerability, nearby bullets cleared (fair).
 - Game over → **continue once** via rewarded hook (full shields, ult charged) or retry.
 - Attract mode = the AI flies behind the start screen (invulnerable). `?demo=1` = the AI plays real runs on a loop.

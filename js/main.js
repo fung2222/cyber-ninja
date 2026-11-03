@@ -2,11 +2,11 @@
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import './strings.js?v=0.3.22';
+import './strings.js?v=0.3.23';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js';
-import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.22';
-import { NinjaAudio } from './audio.js?v=0.3.22';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.23';
+import { NinjaAudio } from './audio.js?v=0.3.23';
 
 const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
@@ -523,6 +523,7 @@ function sim(dt) {
       if (phase !== B.phase) {
         B.phase = phase; B.atkT = 0.9; B.phaseT = 0;
         if (S.state === 'playing') { ui.banner(t('bossPhase', { n: phase }), '', t('bossPhaseS')); audio.warn(); fx.kick({ aberr: 1.2, glitch: 0.5 }); }
+        const bp = new THREE.Vector3(B.x, 0.6, B.z); waves.spawn(bp, new THREE.Color(0xff8a4d), { r0: 1, r1: 9 + phase * 3, h: 2, dur: 0.8, a: 2 }); particles.burst(bp, new THREE.Color(0xff8a4d), 70, { speed: 9, up: 2, life: 0.9, size: 1.2, grav: 0 });
       }
       B.phaseT += dt;
       const p = B.phase;
@@ -569,7 +570,7 @@ function sim(dt) {
     }
     const rage = (B.phase || 1) / 3;
     B.g.position.set(B.x, 0.6, B.z);
-    updateBoss(B.g, dt, T, new THREE.Vector2((S.x - B.x) / 8, -(S.z - B.z) / 20), rage);
+    updateBoss(B.g, dt, T, new THREE.Vector2((S.x - B.x) / 8, -(S.z - B.z) / 20), rage, B.phase || 1);
     if (Math.hypot(B.x - S.x, B.z - S.z) < ENEMIES.boss.radius + PLAYER.radius) hurtPlayer();
   }
   // player bolts: pulse / lance / nova

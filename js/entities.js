@@ -104,14 +104,32 @@ export function makeBoss() {
   const spikes = new THREE.Group(); g.add(spikes);
   const spikeGeo = new THREE.OctahedronGeometry(0.35, 0); spikeGeo.scale(0.6, 0.6, 2);
   for (let i = 0; i < 8; i++) { const s = new THREE.Mesh(spikeGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xa66bff).multiplyScalar(2.4) })); const a = i / 8 * Math.PI * 2; s.position.set(Math.cos(a) * 2.7, 0, Math.sin(a) * 2.7); s.lookAt(0, 0, 0); spikes.add(s); }
+  // phase armour: hidden in phase 1, unfolds for phases 2 and 3
+  const armor = new THREE.Group(); armor.visible = false;
+  const plateMat = new THREE.MeshStandardMaterial({ color: 0x1b0b38, metalness: 0.8, roughness: 0.35, emissive: new THREE.Color(0x3a165f) });
+  for (let i = 0; i < 6; i++) {
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.18, 2.15), plateMat);
+    const a = i / 6 * Math.PI * 2; plate.position.set(Math.cos(a) * 2.45, 0, Math.sin(a) * 2.45); plate.rotation.y = -a; armor.add(plate);
+  }
+  const phaseRing = new THREE.Mesh(new THREE.TorusGeometry(2.65, 0.055, 6, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff8a4d).multiplyScalar(2.2), transparent: true, opacity: 0.8 }));
+  phaseRing.rotation.x = Math.PI / 2; armor.add(phaseRing);
+  g.add(armor);
   const tentacles = [];
   for (let k = 0; k < 6; k++) { const arr = []; for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.28 - i * 0.025, 8, 6), new THREE.MeshStandardMaterial({ color: 0x1a0830, emissive: new THREE.Color(0xff2bd6).multiplyScalar(0.25 + i * 0.05), metalness: 0.5, roughness: 0.4 })); g.add(m); arr.push(m); } tentacles.push({ arr, a: (k / 6) * Math.PI * 2 + 0.3 }); }
-  g.userData = { orb, eyeU, spikes, tentacles };
+  g.userData = { orb, eyeU, spikes, tentacles, armor, phaseRing };
   return g;
 }
-export function updateBoss(g, dt, t, look, rage) {
+export function updateBoss(g, dt, t, look, rage, phase = 1) {
   const u = g.userData; u.eyeU.uLook.value.lerp(look, Math.min(1, dt * 4)); u.eyeU.uHurt.value = Math.max(0, u.eyeU.uHurt.value - dt * 5); u.eyeU.uRage.value = rage;
-  u.spikes.rotation.y = t * (0.6 + rage); const s = 1 + Math.sin(t * 2.2) * 0.04; u.orb.scale.setScalar(s);
+  u.spikes.rotation.y = t * (0.6 + rage);
+  u.armor.visible = phase >= 2;
+  if (u.armor.visible) {
+    u.armor.rotation.y = -t * (0.35 + phase * 0.18);
+    u.armor.scale.setScalar(1 + (phase - 2) * 0.12 + Math.sin(t * 2.4) * 0.02);
+    u.phaseRing.rotation.z = t * (phase === 3 ? 1.5 : 0.7);
+    u.phaseRing.material.opacity = phase === 3 ? 0.55 + 0.35 * Math.sin(t * 6) : 0.65;
+  }
+  const s = 1 + Math.sin(t * 2.2) * 0.04 + (phase - 1) * 0.035; u.orb.scale.setScalar(s);
   for (const T of u.tentacles) T.arr.forEach((m, i) => { const a = T.a + Math.sin(t * 1.8 + i * 0.5 + T.a) * 0.35; const r = 1.6 + i * 0.42; m.position.set(Math.cos(a) * r, -0.4 - i * 0.12 + Math.sin(t * 2 + i) * 0.15, Math.sin(a) * r * 0.55 - 0.6); });
 }
 
