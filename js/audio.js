@@ -29,7 +29,20 @@ export class NinjaAudio extends SynthAudio {
       if (s === 0 || s === 6 || s === 10) this.osc({ type: 'sawtooth', f: mtof(this.preset.roots[bar] - 24), t, dur: s16 * 1.6, vol: 0.055, lp: 380, q: 4, out: this.musicFilter });
     }
   }
-  shot() { if (++this._shot % 2) return; this.osc({ type: 'square', f: 1800, f2: 900, dur: 0.035, vol: 0.018, lp: 5000 }); }
+  shot(kind = 'pulse') {
+    this._shot++;
+    if (kind === 'pulse') {
+      if (this._shot % 2) return;
+      this.osc({ type: 'square', f: 1800, f2: 900, dur: 0.035, vol: 0.018, lp: 5000 });
+    } else if (kind === 'lance') {
+      if (this._shot % 2) return;
+      this.osc({ type: 'sawtooth', f: 880, f2: 280, dur: 0.055, vol: 0.022, lp: 3000 });
+    } else {
+      if (this._shot % 3) return;
+      this.osc({ type: 'sine', f: 190, f2: 70, dur: 0.11, vol: 0.045 });
+      this.osc({ type: 'triangle', f: 620, f2: 240, dur: 0.035, vol: 0.012, lp: 1800 });
+    }
+  }
   hit() { this.osc({ type: 'triangle', f: 700, f2: 400, dur: 0.04, vol: 0.03 }); }
   gem() { this.osc({ type: 'sine', f: 1480, f2: 2100, dur: 0.07, vol: 0.018, send: 0.25 }); }
   boom(big = false) {
@@ -38,7 +51,22 @@ export class NinjaAudio extends SynthAudio {
   }
   hurt() { this.osc({ type: 'sawtooth', f: 300, f2: 70, dur: 0.35, vol: 0.12, lp: 1600 }); this.noiseHit({ dur: 0.3, vol: 0.12, type: 'bandpass', f: 900, f2: 200, q: 1 }); }
   pickup() { [0, 7, 12].forEach((n, i) => this.osc({ type: 'square', f: mtof(76 + n), t: i * 0.05, dur: 0.08, vol: 0.05, lp: 4000, send: 0.3 })); }
-  ult() { this.noiseHit({ dur: 0.9, vol: 0.18, type: 'bandpass', f: 400, f2: 6000, q: 1.2, a: 0.08 }); this.osc({ type: 'sawtooth', f: 80, f2: 900, dur: 0.6, vol: 0.12, lp: 3000, send: 0.4 }); this.osc({ type: 'sine', f: 60, f2: 30, t: 0.5, dur: 0.6, vol: 0.35 }); }
+  ult(kind = 'pulse') {
+    if (kind === 'lance') {
+      this.osc({ type: 'sawtooth', f: 140, f2: 1600, dur: 0.7, vol: 0.14, lp: 4200, send: 0.4 });
+      this.osc({ type: 'sine', f: 1200, f2: 2200, dur: 0.45, vol: 0.06, send: 0.5 });
+      return;
+    }
+    if (kind === 'nova') {
+      this.noiseHit({ dur: 0.7, vol: 0.12, type: 'lowpass', f: 1800, f2: 100, a: 0.01 });
+      this.osc({ type: 'sine', f: 70, f2: 26, dur: 0.9, vol: 0.34 });
+      this.osc({ type: 'triangle', f: 260, f2: 60, dur: 0.45, vol: 0.12 });
+      return;
+    }
+    this.noiseHit({ dur: 0.9, vol: 0.18, type: 'bandpass', f: 400, f2: 6000, q: 1.2, a: 0.08 });
+    this.osc({ type: 'sawtooth', f: 80, f2: 900, dur: 0.6, vol: 0.12, lp: 3000, send: 0.4 });
+    this.osc({ type: 'sine', f: 60, f2: 30, t: 0.5, dur: 0.6, vol: 0.35 });
+  }
   ready() { this.osc({ type: 'sine', f: mtof(84), dur: 0.15, vol: 0.06, send: 0.4 }); this.osc({ type: 'sine', f: mtof(91), t: 0.1, dur: 0.25, vol: 0.06, send: 0.4 }); }
   warn() { for (let i = 0; i < 3; i++) this.osc({ type: 'square', f: 440, f2: 330, t: i * 0.45, dur: 0.3, vol: 0.06, lp: 2000 }); }
   enemyShot() { this.osc({ type: 'sine', f: 520, f2: 260, dur: 0.07, vol: 0.02 }); }

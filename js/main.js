@@ -2,11 +2,11 @@
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import './strings.js?v=0.3.21';
+import './strings.js?v=0.3.22';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js';
-import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.21';
-import { NinjaAudio } from './audio.js?v=0.3.21';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.22';
+import { NinjaAudio } from './audio.js?v=0.3.22';
 
 const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
@@ -43,7 +43,7 @@ const S = {
   od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0,
   score: 0, wave: 1, spec: null, waveT: 0, nextEv: 0, enemies: [], boss: null, pickups: [], kills: 0,
   continued: false, betweenT: 0, t: 0, newRecord: false,
-  hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9,
+  hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
 };
 window.__ninja = S;  // test hook
 
@@ -94,17 +94,21 @@ function clearField() {
 function resetRun() {
   clearField();
   Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.hp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
-    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9 });
+    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city' });
+  world.setDistrict('city');
   beam.visible = false; beam.material.opacity = 0;
   theme.set(1); audio.setBoss(false); nextWave();
 }
 function nextWave() {
   S.wave++; S.spec = waveSpec(S.wave); S.waveT = 0; S.nextEv = 0; S.betweenT = 0;
+  const district = Math.floor((S.wave - 1) / 5) % 2 ? 'ruins' : 'city';
+  const changed = world.setDistrict(district);
+  const districtChanged = changed !== S.district; S.district = changed;
   if (S.spec.boss) {
     spawnBoss(S.spec.hp, S.spec.variant);
     if (S.state !== 'attract') { ui.banner(t('bossIncoming', { name: bossName() }), t('waveN', { n: S.wave }), t('warning')); audio.warn(); fx.kick({ glitch: 0.6, aberr: 1 }); }
   } else if (S.state !== 'attract' && S.wave > 1 && (S.wave - 1) % MILESTONE_EVERY === 0) milestone(S.wave - 1);
-  else if (S.state !== 'attract' && S.wave > 1) ui.banner(t('waveN', { n: S.wave }), '', S.wave % 5 === 4 ? t('bossNext') : '');
+  else if (S.state !== 'attract' && S.wave > 1) ui.banner(t('waveN', { n: S.wave }), '', districtChanged ? t(changed === 'ruins' ? 'districtRuins' : 'districtCity') : (S.wave % 5 === 4 ? t('bossNext') : ''));
   audio.setBoss(!!S.spec.boss); audio.setLevel(S.spec.boss ? 10 : 1 + Math.floor((S.wave - 1) / 2));
 }
 function bossName(b = S.boss) { const v = b && b.variant; return v ? (i18n.isZh() ? v.zh : v.en) : ''; }
@@ -239,7 +243,7 @@ function doUlt() {
   if (mode === 'lance') { beam.position.x = S.x; beam.material.color.setHex(WEAPONS.lance.color).multiplyScalar(2.4); }
   for (const b of ebullets.list) particles.emit(new THREE.Vector3(b.x, 0, b.z), new THREE.Vector3(0, 2, 0), new THREE.Color(0xffffff), { life: 0.4, size: 0.8 });
   ebullets.clear();
-  if (S.state !== 'attract') { audio.ult(); ui.banner(ultName(mode, i18n.isZh() ? 'zh' : 'en'), '', ''); Platform.haptic('heavy'); }
+  if (S.state !== 'attract') { audio.ult(mode); ui.banner(ultName(mode, i18n.isZh() ? 'zh' : 'en'), '', ''); Platform.haptic('heavy'); }
   fx.kick({ slowmo: 0.7, aberr: 1.5, fovKick: 1, trauma: 0.3 }); ui.flash('rgba(0,229,255,0.35)', 500);
   updateHUD();
 }
@@ -401,7 +405,7 @@ function sim(dt) {
         scale: (sol.scale || 1) * (S.odT >= 0 ? 1.22 : 1), rotX: S.weapon === 'nova' ? Math.PI / 2 : 0,
       });
     }
-    if (S.state === 'playing') audio.shot();
+    if (S.state === 'playing') audio.shot(S.weapon);
   }
   // waves
   S.waveT += dt;

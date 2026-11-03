@@ -57,7 +57,7 @@ export class World {
     const haze = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uFog: U.uFogColor, uC2: U.uC2 },
       vertexShader: /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
       fragmentShader: /* glsl */`uniform vec3 uFog, uC2; varying vec2 vUv; void main(){ float d = length(vUv - vec2(0.5, 0.52)); gl_FragColor = vec4(uFog * 0.35 + uC2 * 0.015, 0.62 - d * 0.3); }` }));
-    haze.rotation.x = -Math.PI / 2; haze.position.set(0, -7, -60); haze.renderOrder = -1; scene.add(haze);
+    haze.rotation.x = -Math.PI / 2; haze.position.set(0, -7, -60); haze.renderOrder = -1; scene.add(haze); this.haze = haze;
     // side towers (instanced, recycle)
     this.towerCount = 46;
     const tmat = new THREE.ShaderMaterial({
@@ -85,11 +85,95 @@ export class World {
     this.streaks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.04, 0.04, 3.5), new THREE.MeshBasicMaterial({ color: 0x8fdcff, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }), this.streakN);
     this.streakData = Array.from({ length: this.streakN }, () => ({ x: (Math.random() * 2 - 1) * 26, y: -2 - Math.random() * 14, z: -120 + Math.random() * 130, v: 50 + Math.random() * 40 }));
     this.streaks.frustumCulled = false; scene.add(this.streaks);
+    // deep-space ruins: a second district built behind the same play field
+    this.mode = 'city';
+    this.ruins = this.makeRuins(); scene.add(this.ruins);
+    this.ruinFloor = this.makeRuinFloor(); scene.add(this.ruinFloor);
     this.m = new THREE.Matrix4(); this.q = new THREE.Quaternion(); this.s = new THREE.Vector3(); this.p = new THREE.Vector3();
     // lights for enemy / player standard materials
     scene.add(new THREE.HemisphereLight(0x8a7aff, 0x140022, 0.9));
     const dl = new THREE.DirectionalLight(0xbfd0ff, 1.2); dl.position.set(-6, 20, 8); scene.add(dl);
     this.rim = new THREE.PointLight(0xff2bd6, 30, 30, 1.6); this.rim.position.set(0, 4, -6); scene.add(this.rim);
+  }
+  makeRuinFloor() {
+    const mat = new THREE.ShaderMaterial({
+      depthWrite: true,
+      uniforms: { uTime: U.uTime, uC1: U.uC1, uC2: U.uC2 },
+      vertexShader: /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: /* glsl */`uniform float uTime; uniform vec3 uC1, uC2; varying vec2 vUv;
+        void main(){
+          vec2 p = vUv * 2.0 - 1.0; p.x *= 1.65;
+          float r = length(p); float a = atan(p.y, p.x);
+          float broken = abs(sin(r * 17.0 + sin(a * 5.0 + uTime * 0.1) * 0.7));
+          float ring = smoothstep(0.025, 0.0, broken) * smoothstep(1.35, 0.45, r);
+          float spokes = smoothstep(0.012, 0.0, abs(sin(a * 12.0 + r * 2.0))) * step(0.25, r) * smoothstep(1.3, 0.6, r);
+          float dust = step(0.988, fract(sin(dot(floor(p*36.0), vec2(12.9898,78.233))) * 43758.5453));
+          vec3 col = vec3(0.003, 0.005, 0.014) + uC1 * (ring * 0.22 + spokes * 0.16) + uC2 * dust * 0.35;
+          gl_FragColor = vec4(col, 1.0);
+        }`,
+    });
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(460, 460), mat);
+    floor.rotation.x = -Math.PI / 2; floor.position.set(0, -23, -90); floor.visible = false;
+    return floor;
+  }
+  makeRuins() {
+    const group = new THREE.Group();
+    const body = new THREE.MeshStandardMaterial({ color: 0x070b18, metalness: 0.8, roughness: 0.55, emissive: 0x07112e });
+    const line = new THREE.LineBasicMaterial({ color: 0x6f8cff, transparent: true, opacity: 0.78 });
+    // broken orbital rings
+    for (let i = 0; i < 3; i++) {
+      const geo = new THREE.TorusGeometry(18 + i * 6, 0.7 + i * 0.15, 6, 80, Math.PI * 1.3);
+      const ring = new THREE.Mesh(geo, body);
+      ring.rotation.x = -Math.PI / 2; ring.rotation.z = i * 0.7;
+      ring.position.set(0, -4 - i * 3, -30 - i * 14);
+      group.add(ring);
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 28), line);
+      edge.rotation.copy(ring.rotation); edge.position.copy(ring.position); group.add(edge);
+    }
+    // a broken gate gives the district an immediately readable silhouette
+    const gate = (z, sx = 1) => {
+      const mk = (geo, x, y, rz = 0) => {
+        const m = new THREE.Mesh(geo, body); m.position.set(x, y, z); m.rotation.z = rz; group.add(m);
+        const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), line); e.position.copy(m.position); e.rotation.copy(m.rotation); group.add(e);
+      };
+      mk(new THREE.BoxGeometry(1.6, 13, 1.6), -5 * sx, -2.5);
+      mk(new THREE.BoxGeometry(1.6, 10, 1.6), 5 * sx, -4);
+      mk(new THREE.BoxGeometry(10.5, 1.2, 1.6), 0, 3.4, 0.03);
+      mk(new THREE.BoxGeometry(4.0, 1.2, 1.6), -5.8, 3.8, -0.12);
+    };
+    gate(-27, 1); gate(-52, 1.25);
+    // framed broken columns just outside the playable lane
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i++) {
+        const h = 8 + Math.random() * 5, geo = new THREE.BoxGeometry(1.5, h, 1.5);
+        const m = new THREE.Mesh(geo, body);
+        m.position.set(side * (7.4 + i * 1.1), -1.5 - i * 0.8, -16 - i * 7);
+        m.rotation.z = (Math.random() - 0.5) * 0.18; group.add(m);
+        const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), line); e.position.copy(m.position); e.rotation.copy(m.rotation); group.add(e);
+      }
+    }
+    // broken monoliths silhouetted at the edges
+    for (let i = 0; i < 14; i++) {
+      const side = i % 2 ? 1 : -1;
+      const w = 1.4 + Math.random() * 3.2, h = 10 + Math.random() * 26, d = 1.4 + Math.random() * 3.5;
+      const geo = new THREE.BoxGeometry(w, h, d);
+      const m = new THREE.Mesh(geo, body);
+      m.position.set(side * (9 + Math.random() * 15), -9 - Math.random() * 3, -28 - Math.random() * 70);
+      m.rotation.z = (Math.random() - 0.5) * 0.35; group.add(m);
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), line); e.position.copy(m.position); e.rotation.copy(m.rotation); group.add(e);
+    }
+    group.visible = false;
+    return group;
+  }
+  setDistrict(mode) {
+    const next = mode === 'ruins' ? 'ruins' : 'city';
+    if (next === this.mode) return next;
+    this.mode = next;
+    const ruins = next === 'ruins';
+    this.city.visible = !ruins; this.towers.visible = !ruins; this.haze.visible = !ruins; this.ruins.visible = ruins; this.ruinFloor.visible = ruins;
+    this.streaks.material.color.setHex(ruins ? 0x8f9dff : 0x8fdcff);
+    this.scene.fog.density = ruins ? 0.0032 : 0.009;
+    return next;
   }
   newTower(i, initial) {
     const side = i % 2 ? 1 : -1;
@@ -112,6 +196,7 @@ export class World {
       this.p.set(S.x, S.y, S.z); this.s.set(1, 1, 0.6 + speed * 0.4); this.m.compose(this.p, this.q, this.s); this.streaks.setMatrixAt(i, this.m);
     }
     this.streaks.instanceMatrix.needsUpdate = true;
+    if (this.ruins.visible) this.ruins.rotation.y = t * 0.008;
     this.rim.color.copy(U.uC2.value);
     this.scene.fog.color.copy(U.uFogColor.value);
   }

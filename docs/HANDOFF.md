@@ -1,6 +1,6 @@
 # XENO NIGHTMARE 異域凶間 — Handoff
 
-Status: **web build v0.3.21** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+Status: **web build v0.3.22** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
 2026-11-03 core pass: three-weapon system + per-weapon ultimates + OVERDRIVE; authored wave formations, aimed enemy fire, map laser hazards, three-phase bosses, dynamic boss music. Earlier deep pass: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md).
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
 
@@ -8,11 +8,12 @@ Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from 
 - Vertical shooter seen from a high chase camera: the pilot rides a hover-glider above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
 - **Relative drag** anywhere moves the craft (finger never covers it), keyboard alternative. **Auto-fire** always on.
 - **Three weapons × six levels** (`js/weapons.js`): PULSE REPEATER (spread), PHASE LANCE (piercing line), NOVA SURGE (AoE). **W** canisters only drop from elites and bosses; they do **not** magnetise, and switching also raises that weapon by one level. **P** raises the current level.
-- **Per-weapon ultimate** on Space / blue button: BULLET STORM (radial storm), PRISM PIERCE (wide lane beam), SINGULARITY (expanding nova). Charge comes from kills, boss hits and E pickups.
+- **Per-weapon ultimate** on Space / blue button: BULLET STORM (radial storm), PRISM PIERCE (wide lane beam), SINGULARITY (expanding nova). Charge comes from kills, boss hits and E pickups. Each weapon has its own shot and ultimate timbre.
 - **OVERDRIVE** on Q / orange button: ascends the current weapon for 4 s (effective level +2, faster and stronger), then forces a **3 s cease-fire**. This is the risk/reward replacement for standing still at max power.
 - Enemies arrive in authored formations (`line`, `pincer`, `wall`, `crossfire`, `rush`, `weave`, `elite`), fire aimed patterns (drones single, weavers 3-way, turrets 5-way, elites denser), and scale speed/HP with the wave. Telegraphed **laser lanes** cut one lane of the map every 8–13 s.
 - **Gems** are gold/white crystals (deliberately not magenta like enemy bullets or cyan like player shots); they wait 0.55 s, then spiral-home into the craft. Counts scale with enemy tier/level (boss burst 18–32). Gems add score plus a small amount of ultimate/OVERDRIVE charge.
 - **Map**: drifting asteroids (`makeRock`) plus telegraphed laser lanes; both force lateral movement beyond the enemy waves.
+- **Districts**: every 5 waves the backdrop alternates between NEON KOWLOON (`city`) and DEEP-SPACE RUINS (`ruins`); the ruins hide the city/towers and show a broken gate, orbital-ring arcs, monoliths and a ruined floor plane.
 - **HUD**: HP, weapon name/level/charge, score, wave and pause/mute are in the top strip. The lower-left is empty; OVERDRIVE and weapon ultimate remain stacked at the lower-right.
 - **Full-field movement**: `FIELD.playerMinZ = -21`, so the craft can fly from the bottom to the top of the play field.
 - **Boss every 5 waves — the cosmic monster**: phase 1 ring/aimed, phase 2 adds spiral + gap walls, phase 3 adds crossfire and tighter timings; phases change at 66 % / 33 % HP. Drops P/S/E on death; zone colour shifts.
@@ -57,7 +58,7 @@ index.html       HUD (score, wave, shield pips, weapon/level/charge, boss bar, u
 css/game.css     HUD layout
 js/config.js     constants + authored waveSpec (pure, unit-tested)
 js/weapons.js    weapon table, level curves, OVERDRIVE solution, pickups
-js/world.js      sky dome (stars + nebula), scrolling megacity shader, haze, instanced side towers, speed streaks, lights
+js/world.js      sky dome (stars + nebula), scrolling megacity shader, haze, instanced side towers, speed streaks, ruins district, lights
 js/entities.js   craft model + scarf ribbon, enemy models (neon edge wireframes), boss, instanced bullet pools, pickups
 js/audio.js      NinjaAudio (cyber-kit SynthAudio, 'drive' music)
 js/main.js       states, relative drag input, simulation (movement, weapon fire, waves, AI patterns, hazards, collisions), ult/overdrive, camera, ads hooks
@@ -67,7 +68,7 @@ tests/           weapons.test.mjs, waves.test.mjs, audio.test.mjs, weapons.py, c
 Test hook: `window.__ninja` (state, x, z, score, wave, hp, weapon, power, ult, od, boss, hazards; `api.wave/weapon/charge/ult/overdrive/drop/kill/boss/spawn/enemyFire/hazard/bossHurt`).
 
 ## 5. Tests
-`node --test tests/` · `python tests/weapons.py [url]` · `python tests/core.py [url]` · `python tests/ult-reset.py [url]` · `python tests/brand.py [url]` · `python tests/smoke.py [url] [out]` — weapon levels/pickups/ults/overdrive, enemy aimed fire, hazards, boss phases, start/drag/keyboard/kills/pause/gameover/demo/language, zero console errors. Last run 2026-11-03: 6 node tests PASS, weapons.py PASS, core.py PASS, ult-reset PASS, brand PASS; full smoke screenshot suite pending.
+`node --test tests/` · `python tests/weapons.py [url]` · `python tests/core.py [url]` · `python tests/ult-reset.py [url]` · `python tests/brand.py [url]` · `python tests/smoke.py [url] [out]` — weapon levels/pickups/ults/overdrive, enemy aimed fire, hazards, boss phases, districts, weapon voices, start/drag/keyboard/kills/pause/gameover/demo/language, zero console errors. Last run 2026-11-03: 7 node tests PASS, weapons.py PASS, core.py PASS, ult-reset PASS, brand PASS; full smoke screenshot suite pending.
 
 ## 6. Android packaging
 As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `hk.fung2222.xenonightmare`; lock portrait).

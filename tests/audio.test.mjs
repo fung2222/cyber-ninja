@@ -9,3 +9,10 @@ test('xeno-nightmare BGM has no noise hats/snare', () => {
   assert.match(src, /playStep\(step, time, s16\)/, 'playStep override must exist');
   assert.match(src, /this\.noiseHit = \(\) => \{\}/, 'noise hits must be suppressed during BGM');
 });
+
+test('the three weapons have distinct shot and ultimate voices', () => {
+  assert.match(src, /shot\(kind = 'pulse'\)/);
+  assert.match(src, /kind === 'lance'/);
+  assert.match(src, /kind === 'nova'/);
+  assert.match(src, /ult\(kind = 'pulse'\)/);
+});

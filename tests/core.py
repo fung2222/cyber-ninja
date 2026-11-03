@@ -71,6 +71,12 @@ with sync_playwright() as p:
     b3 = pg.evaluate("() => ({phase:__ninja.boss.phase,hp:__ninja.boss.hp})")
     print('boss phase 3', b3)
     check(b3['phase'] == 3, 'boss changes to phase 3 at 33%')
+    pg.evaluate("() => __ninja.api.wave(6)")
+    pg.wait_for_timeout(300)
+    check(pg.evaluate("() => __ninja.district") == 'ruins', 'wave 6 switches to the deep-space ruins district')
+    pg.evaluate("() => __ninja.api.wave(11)")
+    pg.wait_for_timeout(300)
+    check(pg.evaluate("() => __ninja.district") == 'city', 'wave 11 rotates back to the neon city district')
     check(len(errs) == 0, f'zero console errors ({errs[:3]})')
     c.close(); b.close()
 

@@ -109,6 +109,14 @@ i18n.add({
 "訊號中斷",
 "SIGNAL LOST"
 ],
+"districtCity": [
+"霓虹九龍",
+"NEON KOWLOON"
+],
+"districtRuins": [
+"深空廢墟",
+"DEEP-SPACE RUINS"
+],
 "waveN": [
 "第 {n} 波",
 "WAVE {n}"
