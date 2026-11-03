@@ -173,13 +173,31 @@ export function makePickup(kind, weaponKey) {
 }
 
 // GEM = auto-collected score/charge shard. Tier 0 common, 1 elite, 2 boss.
-const GEM_COLORS = [0x00e5ff, 0xff2bd6, 0xffc22b];
+// Loot colours deliberately avoid magenta (enemy bullets) and cyan (player shots).
+const GEM_COLORS = [0xffd166, 0xf2e9ff, 0x9dffcf];
 export function makeGem(tier = 0) {
   const c = GEM_COLORS[Math.min(2, tier)] || GEM_COLORS[0];
   const geo = new THREE.OctahedronGeometry(0.2 + tier * 0.035, 0); geo.scale(1, 1.55, 1);
   const g = new THREE.Group();
-  g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(0.8), transparent: true, opacity: 0.9 })));
+  g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(0.8), transparent: true, opacity: 0.92 })));
   g.add(neonEdges(geo, c, 3.2));
-  g.userData.tier = tier;
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.09 + tier * 0.012, 0), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  g.add(core);
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.38 + tier * 0.04, 0.018, 6, 20), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(1.3), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+  halo.rotation.x = Math.PI / 2; g.add(halo);
+  g.userData.tier = tier; g.userData.core = core; g.userData.halo = halo;
+  return g;
+}
+
+
+// Drifting debris: a physical map obstacle, deliberately duller than loot and bullets.
+const ROCK_GEO = new THREE.DodecahedronGeometry(1.05, 0);
+export function makeRock() {
+  const g = new THREE.Group();
+  const mesh = new THREE.Mesh(ROCK_GEO, new THREE.MeshStandardMaterial({ color: 0x120a20, metalness: 0.55, roughness: 0.82, emissive: 0x07030e }));
+  g.add(mesh);
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(ROCK_GEO, 18), new THREE.LineBasicMaterial({ color: new THREE.Color(0x63708f).multiplyScalar(1.2) }));
+  g.add(edge);
+  g.userData.edge = edge;
   return g;
 }

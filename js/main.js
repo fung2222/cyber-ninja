@@ -2,11 +2,11 @@
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import './strings.js?v=0.3.20';
+import './strings.js?v=0.3.21';
 import { World } from './world.js';
-import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem } from './entities.js';
-import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.20';
-import { NinjaAudio } from './audio.js?v=0.3.20';
+import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.21';
+import { NinjaAudio } from './audio.js?v=0.3.21';
 
 const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
@@ -43,7 +43,7 @@ const S = {
   od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0,
   score: 0, wave: 1, spec: null, waveT: 0, nextEv: 0, enemies: [], boss: null, pickups: [], kills: 0,
   continued: false, betweenT: 0, t: 0, newRecord: false,
-  hazards: [], hazardT: 7, gems: [],
+  hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9,
 };
 window.__ninja = S;  // test hook
 
@@ -87,13 +87,14 @@ function clearField() {
   for (const p of S.pickups) scene.remove(p.g); S.pickups = [];
   for (const h of S.hazards) scene.remove(h.g); S.hazards = [];
   for (const g of (S.gems || [])) scene.remove(g.g); S.gems = [];
+  for (const r of (S.rocks || [])) scene.remove(r.g); S.rocks = [];
   for (const k of WEAPON_KEYS) pools[k].clear();
   ebullets.clear(); beam.visible = false; beam.material.opacity = 0;
 }
 function resetRun() {
   clearField();
   Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.hp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
-    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [] });
+    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9 });
   beam.visible = false; beam.material.opacity = 0;
   theme.set(1); audio.setBoss(false); nextWave();
 }
@@ -160,7 +161,7 @@ function killEnemy(e, i) {
   fx.kick({ trauma: 0.05 });
 }
 function spawnGem(x, z, tier = 0) {
-  const g = makeGem(tier); g.scale.setScalar(1.25); g.position.set(x, 0.35, z); scene.add(g);
+  const g = makeGem(tier); g.scale.setScalar(1.45); g.position.set(x, 0.35, z); scene.add(g);
   S.gems.push({
     g, x, z, t: 0, tier,
     vx: (Math.random() - 0.5) * 4.2, vz: (Math.random() - 0.5) * 4.2 + 1.6,
@@ -187,6 +188,14 @@ function spawnHazard() {
   g.position.set(x, 0.18, -10.5); scene.add(g);
   S.hazards.push({ g, x, t: 0 });
   if (S.state === 'playing') { audio.warn(); fx.kick({ trauma: 0.12 }); }
+}
+function spawnRock() {
+  let x = (Math.random() * 2 - 1) * (FIELD.halfW - 1.2);
+  if (Math.abs(x - S.x) < 1.8) x = x > 0 ? x - 3.2 : x + 3.2;
+  x = THREE.MathUtils.clamp(x, -FIELD.halfW + 1, FIELD.halfW - 1);
+  const g = makeRock(); const scale = 0.75 + Math.random() * 0.7; g.scale.setScalar(scale);
+  g.position.set(x, 0.45, FIELD.top - 5); scene.add(g);
+  S.rocks.push({ g, x, z: FIELD.top - 5, t: 0, scale, r: 1.05 * scale, vx: (Math.random() - 0.5) * 0.7, vz: 2.6 + Math.random() * 1.2 });
 }
 function hurtEnemy(e, i, dmg) {
   e.hp -= dmg; e.flash = 1;
@@ -333,8 +342,9 @@ S.api = {
   drop: (kind, key) => dropPickup(S.x, S.z - 1.2, kind, key),
   dropAt: (x, z, kind, key) => dropPickup(x, z, kind, key),
   shots: () => ({ pulse: pools.pulse.list.length, lance: pools.lance.list.length, nova: pools.nova.list.length }),
-  threat: () => ({ enemies: S.enemies.length, bullets: ebullets.list.length, hazards: S.hazards.length, gems: S.gems.length, bossPhase: S.boss ? S.boss.phase : null }),
+  threat: () => ({ enemies: S.enemies.length, bullets: ebullets.list.length, hazards: S.hazards.length, gems: S.gems.length, rocks: S.rocks.length, bossPhase: S.boss ? S.boss.phase : null }),
   hazard: () => spawnHazard(),
+  rock: () => spawnRock(),
   spawn: (ev) => spawnEnemy(ev),
   killOne: () => { const e = S.enemies[0]; if (e) { e.hp = 0; killEnemy(e, 0); } },
   enemyFire: (x, z, ang, speed) => enemyFire(x, z, ang, speed),
@@ -414,26 +424,37 @@ function sim(dt) {
     if (!warn && h.t < 2.1 && S.state === 'playing' && Math.abs(S.x - h.x) < 0.55) hurtPlayer();
     if (h.t > 2.2) { scene.remove(h.g); S.hazards.splice(i, 1); }
   }
+  // drifting debris: slow map obstacles that force a lateral decision
+  S.rockT -= dt;
+  if (S.rockT <= 0 && S.state === 'playing' && !S.demo && S.wave > 1) { spawnRock(); S.rockT = 8 + Math.random() * 5; }
+  for (let i = S.rocks.length - 1; i >= 0; i--) {
+    const r = S.rocks[i]; r.t += dt; r.x += r.vx * dt; r.z += r.vz * dt;
+    r.g.position.set(r.x, 0.45 + Math.sin(r.t * 1.4) * 0.12, r.z);
+    r.g.rotation.x += dt * 0.35; r.g.rotation.y += dt * 0.22;
+    if (S.state === 'playing' && Math.hypot(r.x - S.x, r.z - S.z) < r.r + PLAYER.radius) hurtPlayer();
+    if (r.z > FIELD.bottom + 3) { scene.remove(r.g); S.rocks.splice(i, 1); }
+  }
   // gems: scatter briefly, then home into the craft automatically
   for (let i = S.gems.length - 1; i >= 0; i--) {
     const gm = S.gems[i]; gm.t += dt;
-    if (gm.t < 0.35) {
+    if (gm.t < 0.55) {
       gm.x += gm.vx * dt; gm.z += gm.vz * dt; gm.vx *= 0.94; gm.vz *= 0.94;
     } else {
       const dx = S.x - gm.x, dz = S.z - gm.z, d = Math.max(0.001, Math.hypot(dx, dz));
-      const pull = 26 + Math.min(40, gm.t * 10);
-      gm.vx += (dx / d) * pull * dt; gm.vz += (dz / d) * pull * dt;
+      const pull = 26 + Math.min(40, gm.t * 10), swirl = gm.tier === 2 ? 3.4 : 2.4;
+      gm.vx += ((dx / d) * pull + (-dz / d) * swirl) * dt; gm.vz += ((dz / d) * pull + (dx / d) * swirl) * dt;
       gm.vx *= 0.97; gm.vz *= 0.97;
       gm.x += gm.vx * dt; gm.z += gm.vz * dt;
       if (d < 0.9) {
         S.score += gm.value; S.ult = Math.min(100, S.ult + gm.energy); S.ults[S.weapon] = S.ult;
         S.od = Math.min(100, S.od + gm.energy * 0.6);
-        if (S.state === 'playing' && Math.random() < 0.18) audio.pickup();
+        if (S.state === 'playing' && (gm.tier === 2 || Math.random() < 0.22)) audio.gem();
         particles.emit(new THREE.Vector3(gm.x, 0.3, gm.z), new THREE.Vector3(0, 1.5, 0), new THREE.Color(gm.tier === 2 ? 0xffc22b : gm.tier === 1 ? 0xff2bd6 : 0x00e5ff), { life: 0.3, size: 0.5 });
         scene.remove(gm.g); S.gems.splice(i, 1); continue;
       }
     }
-    gm.g.position.set(gm.x, 0.35 + Math.sin(gm.t * 8) * 0.08, gm.z); gm.g.rotation.y = gm.t * 4;
+    gm.g.position.set(gm.x, 0.35 + Math.sin(gm.t * 8) * 0.08, gm.z); gm.g.rotation.y = gm.t * 4; gm.g.rotation.z = gm.t * 2.2;
+    if (gm.g.userData.halo) gm.g.userData.halo.rotation.z = gm.t * 5;
   }
   const sc = speedScale(S.wave);
   for (let i = S.enemies.length - 1; i >= 0; i--) {
