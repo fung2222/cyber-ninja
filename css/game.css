@@ -1,4 +1,5 @@
-/* CYBER NINJA HUD on top of cyber-kit/ui/hud.css */
+/* XENO NIGHTMARE HUD on top of cyber-kit/ui/hud.css */
+html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3px; }
 .hp-pips { display: flex; gap: 4px; margin-top: 6px; }
 .hp-pips i { width: 14px; height: 10px; border: 1px solid rgba(59,255,138,.5); transform: skewX(-20deg); }
 .hp-pips i.on { background: #3bff8a; box-shadow: 0 0 8px #3bff8a; }

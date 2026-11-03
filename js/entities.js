@@ -1,4 +1,4 @@
-// Models + pools: the ninja, enemy archetypes, the cosmic monster boss, bolts, enemy bullets, power-ups.
+// Models + pools: the craft, enemy archetypes, the cosmic monster boss, bolts, enemy bullets, power-ups.
 import * as THREE from 'three';
 import { U } from 'cyber-kit/core/theme.js';
 import { ENEMIES } from './config.js';
@@ -6,7 +6,7 @@ import { ENEMIES } from './config.js';
 const neonEdges = (geo, color, mult = 2.2, thresh = 20) => new THREE.LineSegments(new THREE.EdgesGeometry(geo, thresh), new THREE.LineBasicMaterial({ color: new THREE.Color(color).multiplyScalar(mult) }));
 const darkMetal = (tint = 0x120a24) => new THREE.MeshStandardMaterial({ color: tint, metalness: 0.75, roughness: 0.32, emissive: 0x000000 });
 
-// ------------------------------------------------------------------ the ninja (original design: hover-glider rider)
+// ------------------------------------------------------------------ the player craft (original hover-glider design)
 export function makeNinja() {
   const g = new THREE.Group();
   const body = new THREE.Group(); g.add(body);

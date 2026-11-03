@@ -1,4 +1,4 @@
-# CYBER NINJA — deep audit 2026-11-03
+# XENO NIGHTMARE — deep audit 2026-11-03
 
 Scope: 390px start / play / pause, plus source review of BGM, run reset and HUD. Read-only audit first; fixes tracked below.
 

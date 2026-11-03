@@ -1,13 +1,13 @@
-# CYBER NINJA 賽博忍者：星海魔獸 — Handoff
+# XENO NIGHTMARE 異域凶間 — Handoff
 
 Status: **web build v0.3.13** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
 Deep pass 2026-11-03: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md) — BGM noise removed; new-run ult-ready reset.
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
 
 ## 1. Design
-- Vertical shooter seen from a high chase camera: the ninja rides a hover-glider above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
-- **Relative drag** anywhere moves the ninja (finger never covers it), keyboard alternative. **Auto-fire** always on; power 1–5 widens the volley.
-- **Ultimate 霓虹居合斬 NEON IAI SLASH**: meter from kills (+5 each) / boss hits / E pickups. A slash wave sweeps bottom→top: clears all enemy bullets, kills every normal enemy it passes, 28 damage to the boss, slow-mo + flash.
+- Vertical shooter seen from a high chase camera: the pilot rides a hover-glider above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
+- **Relative drag** anywhere moves the craft (finger never covers it), keyboard alternative. **Auto-fire** always on; power 1–5 widens the volley.
+- **Ultimate 霓虹裂空斬 NEON RIFT SLASH**: meter from kills (+5 each) / boss hits / E pickups. A slash wave sweeps bottom→top: clears all enemy bullets, kills every normal enemy it passes, 28 damage to the boss, slow-mo + flash.
 - Enemies: drone (sway), weaver (sine), turret (stops, aimed shots; triple shot after wave 6), dasher (locks on, charges). Speed and HP scale with the wave.
 - **Boss every 5 waves — the cosmic monster** (eye-orb with orbiting crystal spikes and tentacles, original design): ring burst → twin spiral → aimed 5-way fan, rage below 40 % HP. Drops P/S/E on death; the zone colour theme changes.
 - 3 shields (max 5); a hit costs a shield + 1 power level, 1.6 s invulnerability, nearby bullets cleared (fair).
@@ -44,7 +44,7 @@ index.html       HUD (score, wave, shield pips, power, boss bar, ult button), st
 css/game.css     HUD layout
 js/config.js     constants + waveSpec (pure, unit-tested)
 js/world.js      sky dome (stars + nebula), scrolling megacity shader, haze, instanced side towers, speed streaks, lights
-js/entities.js   ninja model + scarf ribbon, enemy models (neon edge wireframes), boss, instanced bullet pools, pickups
+js/entities.js   craft model + scarf ribbon, enemy models (neon edge wireframes), boss, instanced bullet pools, pickups
 js/audio.js      NinjaAudio (cyber-kit SynthAudio, 'drive' music)
 js/main.js       states, relative drag input, simulation (movement, fire, waves, AI patterns, collisions), ult, camera, ads hooks
 vendor/cyber-kit cyber-kit v0.3.19
@@ -53,10 +53,10 @@ tests/           waves.test.mjs, smoke.py
 Test hook: `window.__ninja` (state, x, z, score, wave, hp, ult, boss, `api.ult/kill/boss`).
 
 ## 5. Tests
-`node tests/waves.test.mjs` · `node --test tests/audio.test.mjs` · `python tests/ult-reset.py [url]` · `python tests/smoke.py [url] [out]` — 412×915 touch + 1280×800: start, drag, keyboard, auto-fire kills, ultimate, boss wave, pause/resume, game over, continue, demo, language toggle/persist (en + zh screenshots), endless wave 31 milestone + wave 40 boss variant, zero console errors. Last run 2026-11-03: waves 1–30 pass, audio PASS, ult-reset PASS; full smoke pending.
+`node tests/waves.test.mjs` · `node --test tests/audio.test.mjs` · `python tests/ult-reset.py [url]` · `python tests/brand.py [url]` · `python tests/smoke.py [url] [out]` — 412×915 touch + 1280×800: start, drag, keyboard, auto-fire kills, ultimate, boss wave, pause/resume, game over, continue, demo, language toggle/persist (en + zh screenshots), endless wave 31 milestone + wave 40 boss variant, zero console errors. Last run 2026-11-03: waves 1–30 pass, audio PASS, ult-reset PASS; full smoke pending.
 
 ## 6. Android packaging
-As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `hk.fung2222.cyberninja`; lock portrait).
+As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `hk.fung2222.xenonightmare`; lock portrait).
 
 ## 7. Ad placements
 | Placement | Type | Code | Rule |

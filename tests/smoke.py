@@ -1,6 +1,6 @@
-"""Headless smoke test for CYBER NINJA.
+"""Headless smoke test for XENO NIGHTMARE.
 Usage: python tests/smoke.py [base_url] [out_dir]   (serve the parent folder: python3 -m http.server 18940)
-Checks: zero console errors, start, drag moves the ninja, keyboard moves, auto-fire kills enemies (score rises),
+Checks: zero console errors, start, drag moves the craft, keyboard moves, auto-fire kills enemies (score rises),
 ultimate, boss wave spawns, pause/resume, game over + continue, demo autoplay,
 language toggle zh-HK/en (persisted in cyber.lang), endless waves beyond the authored cycle (milestone + Mk boss variants).
 """
@@ -38,9 +38,9 @@ def run(p, name, w, h, mobile):
     x0 = st()['x']
     cx, cy = w // 2, int(h * 0.6)
     pg.mouse.move(cx, cy); pg.mouse.down(); pg.mouse.move(cx + 120, cy - 40, steps=8); pg.wait_for_timeout(700); pg.mouse.up()
-    check(st()['x'] > x0 + 1, f'{name}: drag moves ninja ({x0:.2f} -> {st()["x"]:.2f})')
+    check(st()['x'] > x0 + 1, f'{name}: drag moves craft ({x0:.2f} -> {st()["x"]:.2f})')
     x1 = st()['x']; pg.keyboard.down('ArrowLeft'); pg.wait_for_timeout(900); pg.keyboard.up('ArrowLeft')
-    check(st()['x'] < x1 - 0.5, f'{name}: keyboard moves ninja ({x1:.2f} -> {st()["x"]:.2f})')
+    check(st()['x'] < x1 - 0.5, f'{name}: keyboard moves craft ({x1:.2f} -> {st()["x"]:.2f})')
     pg.evaluate('__ninja.invuln = 999')
     for _ in range(40):
         if st()['kills'] > 0: break

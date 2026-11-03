@@ -1,9 +1,9 @@
-// CYBER NINJA string table [zh-HK, en]
+// XENO NIGHTMARE string table [zh-HK, en]
 import { i18n } from 'cyber-kit';
 i18n.add({
 "doc.title": [
-"賽博忍者：星海魔獸 CYBER NINJA · 3D 直向射擊",
-"CYBER NINJA · 3D vertical shooter"
+"異域凶間 XENO NIGHTMARE · 3D 直向射擊",
+"XENO NIGHTMARE · 3D vertical shooter"
 ],
 "score": [
 "分數",
@@ -22,15 +22,15 @@ i18n.add({
 "SHIELD"
 ],
 "ultName": [
-"霓虹居合斬",
-"NEON IAI SLASH"
+"霓虹裂空斬",
+"NEON RIFT SLASH"
 ],
 "ult": [
-"居合斬",
-"IAI"
+"裂空斬",
+"RIFT"
 ],
 "ultS": [
-"IAI · SPACE",
+"RIFT · SPACE",
 "SPACE"
 ],
 "pauseTip": [
@@ -42,20 +42,20 @@ i18n.add({
 "Mute (M)"
 ],
 "title": [
-"賽博忍者",
-"CYBER NINJA"
+"異域凶間",
+"XENO NIGHTMARE"
 ],
 "titleEn": [
-"CYBER NINJA",
-"賽博忍者"
+"XENO NIGHTMARE",
+"異域凶間"
 ],
 "subtitle": [
 "星海魔獸 · 無盡波數",
 "STAR-SEA MONSTERS · ENDLESS WAVES"
 ],
 "tagline": [
-"拖動畫面移動，忍者會自動開火。<br>儲滿能量就放「霓虹居合斬」清場！每 5 波迎戰星海巨獸，波數無盡。",
-"Drag anywhere to move — your ninja fires automatically.<br>Charge up the NEON IAI SLASH to clear the screen! A star-sea monster every 5 waves, and the waves never end."
+"拖動畫面移動戰機，自動開火。<br>儲滿能量就放「霓虹裂空斬」清場！每 5 波迎戰星海巨獸，波數無盡。",
+"Drag anywhere to fly your craft — auto-fire is always on.<br>Charge up the NEON RIFT SLASH to clear the screen! A star-sea monster every 5 waves, and the waves never end."
 ],
 "launch": [
 "出擊",
@@ -66,12 +66,12 @@ i18n.add({
 "ENTER"
 ],
 "touchHint": [
-"手機：喺任何位置拖動（手指唔會遮住忍者）",
-"Touch: drag anywhere (your finger never covers the ninja)"
+"手機：喺任何位置拖動（手指唔會遮住戰機）",
+"Touch: drag anywhere (your finger never covers the craft)"
 ],
 "keysHint": [
-"<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動　<kbd>Space</kbd> 居合斬　<kbd>P</kbd> 暫停　<kbd>M</kbd> 靜音",
-"<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move　<kbd>Space</kbd> iai slash　<kbd>P</kbd> pause　<kbd>M</kbd> mute"
+"<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動　<kbd>Space</kbd> 裂空斬　<kbd>P</kbd> 暫停　<kbd>M</kbd> 靜音",
+"<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move　<kbd>Space</kbd> rift slash　<kbd>P</kbd> pause　<kbd>M</kbd> mute"
 ],
 "bestWave": [
 "最遠波數（無盡紀錄）",
@@ -130,8 +130,8 @@ i18n.add({
 "DRAG TO MOVE · AUTO-FIRE"
 ],
 "ultReady": [
-"居合斬準備好！",
-"IAI READY!"
+"裂空斬準備好！",
+"RIFT SLASH READY!"
 ],
 "bossDown": [
 "巨獸擊破！",
@@ -154,8 +154,8 @@ i18n.add({
 "CONTINUE!"
 ],
 "ultFull": [
-"居合斬已充滿",
-"IAI READY"
+"裂空斬已充滿",
+"RIFT READY"
 ],
 "milestone": [
 "里程碑：第 {n} 波！",
@@ -181,6 +181,6 @@ i18n.add({
 "能量",
 "ENERGY"
 ],
-  "help.rules": ['<ul><li>賽博忍者潛行／暗殺：避開視野、用技能清目標。</li><li>關卡推進；被發現會有警報壓力。</li><li>善用掩體同技能冷卻。</li></ul>', '<ul><li>Cyber ninja stealth: avoid sight cones, eliminate targets.</li><li>Progress through missions; detection raises alarm pressure.</li><li>Use cover and ability cooldowns wisely.</li></ul>'],
-  "help.controls": ['<ul><li>手機：喺任何位置拖動移動（手指唔遮忍者）；自動開火</li><li>鍵盤：<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> 移動　<kbd>Space</kbd> 霓虹居合斬</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Touch: drag anywhere to move (finger never covers the ninja); auto-fire</li><li>Keys: <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> move　<kbd>Space</kbd> Neon Iai Slash</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
+  "help.rules": ['<ul><li>拖動畫面移動戰機，戰機會自動開火。</li><li>擊破敵機儲能量，儲滿放「裂空斬」清彈幕、重創巨獸。</li><li>每 5 波迎戰星海魔獸；護盾歸零就任務失敗，可復活一次。</li></ul>', '<ul><li>Drag anywhere to fly your craft — auto-fire is always on.</li><li>Destroy enemies to charge the RIFT SLASH: clear bullets and hurt bosses.</li><li>A star-sea monster every 5 waves; shield zero ends the run (one revive).</li></ul>'],
+  "help.controls": ['<ul><li>手機：喺任何位置拖動移動（手指唔遮戰機）；自動開火</li><li>鍵盤：<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> 移動　<kbd>Space</kbd> 裂空斬</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Touch: drag anywhere to move (finger never covers the craft); auto-fire</li><li>Keys: <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> move　<kbd>Space</kbd> Rift Slash</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
 });

@@ -1,4 +1,4 @@
-// CYBER NINJA 賽博忍者：星海魔獸 — every tuning constant lives here.
+// XENO NIGHTMARE 異域凶間 — every tuning constant lives here.
 export const GAME_ID = 'cyber-ninja';
 
 // Play field (world units, xz plane). Far = -z = top of screen.

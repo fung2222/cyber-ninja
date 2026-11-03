@@ -1,4 +1,4 @@
-// CYBER NINJA sounds — punchy synth SFX + 'drive' synthwave music (all generated in code).
+// XENO NIGHTMARE sounds — punchy synth SFX + 'drive' synthwave music (all generated in code).
 import { SynthAudio, mtof } from 'cyber-kit/audio/synth.js';
 export class NinjaAudio extends SynthAudio {
   constructor(store) {

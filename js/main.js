@@ -1,8 +1,8 @@
-// CYBER NINJA 賽博忍者：星海魔獸 — controller: drag-to-move auto-fire shooter, waves, cosmic monster bosses, ultimate, continue.
+// XENO NIGHTMARE 異域凶間 — controller: drag-to-move auto-fire shooter, waves, cosmic monster bosses, ultimate, continue.
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, VOLLEYS, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import './strings.js';
+import './strings.js?v=0.3.15';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, PICKUPS } from './entities.js';
 import { NinjaAudio } from './audio.js?v=0.3.14';
@@ -219,7 +219,7 @@ ui.mountHowto({
   privacyUrl: './privacy.html',
   onOpen: () => { try { audio.click(); } catch (_) {} },
   getContent: () => ({
-    kicker: 'CYBER NINJA',
+    kicker: 'XENO NIGHTMARE',
     title: t('kit.howto'),
     sections: [
       { heading: t('kit.rules'), body: t('help.rules') },
