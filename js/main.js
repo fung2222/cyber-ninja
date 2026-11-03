@@ -2,11 +2,11 @@
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import './strings.js?v=0.3.19';
+import './strings.js?v=0.3.20';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem } from './entities.js';
-import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.19';
-import { NinjaAudio } from './audio.js?v=0.3.19';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.20';
+import { NinjaAudio } from './audio.js?v=0.3.20';
 
 const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
@@ -154,7 +154,7 @@ function killEnemy(e, i) {
   if (S.ult >= 100 && !S.ultReadyShown) { S.ultReadyShown = true; if (S.state === 'playing') { audio.ready(); ui.toast(t('ultReady'), 1300); } }
   if (S.state !== 'attract') { audio.boom(false); if ((e.score || e.def.score) >= 120) { const sp = stage.toScreen(p); ui.popup(sp.x, sp.y, '+' + (e.score || e.def.score)); } }
   dropGems(e);
-  const wChance = e.elite ? 0.6 : e.type === 'turret' ? 0.14 : 0;
+  const wChance = e.elite ? 0.65 : 0;
   if (wChance && Math.random() < wChance) dropPickup(e.x, e.z, 'W', randomOtherWeapon(S.weapon));
   else if (Math.random() < DROP_CHANCE) dropPickup(e.x, e.z);
   fx.kick({ trauma: 0.05 });
