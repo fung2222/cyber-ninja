@@ -5,6 +5,13 @@ import { ENEMIES } from './config.js';
 import { WEAPONS } from './weapons.js';
 
 const neonEdges = (geo, color, mult = 2.2, thresh = 20) => new THREE.LineSegments(new THREE.EdgesGeometry(geo, thresh), new THREE.LineBasicMaterial({ color: new THREE.Color(color).multiplyScalar(mult) }));
+// silhouette outline for dark-bodied craft: a brighter, whitened second edge pass —
+// lines only, no glow disc, so the near-black hulls read against the dark ruins
+const whiteOutline = (geo, color, mult = 3.2) => {
+  const e = neonEdges(geo, new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.6), mult);
+  e.scale.setScalar(1.05);
+  return e;
+};
 const darkMetal = (tint = 0x120a24) => new THREE.MeshStandardMaterial({ color: tint, metalness: 0.75, roughness: 0.32, emissive: 0x000000 });
 
 // ------------------------------------------------------------------ the player craft (original hover-glider design)
@@ -116,10 +123,10 @@ const GEO = {
 export function makeEnemy(type) {
   const def = ENEMIES[type]; const g = new THREE.Group(); const mat = darkMetal(); mat.emissive = new THREE.Color(0);
   let core;
-  if (type === 'drone') { core = new THREE.Mesh(GEO.drone, mat); g.add(core, neonEdges(GEO.drone, def.color)); const ring = new THREE.Mesh(GEO.droneRing, new THREE.MeshBasicMaterial({ color: new THREE.Color(def.color).multiplyScalar(2) })); ring.rotation.x = Math.PI / 2; g.add(ring); g.userData.spin = ring; }
+  if (type === 'drone') { core = new THREE.Mesh(GEO.drone, mat); g.add(core, neonEdges(GEO.drone, def.color), whiteOutline(GEO.drone, def.color)); const ring = new THREE.Mesh(GEO.droneRing, new THREE.MeshBasicMaterial({ color: new THREE.Color(def.color).multiplyScalar(2) })); ring.rotation.x = Math.PI / 2; g.add(ring); g.userData.spin = ring; }
   else if (type === 'weaver') { core = new THREE.Mesh(GEO.weaver, new THREE.MeshStandardMaterial({ color: 0x06202a, emissive: new THREE.Color(def.color).multiplyScalar(1.0), metalness: 0.6, roughness: 0.3 })); g.add(core); g.userData.spin = core; }
-  else if (type === 'turret') { core = new THREE.Mesh(GEO.turret, mat); g.add(core, neonEdges(GEO.turret, def.color)); const b = new THREE.Mesh(GEO.barrel, new THREE.MeshBasicMaterial({ color: new THREE.Color(def.color).multiplyScalar(2) })); b.position.set(0, 0, 0.45); const head = new THREE.Group(); head.add(b); g.add(head); g.userData.head = head; }
-  else if (type === 'dasher') { core = new THREE.Mesh(GEO.dasher, mat); core.rotation.x = Math.PI / 2; g.add(core); const e = neonEdges(GEO.dasher, def.color); e.rotation.x = Math.PI / 2; g.add(e); }
+  else if (type === 'turret') { core = new THREE.Mesh(GEO.turret, mat); g.add(core, neonEdges(GEO.turret, def.color), whiteOutline(GEO.turret, def.color)); const b = new THREE.Mesh(GEO.barrel, new THREE.MeshBasicMaterial({ color: new THREE.Color(def.color).multiplyScalar(2) })); b.position.set(0, 0, 0.45); const head = new THREE.Group(); head.add(b); g.add(head); g.userData.head = head; }
+  else if (type === 'dasher') { core = new THREE.Mesh(GEO.dasher, mat); core.rotation.x = Math.PI / 2; g.add(core); const e = neonEdges(GEO.dasher, def.color); e.rotation.x = Math.PI / 2; g.add(e); const o = whiteOutline(GEO.dasher, def.color); o.rotation.x = Math.PI / 2; g.add(o); }
   else if (type === 'splitter') {
     // brood carrier: pulsing egg-core in a neon cage with three orbit pods
     core = new THREE.Mesh(GEO.splitter, new THREE.MeshStandardMaterial({ color: 0x0a1f08, emissive: new THREE.Color(def.color).multiplyScalar(0.5), metalness: 0.5, roughness: 0.35 }));
@@ -137,12 +144,6 @@ export function makeEnemy(type) {
     g.add(core, neonEdges(GEO.mite, def.color, 1.6));
     g.userData.spin = core;
   }
-  // ground under-glow: every enemy casts a light disc so it stays readable over
-  // dark districts (esp. the deep-space ruins) — whitened so it pops on the magenta grid too
-  const glowC = new THREE.Color(def.color).lerp(new THREE.Color(0xffffff), 0.55).multiplyScalar(1.35);
-  const glow = new THREE.Mesh(GLOW_DISC, new THREE.MeshBasicMaterial({ color: glowC, transparent: true, opacity: 0.33, blending: THREE.AdditiveBlending, depthWrite: false }));
-  glow.rotation.x = -Math.PI / 2; glow.position.y = -0.52; glow.scale.setScalar(def.radius * 1.8);
-  g.add(glow); g.userData.glow = glow;
   g.userData.core = core; g.userData.mat = core.material;
   return g;
 }
