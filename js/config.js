@@ -29,11 +29,13 @@ export const ULT = { perKill: 5, perBossHit: 0.15, bossDamage: 28, duration: 0.6
 // Enemy archetypes. Speed is deliberately higher than the old build: the player
 // should be moving before the first wave ends, not standing under a bullet hose.
 export const ENEMIES = {
-  drone:  { hp: 4,  speed: 5.6, score: 60,  radius: 0.75, color: 0xff2bd6, fire: 2.1 },
-  weaver: { hp: 5,  speed: 4.4, score: 90,  radius: 0.8,  color: 0x00e5ff, fire: 2.3 },
-  turret: { hp: 11, speed: 3.0, score: 180, radius: 1.0, color: 0xffc22b, fire: 1.5 },
-  dasher: { hp: 4,  speed: 4.2, score: 140, radius: 0.75, color: 0xff3b5c, fire: 0 },
-  boss:   { hp: 240, speed: 1.6, score: 3000, radius: 2.5, color: 0xa66bff, fire: 1 },
+  drone:    { hp: 4,  speed: 5.6, score: 60,  radius: 0.75, color: 0xff2bd6, fire: 2.4 },
+  weaver:   { hp: 5,  speed: 4.4, score: 90,  radius: 0.8,  color: 0x00e5ff, fire: 2.6 },
+  turret:   { hp: 11, speed: 3.0, score: 180, radius: 1.0, color: 0xffc22b, fire: 1.5 },
+  dasher:   { hp: 4,  speed: 4.2, score: 140, radius: 0.75, color: 0xff3b5c, fire: 0 },
+  splitter: { hp: 9,  speed: 3.2, score: 220, radius: 0.95, color: 0x7dff5e, fire: 2.8 },
+  mite:     { hp: 1,  speed: 6.4, score: 25,  radius: 0.5,  color: 0xb8ff70, fire: 0 },
+  boss:     { hp: 240, speed: 1.6, score: 3000, radius: 2.5, color: 0xa66bff, fire: 1 },
 };
 export const ENEMY_BULLET_SPEED = 9.0;
 export const BOSS_EVERY = 5;
@@ -50,7 +52,7 @@ export function waveSpec(n, rng = Math.random) {
     x = Math.max(-FIELD.halfW + 0.8, Math.min(FIELD.halfW - 0.8, x));
     events.push({ t, type, x, phase: rng() * 6.28, pattern, elite });
   };
-  const usable = n >= 4 ? ['line', 'pincer', 'wall', 'crossfire', 'rush', 'weave', 'elite'] : n >= 3 ? ['line', 'pincer', 'wall', 'weave'] : ['line', 'pincer'];
+  const usable = n >= 6 ? ['line', 'pincer', 'wall', 'crossfire', 'rush', 'weave', 'elite', 'swarm'] : n >= 4 ? ['line', 'pincer', 'wall', 'crossfire', 'rush', 'weave', 'elite'] : n >= 3 ? ['line', 'pincer', 'wall', 'weave'] : ['line', 'pincer'];
   const recipe = n <= 2 ? usable[n - 1] : usable[(n + Math.floor(rng() * usable.length)) % usable.length];
   if (recipe === 'line') {
     const count = 7 + Math.min(4, Math.floor(n / 3));
@@ -72,6 +74,12 @@ export function waveSpec(n, rng = Math.random) {
   } else if (recipe === 'weave') {
     for (let i = 0; i < 6; i++) add('weaver', (i - 2.5) * 1.5, 0.5 + i * 0.28, 'strafe');
     for (let i = 0; i < 3; i++) add('drone', -3.2 + i * 3.2, 1.3 + i * 0.25, 'dive');
+  } else if (recipe === 'swarm') {
+    // a carrier escort: splitters release kamikaze mites when destroyed
+    const splitters = 2 + Math.min(2, Math.floor(n / 8));
+    for (let i = 0; i < splitters; i++) add('splitter', (i - (splitters - 1) / 2) * 3.4, 0.6 + i * 0.5, 'dive', n >= 14 && i === 0);
+    for (let i = 0; i < 4; i++) add('drone', (i - 1.5) * 1.9, 1.2 + i * 0.22, 'dive');
+    for (let i = 0; i < 2; i++) add('weaver', -2.6 + i * 5.2, 1.8 + i * 0.35, 'strafe');
   } else {
     add('turret', 0, 0.8, 'hold', true);
     for (let i = 0; i < 4; i++) add('drone', (i - 1.5) * 1.7, 1.0 + i * 0.25, 'dive');

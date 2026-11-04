@@ -43,7 +43,8 @@ export class World {
           vec2 w = fract(p * 1.4); vec2 wid = floor(p * 1.4);
           float lit = step(0.72, h21(wid + blk * 7.0)) * step(0.15, w.x) * step(0.15, w.y) * (1.0 - min(road, 1.0));
           col += mix(uC1, uC3, step(0.6, r)) * lit * (0.07 + 0.06 * sin(uTime * 0.7 + r * 30.0));
-          col += mix(uC2, uC1, step(0.5, fract(blk.x * 0.37))) * min(road, 1.0) * 0.16;
+          // road glow stays cool (cyan/blue): keeps the magenta reserved for enemy bullets
+          col += mix(uC2, vec3(0.30, 0.55, 1.0), 0.45) * min(road, 1.0) * 0.15;
           // car streaks on roads
           float car = step(0.94, fract(p.y * 0.08 + h21(vec2(blk.x, 0.0)) + uTime * 0.6)) * step(f.x, 0.035);
           col += uC3 * car * 0.7;
@@ -84,7 +85,29 @@ export class World {
     this.streakN = 70;
     this.streaks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.04, 0.04, 3.5), new THREE.MeshBasicMaterial({ color: 0x8fdcff, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }), this.streakN);
     this.streakData = Array.from({ length: this.streakN }, () => ({ x: (Math.random() * 2 - 1) * 26, y: -2 - Math.random() * 14, z: -120 + Math.random() * 130, v: 50 + Math.random() * 40 }));
+    this.streaks.material.opacity = 0.5;
     this.streaks.frustumCulled = false; scene.add(this.streaks);
+    // playfield edge rails: twin animated energy beams framing the combat lane
+    this.rails = [];
+    const railGeo = new THREE.PlaneGeometry(0.5, 34, 1, 1);
+    for (const side of [-1, 1]) {
+      const rail = new THREE.Mesh(railGeo, new THREE.ShaderMaterial({
+        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+        uniforms: { uTime: U.uTime, uC1: U.uC1, uC2: U.uC2, uSide: { value: side } },
+        vertexShader: /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+        fragmentShader: /* glsl */`uniform float uTime; uniform vec3 uC1, uC2; varying vec2 vUv;
+          void main(){
+            float core = smoothstep(0.5, 0.0, abs(vUv.x - 0.5));
+            float flow = 0.55 + 0.45 * sin(vUv.y * 26.0 - uTime * 5.0);
+            float edge = smoothstep(0.16, 0.0, abs(vUv.x - 0.5)) * 1.6;
+            vec3 col = mix(uC1, uC2, vUv.y) * (core * 0.5 * flow + edge * 0.5);
+            gl_FragColor = vec4(col, core * 0.6);
+          }`,
+      }));
+      rail.rotation.x = -Math.PI / 2;
+      rail.position.set(side * (6 + 0.35), 0.06, -10.4);
+      scene.add(rail); this.rails.push(rail);
+    }
     // deep-space ruins: a second district built behind the same play field
     this.mode = 'city';
     this.ruins = this.makeRuins(); scene.add(this.ruins);

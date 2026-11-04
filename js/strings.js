@@ -245,6 +245,27 @@ i18n.add({
 "武器",
 "WEAPON"
 ],
+  "selectCraft": ["選擇機體", "SELECT AIRFRAME"],
+  "selectCraftS": ["3 種性能唔同嘅機體 · 各自擁有專用被動技能", "3 airframes · each with its own passive"],
+  "techTree": ["武器技能樹", "WEAPON TECH TREE"],
+  "techTreeS": ["每種武器 6 級 · 儲能大招 · 執 W 換裝", "SIX LEVELS EACH · CHARGED ULT · W TO SWAP"],
+  "combo": ["連擊", "COMBO"],
+  "shieldUp": ["裝甲修復 +1", "PLATING +1"],
+  "statHp": ["耐久", "ARMOR"],
+  "statDmg": ["火力", "FIRE"],
+  "statSpd": ["速度", "SPEED"],
+  "statChg": ["充能", "CHARGE"],
+  "techDesc": {
+    "pulse": ["均衡散射連發炮。級數越高彈道越闊、單發越痛，近中距離全場壓制，最適合清雜兵同疊連擊。", "An even spread repeater. Higher levels widen the volley and hit harder — great at suppressing the whole lane, best for clearing trash and stacking combos."],
+    "lance": ["高傷害貫穿長槍。一發貫穿多名敵人，級數越高貫穿數越多；對排成一線嘅敵隊同 Boss 係毀滅性打擊。", "A heavy piercing lance. One shot skewers a whole line of enemies; higher levels add pierce counts. Devastating against lined-up squads and bosses."],
+    "nova": ["大範圍爆炸震波。飛得慢但一炸一片，級數越高範圍同傷害越大；貼身放炮，成波敵機連鎖蒸發。", "A slow, wide-area detonation. Short range but hits everything around the blast; higher levels grow the radius. Get close and vaporise whole waves."],
+  },
+  "ultDesc": {
+    "pulse": ["向前 180° 扇形傾瀉彈幕 2.2 秒，期間無敵。被包圍時一鍵逆轉。", "Hoses a 180° forward fan for 2.2s, invulnerable the whole time. The one-button turnaround when surrounded."],
+    "lance": ["展開稜鏡光束 1.3 秒，貫穿全場直線上所有敵人，期間無敵。Boss 戰嘅斬首利器。", "Unfolds a prism beam for 1.3s that pierces every enemy in the lane, invulnerable throughout. A boss decapitator."],
+    "nova": ["釋放奇點 2 秒，衝擊波持續擴散消滅彈幕兼殺敵，期間無敵。最強清場大招。", "Detonates a singularity for 2s — an ever-expanding wave that erases bullets and enemies alike, invulnerable throughout. The ultimate screen-clear."],
+  },
+  "techFoot": ["執 W 武器卡 → 即時換裝 +1 級 · 執 P 火力 → 目前武器 +1 級 · 擊破敵機儲大招能量", "W canister = swap +1 level · P = +1 level · kills charge the ultimate"],
   "help.rules": ['<ul><li>拖動移動戰機，自動開火；三種武器各有 6 級。</li><li>執拾 W 武器會即時換槍；P 提升目前武器等級。</li><li>「裂空斬」係目前武器嘅儲能大招；「最大火力」係通用昇華，用完會強制停火 3 秒。</li><li>金色／白色晶石係寶石，會自動飛向你；粉紅圓點係敵彈，要避。</li><li>武器大招期間無敵；護盾最多 3 格，S 道具會自動補一格。每 5 波迎戰星海魔獸；護盾歸零就任務失敗，可復活一次。</li></ul>', '<ul><li>Drag to fly; auto-fire is always on. Three weapons, six levels each.</li><li>Grab a W drop to swap weapons instantly; P raises the current weapon level.</li><li>The big button is your weapon ultimate; OVERDRIVE is the universal ascension — it forces a 3-second cease-fire afterwards.</li><li>Gold/white crystals are gems and home into you; pink dots are enemy bullets — dodge them.</li><li>A star-sea monster every 5 waves; shield zero ends the run (one revive).</li></ul>'],
   "help.controls": ['<ul><li>手機：拖動移動；自動開火；右下「裂空斬」係武器大招</li><li>鍵盤：<kbd>WASD</kbd> 移動　<kbd>Space</kbd> 武器大招　<kbd>Q</kbd> 最大火力</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Touch: drag to move; auto-fire; the lower-right button is the weapon ultimate</li><li>Keys: <kbd>WASD</kbd> move　<kbd>Space</kbd> weapon ultimate　<kbd>Q</kbd> OVERDRIVE</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
 });

@@ -8,40 +8,80 @@ const neonEdges = (geo, color, mult = 2.2, thresh = 20) => new THREE.LineSegment
 const darkMetal = (tint = 0x120a24) => new THREE.MeshStandardMaterial({ color: tint, metalness: 0.75, roughness: 0.32, emissive: 0x000000 });
 
 // ------------------------------------------------------------------ the player craft (original hover-glider design)
-export function makeNinja() {
+export function makeNinja(craft) {
+  const c = craft || { color: 0x00e5ff, accent: 0xff2bd6, key: 'falcon' };
+  const C = new THREE.Color(c.color), A = new THREE.Color(c.accent);
   const g = new THREE.Group();
   const body = new THREE.Group(); g.add(body);
   // glider board
   const boardGeo = new THREE.CylinderGeometry(0.62, 0.9, 0.12, 6); boardGeo.scale(0.7, 1, 1.25);
   const board = new THREE.Mesh(boardGeo, darkMetal(0x0d0820)); board.position.y = -0.55; body.add(board);
-  const bEdge = neonEdges(boardGeo, 0x00e5ff, 2.6); bEdge.position.copy(board.position); body.add(bEdge);
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.75, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x00e5ff).multiplyScalar(1.6), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const bEdge = neonEdges(boardGeo, c.color, 2.6); bEdge.position.copy(board.position); body.add(bEdge);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.75, 24), new THREE.MeshBasicMaterial({ color: C.clone().multiplyScalar(1.6), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
   glow.rotation.x = -Math.PI / 2; glow.position.y = -0.64; glow.scale.set(0.8, 1.3, 1); body.add(glow);
   // rider
-  const suit = darkMetal(0x2a1a50); suit.emissive = new THREE.Color(0x120830);
-  const torsoGeo = new THREE.CylinderGeometry(0.2, 0.3, 0.62, 6); const torso = new THREE.Mesh(torsoGeo, suit); torso.position.y = -0.12; body.add(torso); const tEdge = neonEdges(torsoGeo, 0x00e5ff, 2.2); tEdge.position.copy(torso.position); body.add(tEdge);
+  const suit = darkMetal(0x2a1a50); suit.emissive = A.clone().multiplyScalar(0.1);
+  const torsoGeo = new THREE.CylinderGeometry(0.2, 0.3, 0.62, 6); const torso = new THREE.Mesh(torsoGeo, suit); torso.position.y = -0.12; body.add(torso); const tEdge = neonEdges(torsoGeo, c.color, 2.2); tEdge.position.copy(torso.position); body.add(tEdge);
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10), suit); head.position.y = 0.33; body.add(head);
-  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.07, 0.1), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff2bd6).multiplyScalar(3) })); visor.position.set(0, 0.35, -0.16); body.add(visor);
-  const band = new THREE.Mesh(new THREE.TorusGeometry(0.205, 0.025, 6, 20), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff2bd6).multiplyScalar(2) })); band.rotation.x = Math.PI / 2; band.position.y = 0.42; body.add(band);
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.07, 0.1), new THREE.MeshBasicMaterial({ color: A.clone().multiplyScalar(3) })); visor.position.set(0, 0.35, -0.16); body.add(visor);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.205, 0.025, 6, 20), new THREE.MeshBasicMaterial({ color: A.clone().multiplyScalar(2) })); band.rotation.x = Math.PI / 2; band.position.y = 0.42; body.add(band);
   // katana on the back (energy blade)
-  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.1), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x00e5ff).multiplyScalar(3) }));
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.1), new THREE.MeshBasicMaterial({ color: C.clone().multiplyScalar(3) }));
   blade.position.set(0.18, 0.05, 0.25); blade.rotation.set(0.9, 0, 0.4); body.add(blade);
+  // airframe-specific silhouette: wings / plates / blades
+  const wingMat = darkMetal(0x140b2e);
+  const wingEdgeMat = new THREE.LineBasicMaterial({ color: C.clone().multiplyScalar(2.4) });
+  const addWing = (geo, x, y, z, rz = 0) => {
+    const w = new THREE.Mesh(geo, wingMat); w.position.set(x, y, z); w.rotation.z = rz; body.add(w);
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), wingEdgeMat); e.position.copy(w.position); e.rotation.copy(w.rotation); body.add(e);
+    return w;
+  };
+  if (c.key === 'fcon' || c.key === 'falcon') {
+    // swept delta wings
+    const wg = new THREE.BoxGeometry(0.85, 0.06, 0.5); wg.applyMatrix4(new THREE.Matrix4().makeShear?.(0, 0, 0, 0, -0.35, 0) || new THREE.Matrix4());
+    for (const s of [-1, 1]) { const geo = new THREE.BoxGeometry(0.9, 0.055, 0.42); geo.translate(s * 0.48, 0, -s * 0.1); geo.applyMatrix4(new THREE.Matrix4().makeRotationZ(s * -0.12)); addWing(geo, s * 0.42, -0.5, 0.12); }
+  } else if (c.key === 'bastion') {
+    // heavy shoulder plates + front ram
+    addWing(new THREE.BoxGeometry(0.34, 0.16, 0.95), -0.5, -0.32, 0.1, 0.1);
+    addWing(new THREE.BoxGeometry(0.34, 0.16, 0.95), 0.5, -0.32, 0.1, -0.1);
+    addWing(new THREE.BoxGeometry(0.16, 0.14, 0.7), 0, -0.44, -0.42);
+    const plateRing = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.03, 6, 28), new THREE.MeshBasicMaterial({ color: C.clone().multiplyScalar(2) }));
+    plateRing.rotation.x = Math.PI / 2; plateRing.position.y = -0.55; body.add(plateRing);
+  } else {
+    // wraith: slim twin blades + antenna fins
+    addWing(new THREE.BoxGeometry(0.09, 0.04, 1.15), -0.42, -0.42, 0.2, 0.06);
+    addWing(new THREE.BoxGeometry(0.09, 0.04, 1.15), 0.42, -0.42, 0.2, -0.06);
+    addWing(new THREE.BoxGeometry(0.05, 0.5, 0.16), -0.2, 0.12, 0.3, 0.35);
+    addWing(new THREE.BoxGeometry(0.05, 0.5, 0.16), 0.2, 0.12, 0.3, -0.35);
+  }
+  // engine thruster (animated in updateNinja): double cone, additive
+  const thruster = new THREE.Group();
+  const flameOut = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.85, 8, 1, true), new THREE.MeshBasicMaterial({ color: C.clone().multiplyScalar(2.6), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  flameOut.rotation.x = Math.PI / 2; flameOut.position.z = 0.42; thruster.add(flameOut);
+  const flameIn = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.5, 6, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  flameIn.rotation.x = Math.PI / 2; flameIn.position.z = 0.3; thruster.add(flameIn);
+  thruster.position.set(0, -0.55, 0.62); body.add(thruster);
   // scarf ribbon (trail follows motion)
   const N = 14; const scarfGeo = new THREE.PlaneGeometry(0.16, 1, 1, N - 1);
-  const scarf = new THREE.Mesh(scarfGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff2bd6).multiplyScalar(2), side: THREE.DoubleSide, transparent: true, opacity: 0.9 }));
+  const scarf = new THREE.Mesh(scarfGeo, new THREE.MeshBasicMaterial({ color: A.clone().multiplyScalar(2), side: THREE.DoubleSide, transparent: true, opacity: 0.9 }));
   scarf.frustumCulled = false; g.add(scarf);
   // shield bubble (invulnerability)
-  const shield = new THREE.Mesh(new THREE.IcosahedronGeometry(0.95, 1), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x00e5ff).multiplyScalar(1.2), wireframe: true, transparent: true, opacity: 0 }));
+  const shield = new THREE.Mesh(new THREE.IcosahedronGeometry(0.95, 1), new THREE.MeshBasicMaterial({ color: C.clone().multiplyScalar(1.2), wireframe: true, transparent: true, opacity: 0 }));
   g.add(shield);
-  g.userData = { body, scarf, scarfPts: Array.from({ length: N }, () => new THREE.Vector3()), shield, glow, visor };
+  g.userData = { body, scarf, scarfPts: Array.from({ length: N }, () => new THREE.Vector3()), shield, glow, visor, thruster, flameOut, flameIn, craftColor: C, craftAccent: A };
   return g;
 }
-export function updateNinja(g, dt, t, vx, invuln) {
+export function updateNinja(g, dt, t, vx, invuln, thrust = 1) {
   const u = g.userData;
   u.body.rotation.z = THREE.MathUtils.lerp(u.body.rotation.z, -vx * 0.05, Math.min(1, dt * 10));
   u.body.rotation.x = -0.18 + Math.sin(t * 3) * 0.03;
   u.body.position.y = Math.sin(t * 4) * 0.06;
   u.glow.material.opacity = 0.45 + Math.sin(t * 20) * 0.1;
+  // engine flame: flickers, lengthens with thrust (overdrive / speed)
+  const fl = thrust * (0.85 + Math.sin(t * 41) * 0.18 + Math.sin(t * 97) * 0.08);
+  u.flameOut.scale.set(1, 1, Math.max(0.25, fl));
+  u.flameIn.scale.set(1, 1, Math.max(0.2, fl * 1.15));
+  u.flameOut.material.opacity = 0.55 + 0.3 * Math.min(1, fl);
   // scarf: head point follows, rest trails behind (+z) with flutter
   const pts = u.scarfPts; const head = new THREE.Vector3(0, 0.38, 0.12).add(g.position);
   pts[0].copy(head);
@@ -70,6 +110,8 @@ const GEO = {
   turret: new THREE.CylinderGeometry(0.55, 0.7, 0.5, 8),
   barrel: new THREE.BoxGeometry(0.16, 0.16, 0.7),
   dasher: new THREE.ConeGeometry(0.42, 1.2, 4),
+  splitter: new THREE.IcosahedronGeometry(0.62, 0),
+  mite: new THREE.TetrahedronGeometry(0.34, 0),
 };
 export function makeEnemy(type) {
   const def = ENEMIES[type]; const g = new THREE.Group(); const mat = darkMetal(); mat.emissive = new THREE.Color(0);
@@ -78,6 +120,23 @@ export function makeEnemy(type) {
   else if (type === 'weaver') { core = new THREE.Mesh(GEO.weaver, new THREE.MeshStandardMaterial({ color: 0x06202a, emissive: new THREE.Color(def.color).multiplyScalar(0.6), metalness: 0.6, roughness: 0.3 })); g.add(core); g.userData.spin = core; }
   else if (type === 'turret') { core = new THREE.Mesh(GEO.turret, mat); g.add(core, neonEdges(GEO.turret, def.color)); const b = new THREE.Mesh(GEO.barrel, new THREE.MeshBasicMaterial({ color: new THREE.Color(def.color).multiplyScalar(2) })); b.position.set(0, 0, 0.45); const head = new THREE.Group(); head.add(b); g.add(head); g.userData.head = head; }
   else if (type === 'dasher') { core = new THREE.Mesh(GEO.dasher, mat); core.rotation.x = Math.PI / 2; g.add(core); const e = neonEdges(GEO.dasher, def.color); e.rotation.x = Math.PI / 2; g.add(e); }
+  else if (type === 'splitter') {
+    // brood carrier: pulsing egg-core in a neon cage with three orbit pods
+    core = new THREE.Mesh(GEO.splitter, new THREE.MeshStandardMaterial({ color: 0x0a1f08, emissive: new THREE.Color(def.color).multiplyScalar(0.5), metalness: 0.5, roughness: 0.35 }));
+    g.add(core, neonEdges(GEO.splitter, def.color));
+    const pods = new THREE.Group();
+    for (let i = 0; i < 3; i++) {
+      const pod = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(def.color).multiplyScalar(2.2) }));
+      const a = i / 3 * Math.PI * 2; pod.position.set(Math.cos(a) * 0.85, 0, Math.sin(a) * 0.85); pods.add(pod);
+    }
+    g.add(pods); g.userData.spin = pods;
+  }
+  else if (type === 'mite') {
+    // kamikaze swarmer: bright tumbling shard
+    core = new THREE.Mesh(GEO.mite, new THREE.MeshBasicMaterial({ color: new THREE.Color(def.color).multiplyScalar(2.4) }));
+    g.add(core, neonEdges(GEO.mite, def.color, 1.6));
+    g.userData.spin = core;
+  }
   g.userData.core = core; g.userData.mat = core.material;
   return g;
 }

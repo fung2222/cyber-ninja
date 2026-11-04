@@ -31,20 +31,30 @@ export class NinjaAudio extends SynthAudio {
   }
   shot(kind = 'pulse') {
     this._shot++;
+    const v = 0.94 + Math.random() * 0.12;   // per-shot pitch variance: the auto-fire never sounds static
     if (kind === 'pulse') {
       if (this._shot % 2) return;
-      this.osc({ type: 'square', f: 1800, f2: 900, dur: 0.035, vol: 0.018, lp: 5000 });
+      this.osc({ type: 'square', f: 1800 * v, f2: 900 * v, dur: 0.035, vol: 0.018, lp: 5000 });
     } else if (kind === 'lance') {
       if (this._shot % 2) return;
-      this.osc({ type: 'sawtooth', f: 880, f2: 280, dur: 0.055, vol: 0.022, lp: 3000 });
+      this.osc({ type: 'sawtooth', f: 880 * v, f2: 280 * v, dur: 0.055, vol: 0.022, lp: 3000 });
     } else {
       if (this._shot % 3) return;
-      this.osc({ type: 'sine', f: 190, f2: 70, dur: 0.11, vol: 0.045 });
-      this.osc({ type: 'triangle', f: 620, f2: 240, dur: 0.035, vol: 0.012, lp: 1800 });
+      this.osc({ type: 'sine', f: 190 * v, f2: 70 * v, dur: 0.11, vol: 0.045 });
+      this.osc({ type: 'triangle', f: 620 * v, f2: 240 * v, dur: 0.035, vol: 0.012, lp: 1800 });
     }
   }
-  hit() { this.osc({ type: 'triangle', f: 700, f2: 400, dur: 0.04, vol: 0.03 }); }
-  gem() { this.osc({ type: 'sine', f: 1480, f2: 2100, dur: 0.07, vol: 0.018, send: 0.25 }); }
+  hit() { const v = 0.92 + Math.random() * 0.16; this.osc({ type: 'triangle', f: 700 * v, f2: 400 * v, dur: 0.04, vol: 0.03 }); }
+  gem(chain = 0) { const base = 1480 * Math.pow(1.059, Math.min(12, chain)); this.osc({ type: 'sine', f: base, f2: base * 1.42, dur: 0.07, vol: 0.018, send: 0.25 }); }
+  // combo milestone: short rising arp, one blip per multiplier step
+  combo(mult = 2) {
+    const n = Math.min(8, mult);
+    for (let i = 0; i < Math.min(4, n); i++) this.osc({ type: 'square', f: mtof(76 + i * 5), t: i * 0.04, dur: 0.06, vol: 0.032, lp: 5200, send: 0.3 });
+  }
+  comboLost() { this.osc({ type: 'sawtooth', f: 320, f2: 140, dur: 0.12, vol: 0.03, lp: 1400 }); }
+  shieldUp() { [0, 5, 12].forEach((n, i) => this.osc({ type: 'sine', f: mtof(81 + n), t: i * 0.06, dur: 0.14, vol: 0.04, send: 0.35 })); }
+  select() { this.osc({ type: 'square', f: mtof(81), dur: 0.05, vol: 0.04, lp: 4200 }); this.osc({ type: 'square', f: mtof(88), t: 0.06, dur: 0.09, vol: 0.04, lp: 4200, send: 0.25 }); }
+  heartbeat() { this.osc({ type: 'sine', f: 68, f2: 40, dur: 0.14, vol: 0.1 }); this.osc({ type: 'sine', f: 60, f2: 36, t: 0.18, dur: 0.12, vol: 0.08 }); }
   boom(big = false) {
     this.noiseHit({ dur: big ? 0.7 : 0.28, vol: big ? 0.22 : 0.1, type: 'lowpass', f: big ? 2400 : 1800, f2: 120, q: 0.8, a: 0.003 });
     this.osc({ type: 'sine', f: big ? 140 : 180, f2: 40, dur: big ? 0.6 : 0.22, vol: big ? 0.3 : 0.14 });

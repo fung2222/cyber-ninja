@@ -6,6 +6,7 @@ import './strings.js?v=0.3.25';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js';
 import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.25';
+import { CRAFTS, CRAFT_KEYS, craftOf, craftName, COMBO, comboMult } from './crafts.js?v=1.0';
 import { NinjaAudio } from './audio.js?v=0.3.25';
 
 const $ = (id) => document.getElementById(id);
@@ -24,7 +25,20 @@ const fx = new FxState();
 const audio = new NinjaAudio(store); ui.setMuted(audio.muted);
 const ads = createAds({ gameId: GAME_ID, ...ADS, onAdOpen: (on) => audio.duckAll(on) });
 
-const ninja = makeNinja(); ninja.scale.setScalar(1.55); scene.add(ninja);
+// ---------------------------------------------------------------- player craft (selectable airframe)
+const savedCraft = store.get('craft', 'falcon');
+let ninja = makeNinja(craftOf(savedCraft)); ninja.scale.setScalar(1.55); scene.add(ninja);
+function setCraft(key, silent = false) {
+  if (!CRAFTS[key]) key = 'falcon';
+  S.craft = key;
+  store.set('craft', key);
+  scene.remove(ninja);
+  ninja = makeNinja(craftOf(key)); ninja.scale.setScalar(1.55); scene.add(ninja);
+  const C = craftOf(key);
+  PLAYER.maxHp = C.hp;
+  if (!silent && S.state === 'attract') { /* rebuilt under the start screen */ }
+  updateHUD();
+}
 const pools = {
   pulse: new BulletPool(scene, 320, new THREE.BoxGeometry(0.09, 0.09, 0.75), WEAPONS.pulse.color),
   lance: new BulletPool(scene, 100, new THREE.BoxGeometry(0.16, 0.16, 3.2), WEAPONS.lance.color),
@@ -38,39 +52,59 @@ beam.rotation.x = -Math.PI / 2; beam.position.set(0, 0.35, -10); beam.visible = 
 
 const S = {
   state: 'attract', demo: !!flags.demo,
-  x: 0, z: 1, vx: 0, hp: PLAYER.hp, invuln: 0, power: 1, fireT: 0, ult: 0, ultT: -1,
+  x: 0, z: 1, vx: 0, hp: 3, invuln: 0, power: 1, fireT: 0, ult: 0, ultT: -1,
   weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 },
   od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0,
   score: 0, wave: 1, spec: null, waveT: 0, nextEv: 0, enemies: [], boss: null, pickups: [], kills: 0,
   continued: false, betweenT: 0, t: 0, newRecord: false,
   hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
+  craft: CRAFTS[savedCraft] ? savedCraft : 'falcon',
+  combo: { chain: 0, timer: 0, mult: 1 }, gemChain: 0, gemChainT: 0, sinceHit: 99,
 };
+PLAYER.maxHp = craftOf(S.craft).hp;
 window.__ninja = S;  // test hook
+const C = () => craftOf(S.craft);            // current airframe
+const chargeGain = (n) => n * C().charge;    // wraith charges faster
 
 // ---------------------------------------------------------------- HUD
+const setRing = (el, pct) => el.style.setProperty('--p', Math.max(0, Math.min(100, pct)).toFixed(1));
 function updateHUD() {
   const lang = i18n.isZh() ? 'zh' : 'en';
   ui.setText('hud-score', S.score.toLocaleString('en-US'));
   ui.setText('hud-best', Math.max(store.best, S.score).toLocaleString('en-US'));
   ui.setText('hud-wave', S.wave);
+  // shield pips (airframe-dependent count)
   const pips = $('hud-hp'); let h = ''; for (let i = 0; i < PLAYER.maxHp; i++) h += `<i class="${i < S.hp ? 'on' : ''}"></i>`; if (pips.innerHTML !== h) pips.innerHTML = h;
-  if ($('hud-power')) $('hud-power').textContent = 'W' + S.power;
+  // weapon chip: name + six level diamonds + ult charge
   $('hud-weapon').textContent = weaponShort(S.weapon, lang);
   $('hud-wlv').textContent = 'LV.' + S.power;
+  const lv = $('hud-lv'); if (lv) { let lh = ''; for (let i = 1; i <= 6; i++) lh += `<i class="${i <= S.power ? 'on' : ''}"></i>`; if (lv.innerHTML !== lh) lv.innerHTML = lh; }
   $('hud-wfill').style.width = Math.min(100, S.ult).toFixed(0) + '%';
   $('hud-wult').textContent = ultName(S.weapon, lang);
+  // combo chip
+  const combo = $('combo-chip');
+  if (combo) {
+    const on = S.combo.mult > 1 && S.combo.timer > 0;
+    combo.classList.toggle('on', on);
+    if (on) { $('combo-mult').textContent = '×' + S.combo.mult; combo.style.setProperty('--cd', (S.combo.timer / COMBO.window).toFixed(2)); }
+  }
+  // action buttons with visible ring progress
   $('ult-label').textContent = ultShort(S.weapon, lang);
   $('ult-sub').textContent = S.ult >= 100 ? (lang === 'zh' ? '就緒' : 'READY') : Math.round(S.ult) + '%';
-  $('ult-fill').style.height = Math.min(100, S.ult).toFixed(0) + '%';
+  setRing($('btn-ult'), S.ult);
   $('btn-ult').classList.toggle('ready', S.ult >= 100 && S.ultT < 0 && S.odT < 0);
   const odReady = S.od >= 100 && S.odT < 0 && S.noFireT <= 0 && S.ultT < 0;
   $('btn-od').classList.toggle('ready', odReady);
   $('btn-od').classList.toggle('active', S.odT >= 0);
   $('btn-od').classList.toggle('venting', S.noFireT > 0);
-  const odPct = S.odT >= 0 ? Math.max(0, 100 - (S.odT / OD.duration) * 100) : S.od;
-  $('od-fill').style.height = Math.min(100, odPct).toFixed(0) + '%';
+  const odDur = OD.duration + C().odBonus;
+  const odPct = S.odT >= 0 ? Math.max(0, 100 - (S.odT / odDur) * 100) : S.od;
+  setRing($('btn-od'), odPct);
   $('od-label').textContent = S.noFireT > 0 ? t('odVent') : S.odT >= 0 ? t('odActive') : t('odShort');
   $('od-sub').textContent = S.noFireT > 0 ? Math.ceil(S.noFireT) + 's' : S.odT >= 0 ? t('odS') : Math.min(100, S.od).toFixed(0) + '%';
+  // craft badge
+  const badge = $('hud-craft'); if (badge) { badge.textContent = C().code[lang] + ' · ' + craftName(S.craft, lang); badge.style.setProperty('--cc', '#' + C().color.toString(16).padStart(6, '0')); }
+  // boss bar with phase segments
   const bb = $('boss-bar'); bb.classList.toggle('hidden', !S.boss);
   if (S.boss) $('boss-fill').style.width = (Math.max(0, S.boss.hp / S.boss.maxHp) * 100).toFixed(1) + '%';
 }
@@ -78,6 +112,10 @@ function refreshStart() { ui.setText('start-best', store.best.toLocaleString('en
 function setState(s) {
   S.state = s; ui.show({ attract: 'start', paused: 'pause', over: 'over' }[s] || null);
   ui.hud(s === 'playing' || s === 'paused' || s === 'over'); $('demo-tag').classList.toggle('hidden', !S.demo); updateHUD();
+  const lang = i18n.isZh() ? 'zh' : 'en';
+  const craftLine = C().code[lang] + ' · ' + craftName(S.craft, lang) + ' · ' + C().role[lang];
+  if ($('pause-craft')) $('pause-craft').textContent = craftLine;
+  if ($('over-craft')) $('over-craft').textContent = craftLine;
 }
 
 // ---------------------------------------------------------------- run flow
@@ -93,8 +131,9 @@ function clearField() {
 }
 function resetRun() {
   clearField();
-  Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.hp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
-    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city' });
+  Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.maxHp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
+    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
+    combo: { chain: 0, timer: 0, mult: 1 }, gemChain: 0, gemChainT: 0, sinceHit: 99 });
   world.setDistrict('city');
   beam.visible = false; beam.material.opacity = 0;
   theme.set(1); audio.setBoss(false); nextWave();
@@ -114,7 +153,7 @@ function nextWave() {
 function bossName(b = S.boss) { const v = b && b.variant; return v ? (i18n.isZh() ? v.zh : v.en) : ''; }
 function refreshBossName() { ui.setText('bb-name', bossName()); ui.setText('bb-sub', S.boss ? t('waveN', { n: S.wave }) : ''); }
 function milestone(n) {
-  const pts = milestoneBonus(n); S.score += pts; S.hp = PLAYER.maxHp; theme.set(Math.floor(3 + n / MILESTONE_EVERY * 2));
+  const pts = milestoneBonus(n); S.score += pts; S.hp = PLAYER.maxHp; S.sinceHit = 99; theme.set(Math.floor(3 + n / MILESTONE_EVERY * 2));
   ui.banner(t('milestone', { n }), t('milestoneS', { pts: pts.toLocaleString('en-US') }), t('waveN', { n: S.wave }));
   audio.ready(); fx.kick({ aberr: 1, glitch: 0.4 }); Platform.haptic('success'); updateHUD();
 }
@@ -149,20 +188,60 @@ function enemyFire(x, z, ang, speed = ENEMY_BULLET_SPEED) { ebullets.add(x, z, M
 const aimAt = (x, z) => Math.atan2(S.x - x, S.z - z);
 
 // ---------------------------------------------------------------- damage / kills
+function bumpCombo() {
+  S.combo.chain++; S.combo.timer = COMBO.window;
+  const m = comboMult(S.combo.chain);
+  if (m > S.combo.mult) {
+    S.combo.mult = m;
+    if (S.state === 'playing') {
+      audio.combo(m);
+      const sp = stage.toScreen(new THREE.Vector3(S.x, 0.8, S.z - 1.4));
+      ui.popup(sp.x, sp.y, '×' + m, 'combo-pop');
+    }
+  }
+}
+function breakCombo(silent = false) {
+  if (S.combo.mult >= 4 && !silent && S.state === 'playing') audio.comboLost();
+  S.combo.chain = 0; S.combo.timer = 0; S.combo.mult = 1;
+}
+function spawnMites(x, z, n, elite = false) {
+  for (let i = 0; i < n; i++) {
+    const g = makeEnemy('mite'); g.scale.setScalar(1.2); scene.add(g);
+    const a = (i / n) * Math.PI * 2 + Math.random();
+    const e = {
+      type: 'mite', def: ENEMIES.mite, g, x, baseX: x, z, t: 0, phase: Math.random() * 6.28,
+      hp: 1, fireT: 999, flash: 0, mode: 0, stopZ: 0,
+      vx: Math.sin(a) * 5.5, vz: Math.cos(a) * 4.5 + 2,
+      pattern: 'swarm', elite: false, level: S.wave, score: ENEMIES.mite.score,
+    };
+    g.position.set(x, 0, z); S.enemies.push(e);
+  }
+}
 function killEnemy(e, i) {
   scene.remove(e.g); S.enemies.splice(i, 1);
+  // a destroyed brood carrier releases its swarm
+  if (e.type === 'splitter') spawnMites(e.x, e.z, e.elite ? 5 : 3, e.elite);
+  const big = e.type === 'turret' || e.elite, small = e.type === 'mite';
   const c = new THREE.Color(e.def.color); const p = new THREE.Vector3(e.x, 0, e.z);
-  particles.burst(p, c, 34, { speed: 7, up: 2, life: 0.7, size: 1, grav: 0, color2: new THREE.Color(0xffffff) });
-  waves.spawn(p, c, { r0: 0.2, r1: 2.2, h: 0.5, dur: 0.4 });
-  S.score += e.score || e.def.score; S.kills++; S.ult = Math.min(100, S.ult + ULT.perKill); S.ults[S.weapon] = S.ult;
-  S.od = Math.min(100, S.od + OD.perKill);
+  particles.burst(p, c, small ? 14 : big ? 52 : 34, { speed: big ? 9 : 7, up: 2, life: small ? 0.5 : 0.75, size: big ? 1.3 : 1, grav: 0, color2: new THREE.Color(0xffffff) });
+  waves.spawn(p, c, { r0: 0.2, r1: big ? 3.4 : 2.2, h: 0.5, dur: big ? 0.55 : 0.4 });
+  // combo + score
+  bumpCombo();
+  const pts = Math.round((e.score || e.def.score) * S.combo.mult);
+  S.score += pts; S.kills++;
+  S.ult = Math.min(100, S.ult + chargeGain(ULT.perKill)); S.ults[S.weapon] = S.ult;
+  S.od = Math.min(100, S.od + chargeGain(OD.perKill));
   if (S.ult >= 100 && !S.ultReadyShown) { S.ultReadyShown = true; if (S.state === 'playing') { audio.ready(); ui.toast(t('ultReady'), 1300); } }
-  if (S.state !== 'attract') { audio.boom(false); if ((e.score || e.def.score) >= 120) { const sp = stage.toScreen(p); ui.popup(sp.x, sp.y, '+' + (e.score || e.def.score)); } }
+  if (S.state !== 'attract') {
+    audio.boom(big);
+    if ((e.score || e.def.score) >= 120 || S.combo.mult > 1) { const sp = stage.toScreen(p); ui.popup(sp.x, sp.y, '+' + pts + (S.combo.mult > 1 ? ' ×' + S.combo.mult : ''), S.combo.mult >= 4 ? 'hot' : ''); }
+  }
   dropGems(e);
   const wChance = e.elite ? 0.65 : 0;
   if (wChance && Math.random() < wChance) dropPickup(e.x, e.z, 'W', randomOtherWeapon(S.weapon));
-  else if (Math.random() < DROP_CHANCE) dropPickup(e.x, e.z);
-  fx.kick({ trauma: 0.05 });
+  else if (!small && Math.random() < DROP_CHANCE) dropPickup(e.x, e.z);
+  fx.kick({ trauma: small ? 0.03 : big ? 0.12 : 0.06 });
+  if (big && S.state === 'playing') fx.kick({ slowmo: 0.16, aberr: 0.35 });   // hit-stop on chunky kills
 }
 function spawnGem(x, z, tier = 0) {
   const g = makeGem(tier); g.scale.setScalar(1.45); g.position.set(x, 0.35, z); scene.add(g);
@@ -209,15 +288,16 @@ function hurtEnemy(e, i, dmg) {
 }
 function hurtBoss(dmg) {
   const B = S.boss; if (!B || B.entering || B.hp <= 0) return;
-  B.hp -= dmg; B.g.userData.eyeU.uHurt.value = 0.4;
-  S.ult = Math.min(100, S.ult + ULT.perBossHit); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + OD.perBossHit);
+  B.hp -= dmg * C().dmg; B.g.userData.eyeU.uHurt.value = 0.4;
+  S.ult = Math.min(100, S.ult + chargeGain(ULT.perBossHit)); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + chargeGain(OD.perBossHit));
   particles.emit(new THREE.Vector3(B.x, 0.5, B.z + 0.5), new THREE.Vector3((Math.random() - 0.5) * 4, 2, 3), new THREE.Color(0xa66bff), { life: 0.3, size: 0.7 });
   if (B.hp <= 0) bossDown();
 }
 function hurtPlayer() {
   if (S.invuln > 0 || S.ultT >= 0) return;
   if (S.state === 'attract') { S.invuln = 1; return; }
-  S.hp--; S.invuln = PLAYER.invuln; S.power = Math.max(1, S.power - 1); S.weaponLevels[S.weapon] = S.power;
+  S.hp--; S.sinceHit = 0; S.invuln = PLAYER.invuln; S.power = Math.max(1, S.power - 1); S.weaponLevels[S.weapon] = S.power;
+  breakCombo();
   audio.hurt(); fx.kick({ trauma: 0.5, aberr: 1.2, glitch: 0.5 }); ui.flash('rgba(255,40,90,0.4)', 380); Platform.haptic('heavy');
   for (const b of ebullets.list) if (Math.hypot(b.x - S.x, b.z - S.z) < 3.5) b.dead = true;
   updateHUD();
@@ -244,7 +324,7 @@ function doUlt() {
   for (const b of ebullets.list) particles.emit(new THREE.Vector3(b.x, 0, b.z), new THREE.Vector3(0, 2, 0), new THREE.Color(0xffffff), { life: 0.4, size: 0.8 });
   ebullets.clear();
   if (S.state !== 'attract') { audio.ult(mode); ui.banner(ultName(mode, i18n.isZh() ? 'zh' : 'en'), '', ''); Platform.haptic('heavy'); }
-  const up = new THREE.Vector3(S.x, 0.5, S.z); particles.burst(up, new THREE.Color(WEAPONS[mode].color), 150, { speed: 14, up: 4, life: 1.1, size: 1.5, grav: 0 }); waves.spawn(up, new THREE.Color(WEAPONS[mode].color), { r0: 1, r1: 16, h: 2.4, dur: 1.0, a: 3 }); fx.kick({ slowmo: 0.7, aberr: 1.5, fovKick: 1, trauma: 0.4 }); ui.flash('rgba(255,255,255,0.42)', 620);
+  const up = new THREE.Vector3(S.x, 0.5, S.z); particles.burst(up, new THREE.Color(WEAPONS[mode].color), 150, { speed: 14, up: 4, life: 1.1, size: 1.5, grav: 0 }); waves.spawn(up, new THREE.Color(WEAPONS[mode].color), { r0: 1, r1: 16, h: 2.4, dur: 1.0, a: 3 }); fx.kick({ slowmo: 0.7, aberr: 1.5, fovKick: 1, trauma: 0.4 }); ui.flash('rgba(255,255,255,0.3)', 480);
   updateHUD();
 }
 function doOverdrive() {
@@ -257,6 +337,7 @@ function doOverdrive() {
 
 function gameOver() {
   S.state = 'dying'; S.dieT = 0;
+  if (ui.el.banner) ui.el.banner.classList.add('hidden');
   const p = new THREE.Vector3(S.x, 0, S.z);
   particles.burst(p, new THREE.Color(0xff2bd6), 120, { speed: 9, up: 3, life: 1.2, size: 1.3, grav: 0, color2: new THREE.Color(0x00e5ff) }); audio.boom(true); audio.fail();
   ninja.visible = false; fx.kick({ slowmo: 0.9, glitch: 1 });
@@ -273,12 +354,16 @@ function gameOver() {
 async function revive() {
   if (S.state !== 'over' || S.continued) return; audio.click();
   const r = await ads.rewarded('continue'); if (!r.rewarded) { ui.toast(t('noReward')); return; }
-  S.continued = true; S.hp = PLAYER.hp; S.invuln = 3; ebullets.clear(); ninja.visible = true; S.ult = 100; S.ults[S.weapon] = 100; S.od = 100;
+  S.continued = true; S.hp = PLAYER.maxHp; S.sinceHit = 99; S.invuln = 3; ebullets.clear(); ninja.visible = true;
+  S.ult = 100; S.ults[S.weapon] = 100; S.od = 100;
+  // clean restart of the power systems: no stale overdrive / cease-fire / ult
+  S.odT = -1; S.noFireT = 0; S.ultT = -1; S.ultMode = null; S.ultFireT = 0; S.novaR = 0;
+  beam.visible = false; beam.material.opacity = 0;
   setState('playing'); audio.unduckMusic(); ui.banner(t('revived'), '', t('ultFull'));
 }
 async function retry() { if (S.state !== 'over') return; audio.click(); await ads.naturalBreak('gameover'); ninja.visible = true; beginRun(); }
 async function overToMenu() { if (S.state !== 'over') return; await ads.naturalBreak('gameover'); ninja.visible = true; showAttract(); }
-function pause() { if (S.state !== 'playing') return; setState('paused'); audio.duckMusic(); audio.back(); }
+function pause() { if (S.state !== 'playing') return; if (ui.el.banner) ui.el.banner.classList.add('hidden'); setState('paused'); audio.duckMusic(); audio.back(); }
 function resume() { if (S.state !== 'paused') return; setState('playing'); audio.unduckMusic(); audio.click(); }
 
 // ---------------------------------------------------------------- input: relative drag + keys
@@ -288,7 +373,7 @@ addEventListener('keyup', (e) => keys.delete(e.code));
 addEventListener('blur', () => keys.clear());
 function worldPerPx() { const a = stage.toScreen(new THREE.Vector3(-FIELD.halfW, 0, 0)), b = stage.toScreen(new THREE.Vector3(FIELD.halfW, 0, 0)); return (FIELD.halfW * 2) / Math.max(40, b.x - a.x); }
 const cv = $('scene');
-cv.addEventListener('pointerdown', (e) => { if (S.state !== 'playing' || S.demo) return; drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, px: S.x, pz: S.z, k: worldPerPx() * PLAYER.dragGain }; try { cv.setPointerCapture(e.pointerId); } catch {} });
+cv.addEventListener('pointerdown', (e) => { if (S.state !== 'playing' || S.demo) return; drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, px: S.x, pz: S.z, k: worldPerPx() * PLAYER.dragGain * C().speed }; try { cv.setPointerCapture(e.pointerId); } catch {} });
 cv.addEventListener('pointermove', (e) => { if (!drag || e.pointerId !== drag.id) return; S.tx = drag.px + (e.clientX - drag.sx) * drag.k; S.tz = drag.pz + (e.clientY - drag.sy) * drag.k * 1.25; });
 const endDrag = (e) => { if (drag && e.pointerId === drag.id) drag = null; };
 cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
@@ -311,6 +396,71 @@ if (shouldShowArcadeMenu(__hub)) { const b = document.getElementById('btn-arcade
 ui.on('btn-arcade-menu', () => { try { audio.back(); } catch {} returnToHub({ gameId: 'cyber-ninja', openStore: false }); });
 
 ui.on('btn-resume', resume); ui.on('btn-quit', () => { audio.back(); showAttract(); });
+
+// ---------------------------------------------------------------- start-screen: craft select + weapon tech tree
+const hex = (n) => '#' + n.toString(16).padStart(6, '0');
+const CRAFT_SVG = {
+  falcon: (c, a) => `<svg viewBox="0 0 96 44"><path d="M48 6 L58 22 L92 34 L58 30 L48 40 L38 30 L4 34 L38 22 Z" fill="none" stroke="${c}" stroke-width="2"/><path d="M48 12 L53 22 L48 32 L43 22 Z" fill="${a}" opacity=".85"/><circle cx="48" cy="22" r="3" fill="${c}"/></svg>`,
+  bastion: (c, a) => `<svg viewBox="0 0 96 44"><path d="M28 10 L68 10 L76 22 L68 34 L28 34 L20 22 Z" fill="none" stroke="${c}" stroke-width="2"/><path d="M40 16 L56 16 L60 22 L56 28 L40 28 L36 22 Z" fill="${a}" opacity=".85"/><path d="M10 22 L20 22 M76 22 L86 22" stroke="${c}" stroke-width="2"/></svg>`,
+  wraith: (c, a) => `<svg viewBox="0 0 96 44"><path d="M48 4 L52 20 L48 38 L44 20 Z" fill="${a}" opacity=".9"/><path d="M16 8 L40 22 L16 36 M80 8 L56 22 L80 36" fill="none" stroke="${c}" stroke-width="2"/><circle cx="48" cy="20" r="2.5" fill="${c}"/></svg>`,
+};
+const statBars = (n) => `<span class="bars">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
+function renderCraftSelect() {
+  const lang = i18n.isZh() ? 'zh' : 'en';
+  const row = $('craft-row'); if (!row) return;
+  row.innerHTML = CRAFT_KEYS.map((k) => {
+    const c = CRAFTS[k];
+    const stats = [
+      [t('statHp'), Math.round(c.hp / 4 * 5)],
+      [t('statDmg'), Math.round(c.dmg / 1.3 * 5)],
+      [t('statSpd'), Math.round(c.speed / 1.15 * 5)],
+      [t('statChg'), Math.round(c.charge / 1.4 * 5)],
+    ];
+    return `<button type="button" class="craft-card ${S.craft === k ? 'sel' : ''}" data-craft="${k}" style="--cc:${hex(c.color)}">
+      <span class="cc-svg">${CRAFT_SVG[k](hex(c.color), hex(c.accent))}</span>
+      <span class="cc-info">
+        <span class="cc-code">${c.code[lang]} · ${c.role[lang]}</span>
+        <span class="cc-name">${c.name[lang]}</span>
+        <span class="cc-passive">${c.passive[lang]}</span>
+      </span>
+      <span class="cc-stats">${stats.map(([l, n]) => `<span class="cc-stat"><em>${l}</em>${statBars(n)}</span>`).join('')}</span>
+    </button>`;
+  }).join('');
+  for (const b of row.querySelectorAll('[data-craft]')) b.addEventListener('click', () => { if (S.craft === b.dataset.craft) return; audio.init(); audio.select(); setCraft(b.dataset.craft); renderCraftSelect(); });
+}
+const ULT_SVG = {
+  pulse: (c) => `<svg viewBox="0 0 30 30"><g fill="none" stroke="${c}" stroke-width="1.6"><path d="M15 26 L15 4 M15 26 L6 10 M15 26 L24 10 M15 26 L2 18 M15 26 L28 18"/></g></svg>`,
+  lance: (c) => `<svg viewBox="0 0 30 30"><path d="M15 2 L18 12 L28 15 L18 18 L15 28 L12 18 L2 15 L12 12 Z" fill="none" stroke="${c}" stroke-width="1.6"/><circle cx="15" cy="15" r="3" fill="${c}"/></svg>`,
+  nova: (c) => `<svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="4" fill="${c}"/><circle cx="15" cy="15" r="9" fill="none" stroke="${c}" stroke-width="1.4" opacity=".8"/><circle cx="15" cy="15" r="13.5" fill="none" stroke="${c}" stroke-width="1" opacity=".5"/></svg>`,
+};
+function levelStat(key, lv) {
+  const L = WEAPONS[key].levels[lv - 1];
+  const lang = i18n.isZh() ? 'zh' : 'en';
+  if (key === 'pulse') return lang === 'zh' ? `${L.shots.length}彈` : `${L.shots.length}SH`;
+  if (key === 'lance') return lang === 'zh' ? `貫${L.pierce}` : `P${L.pierce}`;
+  return lang === 'zh' ? `範${L.aoe}` : `R${L.aoe}`;
+}
+let treeKey = 'pulse';
+function renderTechTree() {
+  const tabs = $('tree-tabs'), det = $('tree-detail');
+  if (!tabs || !det) return;
+  const lang = i18n.isZh() ? 'zh' : 'en';
+  tabs.innerHTML = WEAPON_KEYS.map((k) => {
+    const w = WEAPONS[k];
+    return `<button type="button" class="tree-tab ${treeKey === k ? 'sel' : ''}" data-w="${k}" style="--tc:${hex(w.color)}">${w.short[lang]}<small>${w.name[lang === 'zh' ? 'en' : 'zh']}</small></button>`;
+  }).join('');
+  for (const b of tabs.querySelectorAll('[data-w]')) b.addEventListener('click', () => { treeKey = b.dataset.w; audio.init(); try { audio.click(); } catch (_) {} renderTechTree(); });
+  const w = WEAPONS[treeKey];
+  const nodes = w.levels.map((L, i) => `<div class="td-node"><div class="nd ${i === 5 ? 'max' : ''}"><i>${i + 1}</i></div><small>${levelStat(treeKey, i + 1)}<br>${L.dmg}${lang === 'zh' ? '傷' : 'DMG'}</small></div>`).join('');
+  det.style.setProperty('--tc', hex(w.color));
+  det.innerHTML = `
+    <div class="td-head"><b>${w.name[lang]}</b><span>${w.name[lang === 'zh' ? 'en' : 'zh']}</span></div>
+    <div class="td-desc">${t('techDesc')[treeKey]?.[lang === 'zh' ? 0 : 1] || ''}</div>
+    <div class="td-nodes">${nodes}</div>
+    <div class="td-ult"><span class="u-ico">${ULT_SVG[treeKey](hex(w.color))}</span><div><b>${w.ult[lang]}</b><small>${t('ultDesc')[treeKey]?.[lang === 'zh' ? 0 : 1] || ''}</small></div></div>
+    <div class="td-foot">${t('techFoot')}</div>`;
+}
+renderCraftSelect(); renderTechTree();
 ui.on('btn-settings-pause', () => { try { audio.click(); } catch (_) {} ui.settings({ audio, stage, onOpen: () => { try { audio.click(); } catch (_) {} } }); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
@@ -335,7 +485,7 @@ ui.mountSettings({
 });
 
 
-i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); });
+i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); renderCraftSelect(); renderTechTree(); });
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
 Platform.onBack(() => { if (ui.closeModal()) return true; if (S.state === 'playing') { pause(); return true; } if (S.state === 'paused') { resume(); return true; } if (S.state === 'over') { overToMenu(); return true; } return false; });
 Platform.onPause(() => { if (!S.demo) pause(); });
@@ -343,6 +493,7 @@ S.api = {
   wave: (n) => { clearField(); S.wave = n - 1; nextWave(); },
   ult: () => { S.ult = 100; doUlt(); },
   overdrive: () => { S.od = 100; doOverdrive(); },
+  craft: (key) => setCraft(key),
   weapon: (key, level = 1) => { if (!WEAPONS[key]) return; S.ults[S.weapon] = S.ult; S.weapon = key; S.weaponLevels[key] = Math.max(1, Math.min(6, level)); S.power = S.weaponLevels[key]; S.ult = S.ults[key]; S.fireT = 0; updateHUD(); },
   drop: (kind, key) => dropPickup(S.x, S.z - 1.2, kind, key),
   dropAt: (x, z, kind, key) => dropPickup(x, z, kind, key),
@@ -369,6 +520,7 @@ function autopilot(dt) {
   let push = 0;
   for (const b of ebullets.list) { const dz = S.z - b.z; if (dz > -0.5 && dz < 5) { const dx = S.x - b.x; if (Math.abs(dx) < 1.6) push += Math.sign(dx || 0.1) * (1.6 - Math.abs(dx)) * (1 - dz / 5) * 3; } }
   for (const e of S.enemies) if (e.type === 'dasher' && e.mode === 2) { const dx = S.x - e.x; if (Math.abs(dx) < 2.5) push += Math.sign(dx || 1) * 3; }
+  for (const e of S.enemies) if (e.type === 'mite') { const dx = S.x - e.x, dz = S.z - e.z, d = Math.hypot(dx, dz); if (d < 3.2 && d > 0.01) push += Math.sign(dx || 0.1) * (3.2 - d) * 0.9; }
   S.tx = THREE.MathUtils.clamp(tx + push * 1.4, -FIELD.halfW + 0.5, FIELD.halfW - 0.5); S.tz = 1.2;
   if (S.ult >= 100 && (S.boss || S.enemies.length >= 6)) doUlt();
 }
@@ -379,18 +531,30 @@ function sim(dt) {
   // player movement
   if (S.state === 'attract' || S.demo) autopilot(dt);
   let kx = 0, kz = 0; if (keys.has('ArrowLeft') || keys.has('KeyA')) kx--; if (keys.has('ArrowRight') || keys.has('KeyD')) kx++; if (keys.has('ArrowUp') || keys.has('KeyW')) kz--; if (keys.has('ArrowDown') || keys.has('KeyS')) kz++;
+  const spd = C().speed;
   const px = S.x;
-  if ((kx || kz) && S.state === 'playing' && !S.demo) { S.x += kx * PLAYER.keySpeed * dt; S.z += kz * PLAYER.keySpeed * dt; S.tx = S.x; S.tz = S.z; }
+  if ((kx || kz) && S.state === 'playing' && !S.demo) { S.x += kx * PLAYER.keySpeed * spd * dt; S.z += kz * PLAYER.keySpeed * spd * dt; S.tx = S.x; S.tz = S.z; }
   else if (S.tx !== undefined) { const k = 1 - Math.exp(-dt * (drag ? 28 : 9)); S.x += (S.tx - S.x) * k; S.z += (S.tz - S.z) * k; }
   S.x = THREE.MathUtils.clamp(S.x, -FIELD.halfW + 0.4, FIELD.halfW - 0.4); S.z = THREE.MathUtils.clamp(S.z, FIELD.playerMinZ, FIELD.playerMaxZ);
   if (S.tx !== undefined) { S.tx = THREE.MathUtils.clamp(S.tx, -FIELD.halfW + 0.4, FIELD.halfW - 0.4); S.tz = THREE.MathUtils.clamp(S.tz, FIELD.playerMinZ, FIELD.playerMaxZ); }
   S.vx = (S.x - px) / Math.max(dt, 1e-4);
   S.invuln = Math.max(0, S.invuln - dt);
   ninja.position.set(S.x, 0, S.z);
+  // combo decay
+  if (S.combo.timer > 0) { S.combo.timer -= dt; if (S.combo.timer <= 0) breakCombo(); }
+  S.gemChainT = Math.max(0, S.gemChainT - dt); if (S.gemChainT <= 0) S.gemChain = 0;
+  // bastion nano-plating: regenerate a shield after a calm streak
+  S.sinceHit += dt;
+  const regen = C().regen;
+  if (regen && S.sinceHit >= regen && S.hp < PLAYER.maxHp && S.state === 'playing') {
+    S.hp++; S.sinceHit = 0; audio.shieldUp(); updateHUD();
+    const sp = stage.toScreen(new THREE.Vector3(S.x, 0.9, S.z)); ui.popup(sp.x, sp.y, t('shieldUp'), 'shield-pop');
+    particles.burst(new THREE.Vector3(S.x, 0.4, S.z), new THREE.Color(0x3bff8a), 24, { speed: 4, up: 3, life: 0.6, size: 0.9, grav: 0 });
+  }
   // overdrive burn / forced cease-fire
   if (S.odT >= 0) {
     S.odT += dt;
-    if (S.odT >= OD.duration) {
+    if (S.odT >= OD.duration + C().odBonus) {
       S.odT = -1; S.noFireT = OD.noFire;
       if (S.state === 'playing') { audio.warn(); ui.toast(t('odVent'), 1200); }
     }
@@ -404,10 +568,12 @@ function sim(dt) {
     const pool = pools[S.weapon];
     for (const [ox, ang] of sol.shots) {
       pool.add(S.x + ox, S.z - 0.6, Math.sin(ang) * sol.speed, -Math.cos(ang) * sol.speed, {
-        kind: S.weapon, dmg: sol.dmg, pierce: sol.pierce || 0, aoe: sol.aoe || 0, hit: new Set(),
+        kind: S.weapon, dmg: sol.dmg * C().dmg, pierce: sol.pierce || 0, aoe: sol.aoe || 0, hit: new Set(),
         scale: (sol.scale || 1) * (S.odT >= 0 ? 1.22 : 1), rotX: S.weapon === 'nova' ? Math.PI / 2 : 0,
       });
     }
+    // muzzle flash
+    particles.emit(new THREE.Vector3(S.x, 0.35, S.z - 0.8), new THREE.Vector3((Math.random() - 0.5) * 1.2, 1.2, -4), new THREE.Color(C().color), { life: 0.14, size: 0.85, grav: 0 });
     if (S.state === 'playing') audio.shot(S.weapon);
   }
   // waves
@@ -453,9 +619,11 @@ function sim(dt) {
       gm.vx *= 0.97; gm.vz *= 0.97;
       gm.x += gm.vx * dt; gm.z += gm.vz * dt;
       if (d < 0.9) {
-        S.score += gm.value; S.ult = Math.min(100, S.ult + gm.energy); S.ults[S.weapon] = S.ult;
-        S.od = Math.min(100, S.od + gm.energy * 0.6);
-        if (S.state === 'playing' && (gm.tier === 2 || Math.random() < 0.22)) audio.gem();
+        S.score += gm.value * S.combo.mult;
+        S.gemChain = Math.min(24, S.gemChain + 1); S.gemChainT = 0.9;
+        S.ult = Math.min(100, S.ult + chargeGain(gm.energy)); S.ults[S.weapon] = S.ult;
+        S.od = Math.min(100, S.od + chargeGain(gm.energy * 0.6));
+        if (S.state === 'playing' && (gm.tier === 2 || Math.random() < 0.22)) audio.gem(S.gemChain);
         particles.emit(new THREE.Vector3(gm.x, 0.3, gm.z), new THREE.Vector3(0, 1.5, 0), new THREE.Color(gm.tier === 2 ? 0xffc22b : gm.tier === 1 ? 0xff2bd6 : 0x00e5ff), { life: 0.3, size: 0.5 });
         scene.remove(gm.g); S.gems.splice(i, 1); continue;
       }
@@ -494,15 +662,31 @@ function sim(dt) {
       else if (e.mode === 1) { e.chargeT -= dt; e.flash = 0.6; if (e.chargeT <= 0) { e.mode = 2; const a = aimAt(e.x, e.z); e.dvx = Math.sin(a) * e.vz * 5.0; e.dvz = Math.cos(a) * e.vz * 5.0; } }
       else { e.x += e.dvx * dt; e.z += e.dvz * dt; }
       e.g.rotation.y = e.mode === 2 ? Math.atan2(e.dvx, e.dvz) : aimAt(e.x, e.z);
+    } else if (e.type === 'splitter') {
+      // brood carrier drifts toward mid-field, swaying; pops mites when destroyed
+      e.z += e.vz * dt;
+      e.x += (S.x - e.x) * dt * 0.3 + Math.sin(e.t * 1.8 + e.phase) * dt * 0.9;
+      e.x = THREE.MathUtils.clamp(e.x, -FIELD.halfW + 0.5, FIELD.halfW - 0.5);
+    } else if (e.type === 'mite') {
+      // burst out of the wreck, then hunt the player with ramping speed
+      if (e.t < 0.38) { e.x += e.vx * dt; e.z += e.vz * dt; }
+      else {
+        const sp = Math.min(10.5, e.def.speed * (1 + Math.min(1.4, e.t * 0.4)));
+        const a = Math.atan2(S.x - e.x, S.z - e.z);
+        e.x += Math.sin(a) * sp * dt; e.z += Math.cos(a) * sp * dt;
+        e.g.rotation.y = a; e.g.rotation.x += dt * 9;
+      }
     }
-    // Drone/weaver fire aimed pressure; without this the player only ever dodges Dashers.
-    if ((e.type === 'drone' || e.type === 'weaver') && S.state === 'playing' && e.z > FIELD.top + 1 && e.z < S.z + 1) {
+    // Drone/weaver/splitter fire aimed pressure; without this the player only ever dodges Dashers.
+    if ((e.type === 'drone' || e.type === 'weaver' || e.type === 'splitter') && S.state === 'playing' && e.z > FIELD.top + 1 && e.z < S.z + 1) {
       e.fireT -= dt * sc;
       if (e.fireT <= 0) {
         e.fireT = e.def.fire / sc;
         const a = aimAt(e.x, e.z);
         if (e.type === 'weaver') {
           for (const o of (e.elite ? [-0.24, -0.12, 0, 0.12, 0.24] : [-0.18, 0, 0.18])) enemyFire(e.x, e.z + 0.4, a + o, ENEMY_BULLET_SPEED * 0.95);
+        } else if (e.type === 'splitter') {
+          for (const o of (e.elite ? [-0.2, 0, 0.2] : [-0.12, 0.12])) enemyFire(e.x, e.z + 0.4, a + o, ENEMY_BULLET_SPEED * 0.9);
         } else {
           enemyFire(e.x, e.z + 0.4, a, ENEMY_BULLET_SPEED * 1.05);
           if (e.elite || S.wave > 6) { enemyFire(e.x, e.z + 0.4, a - 0.12, ENEMY_BULLET_SPEED); enemyFire(e.x, e.z + 0.4, a + 0.12, ENEMY_BULLET_SPEED); }
@@ -619,7 +803,7 @@ function sim(dt) {
         for (let i = 0; i < n; i++) {
           // 180° forward fan (left -> up -> right), never backwards
           const a = Math.PI + (i / (n - 1) - 0.5) * Math.PI;
-          pools.pulse.add(S.x, S.z - 0.4, Math.sin(a) * 24, Math.cos(a) * 24, { kind: 'pulse', dmg: 1.6, pierce: 1, hit: new Set(), scale: 1.15, rotX: 0 });
+          pools.pulse.add(S.x, S.z - 0.4, Math.sin(a) * 24, Math.cos(a) * 24, { kind: 'pulse', dmg: 1.6 * C().dmg, pierce: 1, hit: new Set(), scale: 1.15, rotX: 0 });
         }
         particles.emit(new THREE.Vector3(S.x, 0.5, S.z - 0.5), new THREE.Vector3(0, 3, 0), new THREE.Color(0x00e5ff), { life: 0.35, size: 1.4 });
         S.ultFireT += 0.12;
@@ -629,9 +813,9 @@ function sim(dt) {
       while (S.ultFireT <= 0) {
         for (let i = S.enemies.length - 1; i >= 0; i--) {
           const e = S.enemies[i];
-          if (Math.abs(e.x - S.x) < 2.2 && e.z < S.z + 1) hurtEnemy(e, i, 3.2);
+          if (Math.abs(e.x - S.x) < 2.2 && e.z < S.z + 1) hurtEnemy(e, i, 3.2 * C().dmg);
         }
-        if (B && !B.entering && Math.abs(B.x - S.x) < 2.8) hurtBoss(5);
+        if (B && !B.entering && Math.abs(B.x - S.x) < 2.8) hurtBoss(5 * C().dmg);
         S.ultFireT += 0.09;
       }
     } else if (mode === 'nova') {
@@ -639,9 +823,9 @@ function sim(dt) {
       while (S.ultFireT <= 0) {
         for (let i = S.enemies.length - 1; i >= 0; i--) {
           const e = S.enemies[i];
-          if (Math.hypot(e.x - S.x, e.z - S.z) < S.novaR) hurtEnemy(e, i, 2.5);
+          if (Math.hypot(e.x - S.x, e.z - S.z) < S.novaR) hurtEnemy(e, i, 2.5 * C().dmg);
         }
-        if (B && !B.entering && Math.hypot(B.x - S.x, B.z - S.z) < S.novaR) hurtBoss(3.5);
+        if (B && !B.entering && Math.hypot(B.x - S.x, B.z - S.z) < S.novaR) hurtBoss(3.5 * C().dmg);
         for (const b of ebullets.list) if (Math.hypot(b.x - S.x, b.z - S.z) < S.novaR) b.dead = true;
         waves.spawn(new THREE.Vector3(S.x, 0, S.z), new THREE.Color(WEAPONS.nova.color), { r0: S.novaR * 0.8, r1: S.novaR, h: 0.2, dur: 0.5 });
         S.ultFireT += 0.14;
@@ -664,8 +848,8 @@ function sim(dt) {
       scene.remove(p.g); S.pickups.splice(i, 1);
       if (p.kind === 'P') {
         if (S.power < 6) { S.power++; S.weaponLevels[S.weapon] = S.power; } else { S.od = Math.min(100, S.od + 12); }
-      } else if (p.kind === 'S') S.hp = Math.min(PLAYER.maxHp, S.hp + 1);
-      else if (p.kind === 'E') { S.ult = Math.min(100, S.ult + 35); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + 10); }
+      } else if (p.kind === 'S') { S.hp = Math.min(PLAYER.maxHp, S.hp + 1); audio.shieldUp(); }
+      else if (p.kind === 'E') { S.ult = Math.min(100, S.ult + chargeGain(35)); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + chargeGain(10)); }
       else if (p.kind === 'W' && p.weaponKey) {
         S.ults[S.weapon] = S.ult;
         if (p.weaponKey === S.weapon) {
@@ -676,7 +860,7 @@ function sim(dt) {
           S.weaponLevels[S.weapon] = S.power;
           S.ult = S.ults[S.weapon] || 0;
         }
-        S.fireT = 0; S.od = Math.min(100, S.od + OD.perWeaponPickup);
+        S.fireT = 0; S.od = Math.min(100, S.od + chargeGain(OD.perWeaponPickup));
         if (S.state === 'playing') ui.banner(WEAPONS[S.weapon].name[i18n.isZh() ? 'zh' : 'en'], `LV.${S.power}`, t('weaponSwap'));
       }
       if (S.state === 'playing') { audio.pickup(); const sp = stage.toScreen(new THREE.Vector3(S.x, 0.8, S.z)); ui.popup(sp.x, sp.y - 30, t(p.kind), ''); Platform.haptic('light'); }
@@ -709,9 +893,17 @@ function tick(rawDt, time) {
   theme.update(rawDt); fx.update(rawDt);
   if (S.state === 'playing' || S.state === 'attract' || S.state === 'dying') {
     if (S.state === 'dying') { S.dieT += dt; } else sim(dt);
-    updateNinja(ninja, dt, S.t, S.vx, S.invuln);
+    const thrust = 1 + (S.odT >= 0 ? 0.85 : 0) + Math.min(0.6, Math.abs(S.vx) * 0.02);
+    updateNinja(ninja, dt, S.t, S.vx, S.invuln, thrust);
     if (S.state === 'playing') updateHUD();
   }
+  // screen overlays: danger vignette at 1 shield, overdrive burn glow
+  const vd = $('vignette-danger'), vo = $('vignette-od');
+  if (vd) vd.classList.toggle('on', S.state === 'playing' && S.hp === 1);
+  if (vo) vo.classList.toggle('on', S.odT >= 0);
+  // low-shield heartbeat
+  S.heartT = (S.heartT || 0) - rawDt;
+  if (S.state === 'playing' && S.hp === 1 && S.heartT <= 0) { audio.heartbeat(); S.heartT = 1.1; }
   for (const k of WEAPON_KEYS) pools[k].sync(k === 'nova' ? 0.35 : 0.2);
   ebullets.sync(0.3); ecores.list = ebullets.list; ecores.sync(0.3);
   world.update(dt, S.t, S.state === 'paused' || S.state === 'over' ? 0.15 : 1);
