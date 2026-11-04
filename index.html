@@ -37,6 +37,7 @@
     </div>
     <div class="hud-center">
       <div class="wave-line"><span data-i18n="wave"></span><b id="hud-wave">1</b></div>
+      <div class="mission-line" id="hud-mission">CH.01-1 · 霓虹九龍</div>
       <div class="hp-line"><span class="hp-label" data-i18n="shield"></span><div class="hp-pips" id="hud-hp"></div></div>
       <div class="wchip">
         <div class="wchip-top"><b id="hud-weapon">脈衝</b><span id="hud-wlv">LV.1</span><div class="lv-pips" id="hud-lv"></div></div>
@@ -101,14 +102,19 @@
       <div class="select-title hangar-title"><span data-i18n="selectCraft"></span><em data-i18n="selectCraftS"></em></div>
       <button type="button" class="hangar-back" id="btn-hangar-back" data-i18n-attr="aria-label:kit.back" aria-label="返回">✕</button>
     </div>
-    <div class="hangar-stage">
-      <canvas id="craft-canvas"></canvas>
-      <div class="hangar-craft-id" id="craft-id"></div>
-    </div>
-    <div class="hangar-info">
-      <div class="ci-passive" id="craft-passive"></div>
-      <div class="ci-stats" id="craft-stats"></div>
-      <div class="ci-blurb" id="craft-blurb"></div>
+    <div class="hangar-main">
+      <div class="hangar-stage craft-stage">
+        <canvas id="craft-canvas"></canvas>
+        <div class="stage-index">AIRFRAME / 01—03</div>
+        <div class="hangar-craft-id" id="craft-id"></div>
+      </div>
+      <div class="hangar-info craft-info" id="craft-info">
+        <div class="info-kicker" data-i18n="pilotBrief">PILOT BRIEF</div>
+        <div class="ci-passive" id="craft-passive"></div>
+        <div class="ci-stats" id="craft-stats"></div>
+        <div class="ci-blurb" id="craft-blurb"></div>
+        <div class="campaign-lore"><b data-i18n="storyTitle"></b><p data-i18n="storyIntro"></p><span data-i18n="campaignScale"></span></div>
+      </div>
     </div>
     <div class="hangar-select" id="craft-row"></div>
     <div class="hangar-foot">
@@ -123,15 +129,22 @@
       <div class="select-title hangar-title"><span data-i18n="selectWeapon"></span><em data-i18n="selectWeaponS"></em></div>
       <button type="button" class="hangar-back" id="btn-weapon-back" data-i18n-attr="aria-label:kit.back" aria-label="返回">✕</button>
     </div>
-    <div class="hangar-stage">
-      <canvas id="weapon-canvas"></canvas>
-      <div class="hangar-craft-id" id="weapon-id"></div>
-    </div>
-    <div class="hangar-info">
-      <div class="ci-stats" id="weapon-stats"></div>
-      <div class="tech-tree">
-        <div class="tree-detail" id="tree-detail"></div>
+    <div class="hangar-main weapon-main">
+      <div class="hangar-stage weapon-stage">
+        <video id="weapon-video" muted loop playsinline preload="metadata" aria-label="Real gameplay weapon preview"></video>
+        <div class="stage-index"><span data-i18n="realFootage"></span> · LV.6 + ULT</div>
+        <div class="hangar-craft-id" id="weapon-id"></div>
       </div>
+      <div class="hangar-info weapon-info">
+        <div class="ci-stats" id="weapon-stats"></div>
+        <div class="tech-tree">
+          <div class="tree-detail" id="tree-detail"></div>
+        </div>
+      </div>
+    </div>
+    <div class="difficulty-block">
+      <div class="difficulty-head"><span data-i18n="difficulty"></span><small id="difficulty-desc"></small></div>
+      <div class="difficulty-row" id="difficulty-row"></div>
     </div>
     <div class="hangar-select" id="weapon-row"></div>
     <div class="hangar-foot">

@@ -1,6 +1,15 @@
 // XENO NIGHTMARE 異域凶間 — every tuning constant lives here.
 export const GAME_ID = 'cyber-ninja';
 
+// Selectable run rules. Weapon damage/OD values remain in weapons.js; these
+// multipliers only change enemy pressure, survivability and score risk/reward.
+export const DIFFICULTIES = {
+  story:     { key: 'story', enemyHp: 0.78, bossHp: 0.78, bulletSpeed: 0.72, fireRate: 0.62, bonusHp: 2, invuln: 2.2, drops: 1.5, score: 0.8 },
+  normal:    { key: 'normal', enemyHp: 0.9, bossHp: 0.9, bulletSpeed: 0.86, fireRate: 0.82, bonusHp: 0, invuln: 1.85, drops: 1.2, score: 1 },
+  nightmare: { key: 'nightmare', enemyHp: 1.12, bossHp: 1.1, bulletSpeed: 1.02, fireRate: 1.08, bonusHp: 0, invuln: 1.45, drops: 0.9, score: 1.5 },
+};
+export const difficultyOf = (key) => DIFFICULTIES[key] || DIFFICULTIES.normal;
+
 // Play field (world units, xz plane). Far = -z = top of screen.
 export const FIELD = { halfW: 6, top: -24, bottom: 3.2, playerMinZ: -21, playerMaxZ: 2.4 };
 
@@ -55,10 +64,10 @@ export function waveSpec(n, rng = Math.random) {
   const usable = n >= 6 ? ['line', 'pincer', 'wall', 'crossfire', 'rush', 'weave', 'elite', 'swarm'] : n >= 4 ? ['line', 'pincer', 'wall', 'crossfire', 'rush', 'weave', 'elite'] : n >= 3 ? ['line', 'pincer', 'wall', 'weave'] : ['line', 'pincer'];
   const recipe = n <= 2 ? usable[n - 1] : usable[(n + Math.floor(rng() * usable.length)) % usable.length];
   if (recipe === 'line') {
-    const count = 7 + Math.min(4, Math.floor(n / 3));
+    const count = (n === 1 ? 6 : 7) + Math.min(4, Math.floor(n / 3));
     for (let i = 0; i < count; i++) add('drone', (i - (count - 1) / 2) * 1.25, 0.6 + i * 0.16, 'dive');
   } else if (recipe === 'pincer') {
-    for (let i = 0; i < 4; i++) { add('drone', -4.8 + i * 0.7, 0.5 + i * 0.25, 'dive'); add('drone', 4.8 - i * 0.7, 0.7 + i * 0.25, 'dive'); }
+    for (let i = 0; i < 3; i++) { add('drone', -4.8 + i * 0.85, 0.5 + i * 0.3, 'dive'); add('drone', 4.8 - i * 0.85, 0.75 + i * 0.3, 'dive'); }
     for (let i = 0; i < 2; i++) add('weaver', -2.2 + i * 4.4, 1.4 + i * 0.5, 'strafe');
   } else if (recipe === 'wall') {
     const count = 8;

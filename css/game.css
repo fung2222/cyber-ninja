@@ -173,57 +173,94 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .hi-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 20px; }
 .hi-line .hi { white-space: nowrap; }
 
-/* hangar: full-screen craft-select — top 3D stage / middle info+tree / bottom selector */
-#screen-hangar, #screen-weapon { z-index: 40; background: radial-gradient(130% 100% at 50% 0%, #171034 0%, #0a0618 58%, #05020f 100%); }
-.hangar { display: flex; flex-direction: column; width: 100%; height: 100%; max-width: 720px; margin: 0 auto; padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
-.hangar-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; }
-.hangar-title { margin: 0; text-align: left; }
-.hangar-back { flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid var(--c3); background: rgba(10, 6, 24, .6); color: var(--c3); font-size: 18px; line-height: 1; cursor: pointer; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-.hangar-back:active { background: rgba(255, 60, 120, .25); }
-.hangar-stage { flex: 0 0 28vh; min-height: 148px; position: relative; border: 1px solid color-mix(in srgb, var(--c1) 30%, transparent);
-  background: linear-gradient(180deg, rgba(0,229,255,.06), rgba(255,43,214,.05) 70%, rgba(6,2,20,.2));
-  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); }
-.hangar-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.hangar-craft-id { position: absolute; left: 12px; bottom: 8px; pointer-events: none; }
-.hangar-craft-id b { display: block; font-family: var(--font-zh); font-size: 24px; font-weight: 900; letter-spacing: 5px; color: #fff; text-shadow: 0 0 12px var(--cc, var(--c1)); }
-.hangar-craft-id span { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2.5px; color: var(--cc, var(--c1)); }
-.hangar-info { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; width: 100%; padding: 8px 1px 2px; }
-/* craft page has no tech tree — centre its info block in the freed space */
-#screen-hangar .hangar-info { display: flex; flex-direction: column; justify-content: center; }
-.ci-passive { font-size: 11.5px; line-height: 1.55; letter-spacing: .5px; color: #b9c8ff; padding: 6px 10px; margin-bottom: 6px; background: rgba(10,4,30,.5); border: 1px solid color-mix(in srgb, var(--cc, var(--c1)) 35%, transparent);
-  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
-.ci-blurb { font-size: 10.5px; line-height: 1.6; color: #9fb0e8; margin: 2px 0 6px; padding: 0 2px; }
-.ws-stat { display: grid; gap: 3px; text-align: center; padding: 6px 2px 7px; background: rgba(10,4,30,.5); border: 1px solid color-mix(in srgb, var(--cc, var(--c1)) 30%, transparent);
-  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
-.ws-stat em { font-family: 'Orbitron', sans-serif; font-style: normal; font-size: 6.5px; letter-spacing: 1.5px; color: color-mix(in srgb, var(--cc, var(--c1)) 80%, white); }
-.ws-stat b { font-family: 'Orbitron', sans-serif; font-size: 12px; color: #fff; text-shadow: 0 0 8px var(--cc, var(--c1)); }
-.hangar-select { flex: 0 0 auto; display: flex; gap: 8px; width: 100%; padding: 8px 0 6px; }
+/* ---------------- full-width loadout: real craft / real combat footage ---------------- */
+#screen-hangar, #screen-weapon { z-index: 40; padding: 0; background: radial-gradient(110% 90% at 50% 12%, #1b1040 0%, #09051a 52%, #03010c 100%); }
+#screen-hangar::before, #screen-weapon::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .18; background-image: linear-gradient(rgba(0,229,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,.09) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(to bottom, black, transparent 72%); }
+.hangar { position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; max-width: 1180px; margin: 0 auto; padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+.hangar-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 2px 8px; border-bottom: 1px solid rgba(0,229,255,.2); }
+.hangar-title { margin: 0; text-align: left; font-size: 20px; letter-spacing: 4px; min-width: 0; }
+.hangar-title > span { white-space: nowrap; }
+.hangar-title em { flex: 1; font-size: 9px; line-height: 1.45; letter-spacing: 1px; }
+.hangar-back { flex: 0 0 auto; width: 44px; height: 44px; border: 0; border-left: 1px solid var(--c3); background: rgba(10,6,24,.35); color: var(--c3); font-size: 22px; line-height: 1; cursor: pointer; }
+.hangar-back:active { background: rgba(255,60,120,.25); }
+.hangar-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.hangar-stage { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 48%, rgba(0,229,255,.09), transparent 64%); }
+.craft-stage { flex: 1 1 auto; min-height: 205px; }
+.weapon-stage { flex: 0 0 34%; min-height: 170px; }
+.hangar-stage canvas, .hangar-stage video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hangar-stage video { object-fit: cover; background: #05010f; }
+.stage-index { position: absolute; top: 12px; left: 2px; padding-left: 9px; border-left: 2px solid var(--c1); font: 9px/1.4 'Orbitron', sans-serif; letter-spacing: 2px; color: #d9e7ff; text-shadow: 0 1px 5px #000; pointer-events: none; }
+.hangar-craft-id { position: absolute; left: 2px; bottom: 10px; pointer-events: none; text-shadow: 0 2px 12px #05010f, 0 0 12px #05010f; }
+.hangar-craft-id b { display: block; font-family: var(--font-zh); font-size: clamp(28px, 7vw, 44px); font-weight: 900; letter-spacing: 6px; line-height: 1.05; color: #fff; text-shadow: 0 0 14px var(--cc, var(--tc, var(--c1))); }
+.hangar-craft-id span { font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 2px; color: var(--cc, var(--tc, var(--c1))); }
+.hangar-info { width: 100%; min-height: 0; color: #dce6ff; }
+.craft-info { flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; padding: 10px 2px 4px; }
+.weapon-info { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; padding: 8px 2px 2px; }
+.info-kicker { font: 9px/1.4 'Orbitron', sans-serif; letter-spacing: 3px; color: var(--cc, var(--c1)); margin-bottom: 5px; }
+.ci-passive { font-size: 14px; line-height: 1.55; letter-spacing: .3px; color: #eef4ff; padding: 0 0 0 12px; margin: 0 0 10px; border-left: 3px solid var(--cc, var(--c1)); background: none; clip-path: none; }
+.ci-blurb { font-size: 13px; line-height: 1.65; color: #b9c8ed; margin: 9px 0 0; padding: 0; }
+.ci-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid color-mix(in srgb, var(--cc, var(--c1)) 32%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--cc, var(--c1)) 22%, transparent); }
+.cc-stat { display: grid; grid-template-columns: 1fr; gap: 7px; font-family: var(--font-zh); font-size: 11px; letter-spacing: 1px; color: #eaf2ff; }
+.cc-stat .bars { display: flex; gap: 3px; }
+.cc-stat .bars i { height: 6px; flex: 1; background: rgba(255,255,255,.1); }
+.cc-stat .bars i.on { background: var(--cc); box-shadow: 0 0 6px var(--cc); }
+.campaign-lore { margin-top: 10px; padding-top: 9px; border-top: 1px dashed rgba(166,107,255,.35); }
+.campaign-lore b { font-size: 12px; letter-spacing: 2px; color: #d9c7ff; }
+.campaign-lore p { margin: 4px 0; font-size: 12px; line-height: 1.55; color: #aebce8; }
+.campaign-lore span { font: 9px/1.4 'Orbitron', sans-serif; letter-spacing: 1.5px; color: var(--c3); }
+.ws-stat { display: grid; gap: 4px; text-align: center; padding: 0; background: none; border: 0; clip-path: none; }
+.ws-stat em { font-family: var(--font-zh); font-style: normal; font-size: 10px; letter-spacing: 1px; color: #b9c8ed; }
+.ws-stat b { font-family: 'Orbitron', sans-serif; font-size: 16px; color: #fff; text-shadow: 0 0 8px var(--cc, var(--c1)); }
+.tech-tree { margin-top: 8px; }
+.tree-detail { padding: 0; background: none; border: 0; clip-path: none; }
+.td-desc { font-size: 13px; line-height: 1.6; color: #c5d2f3; margin-bottom: 10px; }
+.td-nodes { gap: 5px; margin-bottom: 12px; }
+.td-node .nd { width: 32px; height: 32px; font-size: 11px; background: #09041c; }
+.td-node small { margin-top: 8px; font-size: 9px; line-height: 1.45; color: #d0dbf5; }
+.td-ult { gap: 12px; padding: 8px 0 8px 12px; background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 13%, transparent), transparent); border: 0; border-left: 3px solid var(--tc); clip-path: none; }
+.td-ult .u-ico { width: 38px; height: 38px; }
+.td-ult b { font-size: 15px; }
+.td-ult small { font-size: 12px; line-height: 1.5; color: #c5d2f3; }
+.td-foot { margin-top: 8px; font-size: 11px; line-height: 1.5; letter-spacing: .3px; color: #b9c8ed; }
+.difficulty-block { flex: 0 0 auto; padding: 6px 2px 2px; }
+.difficulty-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 5px; font-size: 12px; letter-spacing: 2px; color: #fff; }
+.difficulty-head small { font-size: 10px; letter-spacing: 0; color: #aebce8; }
+.difficulty-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.diff-btn { min-height: 42px; padding: 6px 4px; color: #aebce8; background: rgba(7,3,20,.5); border: 0; border-bottom: 2px solid rgba(255,255,255,.15); font-family: var(--font-zh); cursor: pointer; }
+.diff-btn b { display: block; font-size: 13px; letter-spacing: 2px; }
+.diff-btn small { display: block; margin-top: 2px; font: 8px 'Orbitron', sans-serif; letter-spacing: 1px; }
+.diff-btn.sel { color: #fff; border-color: var(--c3); background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--c3) 13%, transparent)); text-shadow: 0 0 8px var(--c3); }
+.hangar-select { flex: 0 0 auto; display: flex; gap: 10px; width: 100%; padding: 8px 0; }
+.hs-btn { padding: 8px 4px 9px; background: linear-gradient(180deg, rgba(20,10,48,.4), rgba(5,2,16,.65)); border: 0; border-bottom: 2px solid color-mix(in srgb, var(--cc, var(--c1)) 38%, transparent); clip-path: none; }
+.hs-btn.sel { border-color: var(--cc); box-shadow: inset 0 -12px 20px -16px var(--cc); background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--cc) 12%, transparent)); }
+.hs-svg svg { height: 30px; }
+.hs-name { font-size: 16px; letter-spacing: 3px; }
+.hs-code { font-size: 9px; letter-spacing: 1px; }
 .hangar-foot { flex: 0 0 auto; width: 100%; }
-.hangar-foot .neon-btn { width: 100%; }
+.hangar-foot .neon-btn { width: 100%; min-height: 50px; font-size: 16px; }
+.mission-line { max-width: 190px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 7px/1.3 'Orbitron', sans-serif; letter-spacing: .7px; color: var(--c2); opacity: .9; }
 
 @media (min-width: 761px) {
-  .hangar { max-width: 860px; }
-  .hangar-stage { flex-basis: 34vh; }
+  .hangar { padding-left: max(28px, env(safe-area-inset-left)); padding-right: max(28px, env(safe-area-inset-right)); }
+  .hangar-main { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(340px, .82fr); gap: 28px; padding: 12px 0; }
+  .hangar-stage, .craft-stage, .weapon-stage { min-height: 0; height: 100%; }
+  .craft-info, .weapon-info { align-self: center; max-height: 100%; padding: 12px 0; }
+  .hangar-craft-id b { font-size: 42px; }
+  .td-desc, .ci-blurb { font-size: 14px; }
+  .campaign-lore p { font-size: 13px; }
   .hud-score .value { font-size: 26px; }
   .ult-btn { width: 84px; height: 84px; }
   .od-btn { width: 62px; height: 62px; }
 }
 
-
 @media (max-width: 760px) {
-  .boss-bar { top: calc(max(10px, env(safe-area-inset-top)) + 96px); width: 80vw; }
-  .hud-top .hud-center { width: min(172px, 44vw); }
+  .boss-bar { top: calc(max(10px, env(safe-area-inset-top)) + 106px); width: 80vw; }
+  .hud-top .hud-center { width: min(184px, 47vw); }
   .ult-btn { width: 64px; height: 64px; }
   .od-btn { width: 48px; height: 48px; }
   .od-txt b { font-size: 9px; }
   .ult-txt b { font-size: 13px; }
-  #combo-chip { top: calc(max(10px, env(safe-area-inset-top)) + 96px); }
-  .td-nodes { gap: 4px; }
-  .td-node .nd { width: 26px; height: 26px; font-size: 8px; }
-  .hangar-stage { flex-basis: 24vh; min-height: 128px; }
-  /* robust home scroll: the whole middle column scrolls and the CTA stays pinned
-     above the hi-line — old in-app WebViews ignore flex-shrink, which used to let
-     the craft cards spill under the LAUNCH button */
+  #combo-chip { top: calc(max(10px, env(safe-area-inset-top)) + 106px); }
   .screen.hero .menu-mid { overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .screen.hero { align-items: flex-end; padding-bottom: max(36px, env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(5,1,15,0) 0%, rgba(5,1,15,.35) 35%, rgba(5,1,15,.92) 72%); }
   .title { font-size: 64px; letter-spacing: 8px; }
@@ -232,22 +269,28 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   .demo-tag { top: auto !important; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 8px) !important; left: max(16px, env(safe-area-inset-left)) !important; transform: none !important; }
 }
 
-/* short screens: compress so stats + the full tech tree still fit without scrolling */
-@media (max-height: 740px) {
+@media (max-height: 740px) and (max-width: 760px) {
   .hangar { padding-top: 6px; padding-bottom: 6px; }
   .hangar-head { padding-bottom: 4px; }
-  .hangar-info { padding-top: 6px; }
-  .hangar-stage { flex-basis: 19vh; min-height: 100px; }
-  .hangar-craft-id b { font-size: 18px; }
-  .ci-passive { font-size: 10px; margin-bottom: 4px; padding: 4px 8px; }
-  .ci-blurb { font-size: 9px; margin-bottom: 4px; }
-  .td-desc { font-size: 9px; margin-bottom: 6px; }
-  .td-node .nd { width: 22px; height: 22px; font-size: 7px; }
-  .td-node small { margin-top: 4px; font-size: 6px; }
-  .td-ult { padding: 5px 8px; }
-  .td-ult small { font-size: 8px; }
-  .td-foot { margin-top: 5px; font-size: 8px; }
-  .hs-svg svg { height: 20px; }
-  .hs-name { font-size: 12px; }
-  .hangar-select { padding: 6px 0 4px; }
+  .hangar-title { font-size: 17px; }
+  .hangar-title em { display: none; }
+  .craft-stage { min-height: 150px; }
+  .weapon-stage { flex-basis: 29%; min-height: 125px; }
+  .craft-info { padding-top: 6px; }
+  .info-kicker, .campaign-lore p { display: none; }
+  .campaign-lore { margin-top: 6px; padding-top: 5px; }
+  .ci-passive { font-size: 12px; margin-bottom: 6px; }
+  .ci-blurb { font-size: 11px; margin-top: 6px; }
+  .ci-stats { padding: 7px 0; }
+  .td-desc { font-size: 11px; margin-bottom: 6px; }
+  .td-node .nd { width: 26px; height: 26px; font-size: 9px; }
+  .td-node small { margin-top: 5px; font-size: 8px; }
+  .td-ult { padding-top: 5px; padding-bottom: 5px; }
+  .td-ult small { font-size: 10px; }
+  .td-foot { font-size: 9px; }
+  .hs-svg svg { height: 23px; }
+  .hs-name { font-size: 14px; }
+  .hs-code { font-size: 8px; }
+  .hangar-select { padding: 5px 0; }
+  .hangar-foot .neon-btn { min-height: 44px; }
 }

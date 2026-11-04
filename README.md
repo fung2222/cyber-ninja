@@ -1,57 +1,68 @@
 # 異域凶間 XENO NIGHTMARE
 
-> 賽博朋克 3D 直向射擊 · cyberpunk 3D vertical shooter · 自動開火 auto-fire · Three.js · 手機優先
+> 賽博朋克 3D 直向射擊 · 10 章 × 5 關 · 50 種地圖變化 · 三種難度 · Three.js · 手機優先
 
 **試玩 Play:** https://fung2222.github.io/cyber-ninja/ · **自動示範 Demo:** https://fung2222.github.io/cyber-ninja/?demo=1
 
 ![XENO NIGHTMARE](docs/shots/desktop-play.png)
 
-## 玩法 How to play
-- 撳 **出擊 LAUNCH** 進入**揀機體頁**：上面係 3D 旋轉機體展示＋機體名，中間係被動技能、四項屬性條同機體介紹，下面水平三掣揀機——**VX-01 蒼隼 FALCON**（速度型，疾風引擎 +14% 速度）、**VX-02 壁壘 BASTION**（重裝型，納米裝甲 4 格護盾、8 秒無傷自動回復 1 格）、**VX-03 幽影 WRAITH**（匿蹤型，傷害 +28%、充能 +40%、OVERDRIVE +1 秒，但只有 2 格護盾）。揀好按**下一步**入**揀武器頁**。
-- **揀武器頁**：上面係武器 3D 射擊示範動畫（你所揀嘅機體即場用緊嗰把武器自動開火俾你睇），中間係武器性能表（傷害／彈數／射速／特性）＋**詳細技能樹**（6 級數值、大招說明），下面水平三掣揀開局武器（**脈衝連發／相位長槍／星爆震波**）。揀好按**開始出擊**（ENTER）正式入關卡。機體同武器選擇都會記住。
-- 喺畫面**任何位置拖動**移動戰機（相對拖動，手指唔會遮住角色）；戰機會**自動開火**。
-- **三種武器、每種 6 級**：**脈衝連發 PULSE REPEATER**（均衡散射）、**相位長槍 PHASE LANCE**（貫穿直線）、**星爆震波 NOVA SURGE**（大範圍爆炸）。執拾 **W 武器**即時換槍，**P 火力**提升目前武器一級；每種武器保留自己嘅等級同儲能。
-- 每種武器有**自己嘅儲能大招**：彈幕洪流、稜鏡貫穿、奇點爆發；擊破敵機儲能量。三種武器嘅射擊聲同大招聲都唔同；武器大招期間**無敵**，脈衝大招改為向前 180° 扇形掃射。
-- **最大火力 OVERDRIVE**：按 Q／撳橙色掣，現有武器昇華 4 秒（火力同射速提升）；代價係完結後**強制停火 3 秒**，期間要專心走位。
-- 敵人會用**編排隊形**（兩翼、彈牆、交叉火、衝鋒、精英）同瞄準射擊；地圖每隔幾秒有**預警激光欄**，要靠走位避開。
-- 每 5 波迎戰**星海魔獸**：三個階段、每階段獨立彈幕（環形、螺旋、缺口彈牆、交叉火），血越低攻勢越密；第二階段會展開裝甲環，第三階段核心暴走。
-- 擊破敵人會跌出**金色／白色晶石寶石**，自動飛向戰機吸收；普通敵 1–2 粒、砲塔 3 粒、精英額外 4 粒、Boss 一次 18–32 粒。寶石加分數同少量儲能，唔會自動幫你換武器。
-- 地圖會有**漂移隕石**同**預警激光欄**，兩者都係障礙；隕石可以靠左右走位避開。
-- 場景每 5 波輪換：**霓虹九龍** → **深空廢墟**（巨大破門、環形遺跡、破碎石柱）→ 再返回城市。
-- 拾取道具：**火力 P**（升目前武器）、**護盾 S**（+1 護盾，最多 3 格，會自動擋一次攻擊）、**能量 E**（儲大招）。**武器 W** 只會由精英怪同 Boss 掉落，**唔會自動吸向你**；要自己飛過去執。執到會換槍並將該武器升 1 級（已滿級就保持 6）。
-- 機體可以飛越**全版圖**（由上到下），唔再局限下半部。
-- 被擊中會失去 1 格護盾同 1 級目前武器；護盾歸零就任務失敗，可以睇廣告**復活一次**（網頁版免費）。
-- **無盡模式**：波數永遠唔會完。每個巨獸週期都會出新品種（深淵魔眼、等離子海妖……之後 Mk.2、Mk.3 變種），難度曲線有上限（敵機 HP 最多 ×3.2、巨獸 HP 最多 1100、射速最多 ×1.6），確保一直玩得落去。每 10 波係**里程碑**：額外分數、護盾補滿、城市主題轉色。最遠波數會記錄為無盡紀錄。
+## 故事 Story
+Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城市、記憶同現實規則逐一被改寫。三位駕駛員——**蒼隼 FALCON、壁壘 BASTION、幽影 WRAITH**——並肩作戰，穿越十個失守區域，奪回世界中樞並重啟黎明。
 
-## 語言 Language
-遊戲支援**繁體中文（香港）**同 **English**，喺齒輪設定或暫停畫面切換，會記住你嘅選擇（`localStorage cyber.lang`，所有 CYBER 遊戲共用）。網址加 `?lang=en` / `?lang=zh` 亦可。
+主線有 **10 章、每章 5 關，共 50 關**。每章有雙語劇情簡報、獨立名稱、主題配色及場景配置；每關嘅城市網格、道路、塔樓密度、遺跡方向、霧度及障礙節奏都有變化。每章第 5 關係 Boss 戰；完成第 50 關後進入無盡模式。
+
+## 出擊流程 Loadout
+主頁保持品牌＋出擊＋紀錄。按 **出擊 LAUNCH** 後：
+
+1. **選擇機體**：全闊 3D 旋轉展示完整機體，配上被動技能、四項屬性、機體介紹同故事簡報。底部水平三掣切換機體。
+2. **選擇武器**：頂部播放由正式遊戲渲染器錄製嘅**實機滿級戰鬥影片**，每段包括 LV.6、OVERDRIVE 同專屬大招。下方保留性能表、完整六級技能樹、大招說明及操作提示。
+3. **選擇難度**：故事／標準／凶間三種版本，再按 **開始出擊**。機體、開局武器及難度均會記住。
+
+### 難度 Difficulty
+- **故事 STORY**：額外 2 格護盾、敵彈速度 ×0.72、敵人射速 ×0.62、較多道具、受擊無敵 2.2 秒；適合新手同欣賞劇情。
+- **標準 NORMAL**：降低開局壓力但保留完整走位挑戰；敵彈 ×0.86、敵人射速 ×0.82、受擊無敵 1.85 秒。
+- **凶間 NIGHTMARE**：敵人 HP／彈速／射速提高，分數 ×1.5；適合熟練玩家。
+
+## 玩法 How to play
+- 喺畫面**任何位置拖動**移動戰機（相對拖動，手指唔會遮住角色）；戰機會**自動開火**，亦可飛到全版圖上方。
+- **三種機體**：蒼隼速度 +14%；壁壘 4 格護盾兼 8 秒無傷回復 1 格；幽影傷害 +28%、充能 +40%、OVERDRIVE +1 秒，但只有 2 格基礎護盾。
+- **三種武器、每種 6 級**：脈衝連發（散射）、相位長槍（貫穿）、星爆震波（範圍爆炸）。**W** 即時換槍並升該武器 1 級；**P** 提升目前武器一級。各武器保留獨立等級及儲能。
+- **專屬大招**：彈幕洪流（180° 向前掃射）、稜鏡貫穿（直線光束）、奇點爆發（擴散衝擊波兼消彈）。大招期間無敵。
+- **OVERDRIVE**：武器昇華 4 秒；**超載生效期間可以隨時插入武器大招**。超載完結後強制停火散熱 3 秒。
+- 敵人使用編排隊形、瞄準彈及衝鋒；地圖有預警激光欄同漂移隕石。全黑敵機只加強發光輪廓線，唔會高亮整個機身；彩色敵人維持原設計。
+- 每 5 關迎戰三階段星海魔獸。Boss 彈幕已降低密度、擴闊彈牆缺口及安全間距；高畫質光暈亦降低彈體融合，粉紅彈殼配白色彈心，較容易分辨。
+- 擊破敵人跌出金色／白色晶石，自動飛向戰機，提供分數及充能。被擊中會失去 1 格護盾及 1 級目前武器；護盾歸零可復活一次。
+- 無盡模式沿用五十種地圖指紋循環變化，敵人 HP、Boss HP 同射速設有上限；每 10 關有里程碑獎勵及護盾補滿。
 
 ## English
-**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Drag anywhere to move — your craft auto-fires (your finger never covers the ship) and can fly across the **whole field**. **Three weapons, six levels each:** Pulse Repeater, Phase Lance and Nova Surge. **P** raises the current weapon; **W** canisters only drop from elites, turrets and bosses, never magnetise, and upgrade the weapon you pick up. Each weapon has its own charged ultimate. **OVERDRIVE** ascends the current weapon for 4 seconds, then forces a 3-second cease-fire. Kills drop **gold/white crystal gems** that fly into the craft automatically; bosses drop a large burst. Drifting **asteroids** and telegraphed laser lanes make the map itself a threat. The district rotates every five waves between **Neon Kowloon** and the **Deep-Space Ruins** (broken gates, orbital arcs, shattered columns). Enemies arrive in authored formations and fire aimed patterns; telegraphed laser lanes cut across the map. Every 5 waves a **star-sea monster** boss fights in three distinct phases. **Endless mode:** capped scaling, milestone bonuses, saved best-wave record. Bilingual (Traditional Chinese / English).
+**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Ouroboros, a digital virus, is devouring the cyber world; three pilots fight through **10 chapters × 5 levels and 50 map variations** before endless mode unlocks. The loadout flow includes a full-craft 3D preview, real recorded LV.6/OVERDRIVE/ultimate gameplay for all three weapons, a six-level tree and selectable **Story / Normal / Nightmare** rules. Drag anywhere to move with auto-fire. Each weapon retains its own level and charged ultimate, and an ultimate can now interrupt active OVERDRIVE. Dark enemies use glowing outline-only silhouettes; boss bullets have wider spacing and controlled bloom for readability. Choices and records persist locally in the current browser.
 
 ## 操作 Controls
 | 動作 | 手機 | 鍵盤 |
 |---|---|---|
 | 移動 Move | 拖動 Drag | ←→↑↓ / WASD |
-| 武器大招 Weapon Ultimate | 藍色大招掣 | Space / Enter / X / J |
-| 最大火力 OVERDRIVE | 橙色掣 | Q / O |
+| 武器大招 Weapon Ultimate | 左下藍色掣 | Space / Enter / X / J |
+| 最大火力 OVERDRIVE | 左下橙色掣 | Q / O |
 | 暫停 Pause | ⏸ | P / Esc |
 | 靜音 Mute | 🔊 | M |
 
-## 網址參數 URL flags
-`?demo=1` AI 自動玩 · `?lang=en|zh` · `?fps=1` · `?quality=low` · `?adsim=1` · `?reset=1` · `?mute=1`
+## 語言及網址 Language / URL flags
+支援繁體中文（香港）及 English；可喺設定切換並記住選擇。網址參數：`?demo=1` · `?lang=en|zh` · `?fps=1` · `?quality=low` · `?glow=low|high` · `?adsim=1` · `?reset=1` · `?mute=1`。
 
 ## 技術 Tech
-Three.js r169 + [cyber-kit](https://github.com/fung2222/cyber-kit) v0.3.19（`vendor/cyber-kit/`），冇 build step，可離線運行。所有模型（戰機、敵機、星海魔獸）都係程式生成嘅原創設計；音效同音樂全部合成。
+Three.js r169 + vendored cyber-kit v0.3.19，plain HTML/CSS/JS，無 build step。模型、場景、音效及音樂均為程式生成；武器預覽影片由本作正式渲染器實際錄製，保存為 WebM 並附 JPEG poster fallback。
 
 ## 開發 Development
 ```bash
-cd .. && python3 -m http.server 18940     # http://127.0.0.1:18940/cyber-ninja/
-node --test cyber-ninja/tests/
-python cyber-ninja/tests/weapons.py
-python cyber-ninja/tests/core.py
-python cyber-ninja/tests/ult-reset.py
-python cyber-ninja/tests/brand.py
-python cyber-ninja/tests/smoke.py
+python3 -m http.server 18940     # http://127.0.0.1:18940/index.html
+node --test tests/
+python3 tests/weapons.py http://127.0.0.1:18940/index.html
+python3 tests/core.py http://127.0.0.1:18940/index.html
+python3 tests/ult-reset.py http://127.0.0.1:18940/index.html
+python3 tests/brand.py http://127.0.0.1:18940/index.html
+python3 tests/smoke.py http://127.0.0.1:18940/index.html docs/shots
+# Re-record real weapon previews after combat visuals change:
+python3 tests/record-previews.py http://127.0.0.1:18940/index.html
 ```
+
 文件：[docs/HANDOFF.md](docs/HANDOFF.md) · [docs/DEEP-AUDIT-2026-11-03.md](docs/DEEP-AUDIT-2026-11-03.md) · [privacy.html](privacy.html) · 屬於 [CYBER ARCADE](https://github.com/fung2222/cyber-arcade) 系列。

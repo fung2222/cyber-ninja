@@ -14,8 +14,8 @@ i18n.add({
 "BEST"
 ],
 "wave": [
-"波數",
-"WAVE"
+"關卡",
+"LEVEL"
 ],
 "shield": [
 "護盾",
@@ -126,8 +126,8 @@ i18n.add({
 "DEEP-SPACE RUINS"
 ],
 "waveN": [
-"第 {n} 波",
-"WAVE {n}"
+"第 {n} 關",
+"LEVEL {n}"
 ],
 "bossNext": [
 "下一波：巨獸！",
@@ -255,6 +255,23 @@ i18n.add({
   "selectWeaponS": ["三種武器 · 揀你嘅開局武器", "Three weapons · pick your starter"],
   "nextPage": ["下一步", "NEXT"],
   "nextPageS": ["選擇武器", "WEAPON"],
+  "pilotBrief": ["駕駛員簡報", "PILOT BRIEF"],
+  "storyTitle": ["噬界入侵 · 三位駕駛員最後防線", "OUROBOROS · THREE PILOTS, ONE LAST LINE"],
+  "storyIntro": ["Cyber world 正被數碼病毒「噬界」入侵及蠶食。蒼隼、壁壘、幽影三位駕駛員並肩作戰，穿越十個失守區域，奪回世界中樞。", "The digital virus Ouroboros is invading and devouring the cyber world. Falcon, Bastion and Wraith fight across ten fallen sectors to reclaim the world kernel."],
+  "campaignScale": ["10 章 × 5 關 · 50 種地圖變化 · 完成後進入無盡模式", "10 CHAPTERS × 5 SORTIES · 50 MAPS · ENDLESS AFTER THE CAMPAIGN"],
+  "realFootage": ["實機滿級戰鬥錄像", "REAL MAX-POWER GAMEPLAY"],
+  "difficulty": ["任務難度", "DIFFICULTY"],
+  "diff.story": ["故事", "STORY"],
+  "diff.normal": ["標準", "NORMAL"],
+  "diff.nightmare": ["凶間", "NIGHTMARE"],
+  "diffTag.story": ["輕鬆 · +2 護盾", "EASY · +2 SHIELDS"],
+  "diffTag.normal": ["平衡", "BALANCED"],
+  "diffTag.nightmare": ["高危 · 1.5× 分數", "HARD · 1.5× SCORE"],
+  "diffDesc.story": ["敵彈較慢、道具較多，適合欣賞十章故事", "Slower bullets, more drops and the full ten-chapter story"],
+  "diffDesc.normal": ["開局壓力降低，保留完整走位挑戰", "A gentler opening with the full dodging challenge"],
+  "diffDesc.nightmare": ["敵機更硬、彈速更快，分數 ×1.5", "Tougher enemies, faster bullets and 1.5× score"],
+  "chapterStage": ["第 {chapter} 章-{stage} · {name}", "CH.{chapter}-{stage} · {name}"],
+  "endlessUnlocked": ["十章主線完成 · 無盡異域已開放", "CAMPAIGN COMPLETE · ENDLESS RIFT UNLOCKED"],
   "combo": ["連擊", "COMBO"],
   "shieldUp": ["裝甲修復 +1", "PLATING +1"],
   "statHp": ["耐久", "ARMOR"],
@@ -268,6 +285,6 @@ i18n.add({
   "ultDesc.lance": ["展開稜鏡光束 1.3 秒，貫穿全場直線上所有敵人，期間無敵。Boss 戰嘅斬首利器。", "Unfolds a prism beam for 1.3s that pierces every enemy in the lane, invulnerable throughout. A boss decapitator."],
   "ultDesc.nova": ["釋放奇點 2 秒，衝擊波持續擴散消滅彈幕兼殺敵，期間無敵。最強清場大招。", "Detonates a singularity for 2s — an ever-expanding wave that erases bullets and enemies alike, invulnerable throughout. The ultimate screen-clear."],
   "techFoot": ["執 W 武器卡 → 即時換裝 +1 級 · 執 P 火力 → 目前武器 +1 級 · 擊破敵機儲大招能量", "W canister = swap +1 level · P = +1 level · kills charge the ultimate"],
-  "help.rules": ['<ul><li>拖動移動戰機，自動開火；三種武器各有 6 級。</li><li>執拾 W 武器會即時換槍；P 提升目前武器等級。</li><li>「裂空斬」係目前武器嘅儲能大招；「最大火力」係通用昇華，用完會強制停火 3 秒。</li><li>金色／白色晶石係寶石，會自動飛向你；粉紅圓點係敵彈，要避。</li><li>武器大招期間無敵；護盾最多 3 格，S 道具會自動補一格。每 5 波迎戰星海魔獸；護盾歸零就任務失敗，可復活一次。</li></ul>', '<ul><li>Drag to fly; auto-fire is always on. Three weapons, six levels each.</li><li>Grab a W drop to swap weapons instantly; P raises the current weapon level.</li><li>The big button is your weapon ultimate; OVERDRIVE is the universal ascension — it forces a 3-second cease-fire afterwards.</li><li>Gold/white crystals are gems and home into you; pink dots are enemy bullets — dodge them.</li><li>A star-sea monster every 5 waves; shield zero ends the run (one revive).</li></ul>'],
-  "help.controls": ['<ul><li>手機：拖動移動；自動開火；右下「裂空斬」係武器大招</li><li>鍵盤：<kbd>WASD</kbd> 移動　<kbd>Space</kbd> 武器大招　<kbd>Q</kbd> 最大火力</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Touch: drag to move; auto-fire; the lower-right button is the weapon ultimate</li><li>Keys: <kbd>WASD</kbd> move　<kbd>Space</kbd> weapon ultimate　<kbd>Q</kbd> OVERDRIVE</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
+  "help.rules": ['<ul><li>主線共 10 章、每章 5 關，有 50 種地圖變化；完成後進入無盡模式。出擊前可揀故事／標準／凶間難度。</li><li>拖動移動戰機，自動開火；三種武器各有 6 級。執拾 W 武器會即時換槍；P 提升目前武器等級。</li><li>藍色掣係武器儲能大招；橙色「超載」係通用昇華，期間仍可插入大招，完結後強制停火 3 秒。</li><li>金色／白色晶石係寶石，會自動飛向你；粉紅圓點係敵彈，要避。</li><li>武器大招期間無敵；護盾數量由機體同難度決定，S 道具會補一格。每 5 關迎戰星海魔獸；護盾歸零就任務失敗，可復活一次。</li></ul>', '<ul><li>The campaign spans 10 chapters × 5 levels with 50 map variations, then endless mode. Choose Story, Normal or Nightmare before launch.</li><li>Drag to fly; auto-fire is always on. Grab W to swap weapons; P raises the current weapon level.</li><li>The blue button is your weapon ultimate. OVERDRIVE ascends the weapon, allows an ultimate during its active window, then forces a 3-second cease-fire.</li><li>Gold/white crystals home into you; pink dots are enemy bullets — dodge them.</li><li>Ultimates grant invulnerability. Shield count depends on airframe and difficulty; every fifth level is a boss. Shield zero ends the run (one revive).</li></ul>'],
+  "help.controls": ['<ul><li>手機：拖動移動；自動開火；左下藍色掣係武器大招，橙色掣係超載</li><li>鍵盤：<kbd>WASD</kbd> 移動　<kbd>Space</kbd> 武器大招　<kbd>Q</kbd> 最大火力</li><li>暫停 <kbd>P</kbd> · 靜音 <kbd>M</kbd></li></ul>', '<ul><li>Touch: drag to move; auto-fire; the lower-left blue button is the weapon ultimate and orange is OVERDRIVE</li><li>Keys: <kbd>WASD</kbd> move　<kbd>Space</kbd> weapon ultimate　<kbd>Q</kbd> OVERDRIVE</li><li>Pause <kbd>P</kbd> · Mute <kbd>M</kbd></li></ul>'],
 });

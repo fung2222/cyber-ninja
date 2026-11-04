@@ -6,7 +6,7 @@ const HASH = /* glsl */`float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); 
 
 export class World {
   constructor(scene) {
-    this.scene = scene; this.speed = 1; this.scroll = 0;
+    this.scene = scene; this.speed = 1; this.scroll = 0; this.mission = null;
     scene.fog = new THREE.FogExp2(0x0a0418, 0.009);   // was 0.012: less haze over the play field
     this.uScroll = { value: 0 };
     // sky dome
@@ -31,22 +31,22 @@ export class World {
     scene.add(this.sky);
     // megacity far below (procedural blocks, windows, glowing roads), scrolls toward the camera
     const city = new THREE.Mesh(new THREE.PlaneGeometry(700, 900, 1, 1), new THREE.ShaderMaterial({
-      fog: false, uniforms: { uTime: U.uTime, uC1: U.uC1, uC2: U.uC2, uC3: U.uC3, uScroll: this.uScroll, uFog: U.uFogColor },
+      fog: false, uniforms: { uTime: U.uTime, uC1: U.uC1, uC2: U.uC2, uC3: U.uC3, uScroll: this.uScroll, uFog: U.uFogColor, uGrid: { value: 9 }, uRoad: { value: 0.035 }, uMapGlow: { value: 1 } },
       vertexShader: /* glsl */`varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-      fragmentShader: /* glsl */`uniform float uTime, uScroll; uniform vec3 uC1, uC2, uC3, uFog; varying vec3 vW; ${HASH}
+      fragmentShader: /* glsl */`uniform float uTime, uScroll, uGrid, uRoad, uMapGlow; uniform vec3 uC1, uC2, uC3, uFog; varying vec3 vW; ${HASH}
         void main(){
           vec2 p = vec2(vW.x, vW.z - uScroll);
-          vec2 blk = floor(p / 9.0); vec2 f = fract(p / 9.0);
-          float road = step(f.x, 0.035) + step(f.y, 0.035);
+          vec2 blk = floor(p / uGrid); vec2 f = fract(p / uGrid);
+          float road = step(f.x, uRoad) + step(f.y, uRoad);
           float r = h21(blk);
           vec3 col = vec3(0.012, 0.01, 0.025);
           vec2 w = fract(p * 1.4); vec2 wid = floor(p * 1.4);
           float lit = step(0.72, h21(wid + blk * 7.0)) * step(0.15, w.x) * step(0.15, w.y) * (1.0 - min(road, 1.0));
-          col += mix(uC1, uC3, step(0.6, r)) * lit * (0.07 + 0.06 * sin(uTime * 0.7 + r * 30.0));
+          col += mix(uC1, uC3, step(0.6, r)) * lit * (0.07 + 0.06 * sin(uTime * 0.7 + r * 30.0)) * uMapGlow;
           // road glow stays cool (cyan/blue): keeps the magenta reserved for enemy bullets
           col += mix(uC2, vec3(0.30, 0.55, 1.0), 0.45) * min(road, 1.0) * 0.15;
           // car streaks on roads
-          float car = step(0.94, fract(p.y * 0.08 + h21(vec2(blk.x, 0.0)) + uTime * 0.6)) * step(f.x, 0.035);
+          float car = step(0.94, fract(p.y * 0.08 + h21(vec2(blk.x, 0.0)) + uTime * 0.6)) * step(f.x, uRoad);
           col += uC3 * car * 0.7;
           float dist = length(vW.xz - cameraPosition.xz);
           col = mix(col, uFog * 0.9, smoothstep(60.0, 330.0, dist));
@@ -198,12 +198,39 @@ export class World {
     this.scene.fog.density = ruins ? 0.0032 : 0.009;
     return next;
   }
+  setMission(m) {
+    if (!m) return this.setDistrict('city');
+    const changed = this.setDistrict(m.district);
+    this.mission = m;
+    const map = m.map;
+    const cu = this.city.material.uniforms;
+    cu.uGrid.value = map.grid; cu.uRoad.value = map.road; cu.uMapGlow.value = map.glow;
+    this.ruins.scale.set(map.ruinScale, 1, map.ruinScale);
+    this.ruins.rotation.z = map.ruinTurn * 0.08;
+    this.ruinFloor.rotation.z = map.floorTurn;
+    for (const rail of this.rails) rail.scale.x = map.rail;
+    this.scene.fog.density = (m.district === 'ruins' ? 0.0032 : 0.009) * map.fog;
+    // Deterministic tower/ruin layout for each of the 50 sorties. Recycling still
+    // animates normally, but every mission opens with its own recognizable map.
+    const rnd = (n) => { const v = Math.sin(n * 91.731 + m.seed * 37.117) * 43758.5453; return v - Math.floor(v); };
+    for (let i = 0; i < this.towerCount; i++) {
+      const side = i % 2 ? 1 : -1;
+      this.towerData[i] = {
+        x: side * (12 + rnd(i + 1) * 27) * map.tower,
+        w: 2.2 + rnd(i + 11) * 5.2, d: 2.4 + rnd(i + 21) * 5.0,
+        h: (18 + rnd(i + 31) * 43) * map.tower,
+        top: -8 - rnd(i + 41) * 17, z: -150 + rnd(i + 51) * 170,
+      };
+    }
+    return changed;
+  }
   newTower(i, initial) {
     const side = i % 2 ? 1 : -1;
+    const spread = this.mission?.map.tower || 1;
     const x = side * (13 + Math.random() * 26), w = 2.5 + Math.random() * 5, d = 2.5 + Math.random() * 5;
     const h = 20 + Math.random() * 40; const top = -9 - Math.random() * 16;
     const z = initial ? -150 + Math.random() * 170 : -150 - Math.random() * 20;
-    return { x, w, d, h, top, z };
+    return { x: x * spread, w, d, h: h * spread, top, z };
   }
   update(dt, t, speed = 1) {
     const v = 14 * speed; this.scroll += v * dt * 0.6; this.uScroll.value = this.scroll;

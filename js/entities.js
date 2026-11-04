@@ -7,10 +7,16 @@ import { WEAPONS } from './weapons.js';
 const neonEdges = (geo, color, mult = 2.2, thresh = 20) => new THREE.LineSegments(new THREE.EdgesGeometry(geo, thresh), new THREE.LineBasicMaterial({ color: new THREE.Color(color).multiplyScalar(mult) }));
 // silhouette outline for dark-bodied craft: a brighter, whitened second edge pass —
 // lines only, no glow disc, so the near-black hulls read against the dark ruins
-const whiteOutline = (geo, color, mult = 3.2) => {
-  const e = neonEdges(geo, new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.6), mult);
-  e.scale.setScalar(1.05);
-  return e;
+const whiteOutline = (geo, color, mult = 4.2) => {
+  const group = new THREE.Group();
+  const c = new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.52).multiplyScalar(mult);
+  // Three line-only passes create a bloom-readable silhouette without filling or
+  // highlighting the near-black hull. WebGL ignores lineWidth, so use scale layers.
+  for (const scale of [1.035, 1.075, 1.12]) {
+    const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 20), new THREE.LineBasicMaterial({ color: c.clone(), transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
+    line.scale.setScalar(scale); line.renderOrder = 2; group.add(line);
+  }
+  return group;
 };
 const darkMetal = (tint = 0x120a24) => new THREE.MeshStandardMaterial({ color: tint, metalness: 0.75, roughness: 0.32, emissive: 0x000000 });
 

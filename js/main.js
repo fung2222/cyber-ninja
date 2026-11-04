@@ -1,7 +1,8 @@
 // XENO NIGHTMARE 異域凶間 — controller: drag-to-move auto-fire shooter, waves, cosmic monster bosses, ultimate, continue.
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
-import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
+import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, DIFFICULTIES, difficultyOf, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
+import { CAMPAIGN_LEVELS, campaignForWave, campaignLabel } from './campaign.js';
 import './strings.js?v=0.3.25';
 import { World } from './world.js';
 import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js';
@@ -13,7 +14,7 @@ const $ = (id) => document.getElementById(id);
 const store = createStore(GAME_ID);
 if (flags.reset) store.clear();
 const ui = new CyberUI({ screens: ['start', 'pause', 'over'] });
-const stage = createStage({ canvas: $('scene'), bloom: 0.95, bloomRadius: 0.5, bloomThreshold: 0.75, fov: 50, exposure: 1.05, onFatal: (m) => ui.fatal(m) });
+const stage = createStage({ canvas: $('scene'), bloom: 0.78, bloomRadius: 0.34, bloomThreshold: 0.92, glowLevels: { high: { strength: 0.72, radius: 0.62, threshold: 0.08 }, low: { strength: 0.4, radius: 0.45 } }, fov: 50, exposure: 1.05, onFatal: (m) => ui.fatal(m) });
 ui.glowToggle(stage);   // cyber-kit v0.3.0: GLOW LOW/HIGH button in the pause screen (shared preference, LOW = crisp default)
 const { scene, camera } = stage;
 const theme = new ThemeController(); theme.set(1, true);
@@ -28,7 +29,10 @@ const ads = createAds({ gameId: GAME_ID, ...ADS, onAdOpen: (on) => audio.duckAll
 // ---------------------------------------------------------------- player craft (selectable airframe)
 const savedCraft = store.get('craft', 'falcon');
 const savedStartWeapon = store.get('startWeapon', 'pulse');
+const savedDifficulty = store.get('difficulty', 'normal');
 let selWeapon = WEAPON_KEYS.includes(savedStartWeapon) ? savedStartWeapon : 'pulse';
+let selDifficulty = DIFFICULTIES[savedDifficulty] ? savedDifficulty : 'normal';
+const D = () => difficultyOf(selDifficulty);
 let ninja = makeNinja(craftOf(savedCraft)); ninja.scale.setScalar(1.55); scene.add(ninja);
 function setCraft(key, silent = false) {
   if (!CRAFTS[key]) key = 'falcon';
@@ -37,20 +41,23 @@ function setCraft(key, silent = false) {
   scene.remove(ninja);
   ninja = makeNinja(craftOf(key)); ninja.scale.setScalar(1.55); scene.add(ninja);
   const C = craftOf(key);
-  PLAYER.maxHp = C.hp;
+  PLAYER.maxHp = C.hp + D().bonusHp;
   if (!silent && S.state === 'attract') { /* rebuilt under the start screen */ }
   updateHUD();
   renderCraftSelect(); renderCraftInfo();
   if (pv) pvSetModel(C);
-  if (wv) wvSetCraft();
 }
 const pools = {
   pulse: new BulletPool(scene, 320, new THREE.BoxGeometry(0.09, 0.09, 0.75), WEAPONS.pulse.color),
   lance: new BulletPool(scene, 100, new THREE.BoxGeometry(0.16, 0.16, 3.2), WEAPONS.lance.color),
   nova: new BulletPool(scene, 100, new THREE.TorusGeometry(0.5, 0.09, 8, 24), WEAPONS.nova.color),
 };
-const ebullets = new BulletPool(scene, 500, new THREE.SphereGeometry(0.17, 10, 8), 0xff2bd6);
-const ecores = new BulletPool(scene, 500, new THREE.SphereGeometry(0.08, 6, 4), 0xffffff);
+const ebullets = new BulletPool(scene, 500, new THREE.SphereGeometry(0.19, 10, 8), 0xff2bd6);
+const ecores = new BulletPool(scene, 500, new THREE.SphereGeometry(0.085, 6, 4), 0xffffff);
+// Keep hostile bullets as separate magenta shells with a small raised white core.
+// Excess HDR brightness made adjacent bullets fuse together under HIGH bloom.
+ebullets.mesh.material.color.setHex(0xff2bd6).multiplyScalar(1.3);
+ecores.mesh.material.color.setHex(0xffffff).multiplyScalar(0.9);
 // weapon-ultimate beam (laser) — a wide plane over the play field
 const beam = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 38), new THREE.MeshBasicMaterial({ color: new THREE.Color(WEAPONS.lance.color).multiplyScalar(2.4), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
 beam.rotation.x = -Math.PI / 2; beam.position.set(0, 0.35, -10); beam.visible = false; scene.add(beam);
@@ -63,10 +70,10 @@ const S = {
   score: 0, wave: 1, spec: null, waveT: 0, nextEv: 0, enemies: [], boss: null, pickups: [], kills: 0,
   continued: false, betweenT: 0, t: 0, newRecord: false,
   hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
-  craft: CRAFTS[savedCraft] ? savedCraft : 'falcon',
+  craft: CRAFTS[savedCraft] ? savedCraft : 'falcon', difficulty: selDifficulty, mission: campaignForWave(1),
   combo: { chain: 0, timer: 0, mult: 1 }, gemChain: 0, gemChainT: 0, sinceHit: 99,
 };
-PLAYER.maxHp = craftOf(S.craft).hp;
+PLAYER.maxHp = craftOf(S.craft).hp + D().bonusHp;
 window.__ninja = S;  // test hook
 const C = () => craftOf(S.craft);            // current airframe
 const chargeGain = (n) => n * C().charge;    // wraith charges faster
@@ -78,6 +85,7 @@ function updateHUD() {
   ui.setText('hud-score', S.score.toLocaleString('en-US'));
   ui.setText('hud-best', Math.max(store.best, S.score).toLocaleString('en-US'));
   ui.setText('hud-wave', S.wave);
+  ui.setText('hud-mission', campaignLabel(S.mission || campaignForWave(S.wave), lang) + (S.wave > CAMPAIGN_LEVELS ? ' · ∞' : ''));
   // shield pips (airframe-dependent count)
   const pips = $('hud-hp'); let h = ''; for (let i = 0; i < PLAYER.maxHp; i++) h += `<i class="${i < S.hp ? 'on' : ''}"></i>`; if (pips.innerHTML !== h) pips.innerHTML = h;
   // weapon chip: name + six level diamonds + ult charge
@@ -97,7 +105,7 @@ function updateHUD() {
   $('ult-label').textContent = ultShort(S.weapon, lang);
   $('ult-sub').textContent = S.ult >= 100 ? (lang === 'zh' ? '就緒' : 'READY') : Math.round(S.ult) + '%';
   setRing($('btn-ult'), S.ult);
-  $('btn-ult').classList.toggle('ready', S.ult >= 100 && S.ultT < 0 && S.odT < 0);
+  $('btn-ult').classList.toggle('ready', S.ult >= 100 && S.ultT < 0 && S.noFireT <= 0);
   const odReady = S.od >= 100 && S.odT < 0 && S.noFireT <= 0 && S.ultT < 0;
   $('btn-od').classList.toggle('ready', odReady);
   $('btn-od').classList.toggle('active', S.odT >= 0);
@@ -137,7 +145,7 @@ function clearField() {
 function resetRun() {
   clearField();
   Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.maxHp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
-    weapon: selWeapon, weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
+    weapon: selWeapon, difficulty: selDifficulty, mission: campaignForWave(1), weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
     combo: { chain: 0, timer: 0, mult: 1 }, gemChain: 0, gemChainT: 0, sinceHit: 99 });
   world.setDistrict('city');
   beam.visible = false; beam.material.opacity = 0;
@@ -145,14 +153,20 @@ function resetRun() {
 }
 function nextWave() {
   S.wave++; S.spec = waveSpec(S.wave); S.waveT = 0; S.nextEv = 0; S.betweenT = 0;
-  const district = Math.floor((S.wave - 1) / 5) % 2 ? 'ruins' : 'city';
-  const changed = world.setDistrict(district);
+  const m = campaignForWave(S.wave); S.mission = m;
+  const changed = world.setMission(m);
   const districtChanged = changed !== S.district; S.district = changed;
+  theme.set(m.theme);
+  const lang = i18n.isZh() ? 'zh' : 'en';
   if (S.spec.boss) {
-    spawnBoss(S.spec.hp, S.spec.variant);
-    if (S.state !== 'attract') { ui.banner(t('bossIncoming', { name: bossName() }), t('waveN', { n: S.wave }), t('warning')); audio.warn(); fx.kick({ glitch: 0.6, aberr: 1 }); }
+    spawnBoss(Math.round(S.spec.hp * D().bossHp), S.spec.variant);
+    if (S.state !== 'attract') { ui.banner(t('bossIncoming', { name: bossName() }), `${campaignLabel(m, lang)} · ${m.stageName[lang]}`, m.stage === 1 ? m.story[lang] : t('warning')); audio.warn(); fx.kick({ glitch: 0.6, aberr: 1 }); }
   } else if (S.state !== 'attract' && S.wave > 1 && (S.wave - 1) % MILESTONE_EVERY === 0) milestone(S.wave - 1);
-  else if (S.state !== 'attract' && S.wave > 1) ui.banner(t('waveN', { n: S.wave }), '', districtChanged ? t(changed === 'ruins' ? 'districtRuins' : 'districtCity') : (S.wave % 5 === 4 ? t('bossNext') : ''));
+  else if (S.state !== 'attract' && S.wave > 1) {
+    const title = m.campaign ? t('chapterStage', { chapter: m.chapter, stage: m.stage, name: m.name[lang] }) : t('waveN', { n: S.wave });
+    ui.banner(title, m.stageName[lang], m.stage === 1 ? m.story[lang] : (S.wave % 5 === 4 ? t('bossNext') : m.place[lang]));
+  }
+  if (S.wave === CAMPAIGN_LEVELS + 1 && S.state !== 'attract') ui.toast(t('endlessUnlocked'), 2600);
   audio.setBoss(!!S.spec.boss); audio.setLevel(S.spec.boss ? 10 : 1 + Math.floor((S.wave - 1) / 2));
 }
 function bossName(b = S.boss) { const v = b && b.variant; return v ? (i18n.isZh() ? v.zh : v.en) : ''; }
@@ -165,7 +179,8 @@ function milestone(n) {
 function beginRun() {
   audio.init(); audio.startMusic(); audio.unduckMusic();
   resetRun(); setState('playing'); audio.confirm();
-  ui.banner(t('waveN', { n: 1 }), '', t('firstHint'));
+  const m = S.mission, lang = i18n.isZh() ? 'zh' : 'en';
+  ui.banner(t('chapterStage', { chapter: 1, stage: 1, name: m.name[lang] }), m.story[lang], t('firstHint'));
 }
 function showAttract() { closeHangar(); closeWeapon(); setState('attract'); resetRun(); refreshStart(); }
 
@@ -175,9 +190,9 @@ function spawnEnemy(ev) {
   g.scale.setScalar(1.45 * (elite ? 1.18 : 1)); scene.add(g);
   const e = {
     type: ev.type, def, g, x: ev.x, baseX: ev.x, z: FIELD.top - 1, t: 0, phase: ev.phase,
-    hp: Math.ceil(def.hp * hpScale(S.wave) * (elite ? 1.8 : 1)), fireT: 0.7 + Math.random() * 0.8,
+    hp: Math.ceil(def.hp * hpScale(S.wave) * D().enemyHp * (elite ? 1.8 : 1)), fireT: (S.wave <= 2 ? 1.35 : 0.7) + Math.random() * 0.9,
     flash: 0, mode: 0, stopZ: ev.type === 'turret' ? -17 + Math.random() * 4 : -15 + Math.random() * 5,
-    vx: 0, vz: def.speed * speedScale(S.wave) * (elite ? 1.12 : 1),
+    vx: 0, vz: def.speed * speedScale(S.wave) * (elite ? 1.12 : 1) * (S.wave <= 2 ? 0.88 : 1),
     pattern: ev.pattern || 'dive', elite, level: S.wave, score: def.score * (elite ? 2.5 : 1),
   };
   if (elite && e.g.userData.mat) e.g.userData.mat.emissive = new THREE.Color(def.color).multiplyScalar(0.18);
@@ -189,7 +204,7 @@ function spawnBoss(hp, variant = { zh: '星海魔獸', en: 'COSMIC MONSTER', rat
   refreshBossName();
   g.position.set(0, 0, S.boss.z);
 }
-function enemyFire(x, z, ang, speed = ENEMY_BULLET_SPEED) { ebullets.add(x, z, Math.sin(ang) * speed, Math.cos(ang) * speed); }
+function enemyFire(x, z, ang, speed = ENEMY_BULLET_SPEED) { const v = speed * D().bulletSpeed; ebullets.add(x, z, Math.sin(ang) * v, Math.cos(ang) * v); }
 const aimAt = (x, z) => Math.atan2(S.x - x, S.z - z);
 
 // ---------------------------------------------------------------- damage / kills
@@ -232,7 +247,7 @@ function killEnemy(e, i) {
   waves.spawn(p, c, { r0: 0.2, r1: big ? 3.4 : 2.2, h: 0.5, dur: big ? 0.55 : 0.4 });
   // combo + score
   bumpCombo();
-  const pts = Math.round((e.score || e.def.score) * S.combo.mult);
+  const pts = Math.round((e.score || e.def.score) * S.combo.mult * D().score);
   S.score += pts; S.kills++;
   S.ult = Math.min(100, S.ult + chargeGain(ULT.perKill)); S.ults[S.weapon] = S.ult;
   S.od = Math.min(100, S.od + chargeGain(OD.perKill));
@@ -244,7 +259,7 @@ function killEnemy(e, i) {
   dropGems(e);
   const wChance = e.elite ? 0.65 : 0;
   if (wChance && Math.random() < wChance) dropPickup(e.x, e.z, 'W', randomOtherWeapon(S.weapon));
-  else if (!small && Math.random() < DROP_CHANCE) dropPickup(e.x, e.z);
+  else if (!small && Math.random() < DROP_CHANCE * D().drops) dropPickup(e.x, e.z);
   fx.kick({ trauma: small ? 0.03 : big ? 0.12 : 0.06 });
   if (big && S.state === 'playing') fx.kick({ slowmo: 0.16, aberr: 0.35 });   // hit-stop on chunky kills
 }
@@ -301,7 +316,7 @@ function hurtBoss(dmg) {
 function hurtPlayer() {
   if (S.invuln > 0 || S.ultT >= 0) return;
   if (S.state === 'attract') { S.invuln = 1; return; }
-  S.hp--; S.sinceHit = 0; S.invuln = PLAYER.invuln; S.power = Math.max(1, S.power - 1); S.weaponLevels[S.weapon] = S.power;
+  S.hp--; S.sinceHit = 0; S.invuln = D().invuln; S.power = Math.max(1, S.power - 1); S.weaponLevels[S.weapon] = S.power;
   breakCombo();
   audio.hurt(); fx.kick({ trauma: 0.5, aberr: 1.2, glitch: 0.5 }); ui.flash('rgba(255,40,90,0.4)', 380); Platform.haptic('heavy');
   for (const b of ebullets.list) if (Math.hypot(b.x - S.x, b.z - S.z) < 3.5) b.dead = true;
@@ -321,7 +336,7 @@ function bossDown() {
   theme.set(1 + S.wave / 5); audio.setBoss(false);
 }
 function doUlt() {
-  if (S.ult < 100 || S.ultT >= 0 || S.odT >= 0 || S.noFireT > 0 || !(S.state === 'playing' || S.state === 'attract')) return;
+  if (S.ult < 100 || S.ultT >= 0 || S.noFireT > 0 || !(S.state === 'playing' || S.state === 'attract')) return;
   const mode = S.weapon;
   S.ult = 0; S.ults[mode] = 0; S.ultReadyShown = false; S.ultT = 0; S.ultFireT = 0; S.ultMode = mode; S.novaR = 2; S.invuln = Math.max(S.invuln, 0.35);
   beam.visible = mode === 'lance';
@@ -388,8 +403,8 @@ const hangarOpen = () => !$('screen-hangar').classList.contains('hidden');
 const weaponOpen = () => !$('screen-weapon').classList.contains('hidden');
 function openHangar() { renderCraftSelect(); renderCraftInfo(); ensurePreview(); $('screen-weapon').classList.add('hidden'); $('screen-hangar').classList.remove('hidden'); }
 function closeHangar() { $('screen-hangar').classList.add('hidden'); }
-function openWeapon() { renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); ensureWeaponPreview(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); }
-function closeWeapon() { $('screen-weapon').classList.add('hidden'); }
+function openWeapon() { renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); renderDifficulty(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); syncWeaponVideo(); }
+function closeWeapon() { $('screen-weapon').classList.add('hidden'); const v = $('weapon-video'); if (v) v.pause(); }
 function confirmWeapon() { closeWeapon(); closeHangar(); beginRun(); }
 
 createInput({
@@ -495,8 +510,8 @@ function ensurePreview() {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   const sc = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(36, 1, 0.1, 60);
-  cam.position.set(0, 1.75, 5.1); cam.lookAt(0, 0.35, 0);
+  const cam = new THREE.PerspectiveCamera(38, 1, 0.1, 60);
+  cam.position.set(0, 2.35, 6.8); cam.lookAt(0, -0.08, 0);
   sc.add(new THREE.HemisphereLight(0x9fc0ff, 0x1a0b2e, 1.5));
   const keyL = new THREE.DirectionalLight(0xffffff, 2.0); keyL.position.set(2.5, 4, 3); sc.add(keyL);
   const rimL = new THREE.DirectionalLight(0xff2bd6, 1.5); rimL.position.set(-3, 1.5, -2.5); sc.add(rimL);
@@ -509,7 +524,7 @@ function ensurePreview() {
 function pvSetModel(c) {
   if (!pv) return;
   if (pv.model) pv.sc.remove(pv.model);
-  const m = makeNinja(c); m.scale.setScalar(2.0); m.rotation.y = 0.6; pv.sc.add(m); pv.model = m;
+  const m = makeNinja(c); m.scale.setScalar(1.65); m.rotation.y = 0.6; pv.sc.add(m); pv.model = m;
   pv.disc.material.color.setHex(c.color);
 }
 function sizePreview() {
@@ -531,72 +546,18 @@ function renderPreview(dt) {
   pv.renderer.render(pv.sc, pv.cam);
 }
 
-// ---------------------------------------------------------------- weapon-select page (second hangar page)
-let wv = null;
-function ensureWeaponPreview() {
-  if (wv) return wv;
-  const canvas = $('weapon-canvas'); if (!canvas) return null;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  const sc = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
-  cam.position.set(0, 4.6, 4.8); cam.lookAt(0, 0.2, -1.6);
-  sc.add(new THREE.HemisphereLight(0x9fc0ff, 0x1a0b2e, 1.4));
-  const keyL = new THREE.DirectionalLight(0xffffff, 1.8); keyL.position.set(2.5, 4, 3); sc.add(keyL);
-  const rimL = new THREE.DirectionalLight(0xff2bd6, 1.2); rimL.position.set(-3, 1.5, -2.5); sc.add(rimL);
-  // demo field: the selected craft auto-fires at a drifting target drone
-  const craftM = makeNinja(craftOf(S.craft)); craftM.scale.setScalar(1.6); craftM.position.set(0, 0, 0.2); sc.add(craftM);
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(1.3, 40), new THREE.MeshBasicMaterial({ color: craftOf(S.craft).color, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false }));
-  disc.rotation.x = -Math.PI / 2; disc.position.set(0, -0.02, 0.2); sc.add(disc);
-  const target = makeEnemy('drone'); target.scale.setScalar(1.3); target.position.set(0, 0, -3.4); sc.add(target);
-  const pools = {
-    pulse: new BulletPool(sc, 140, new THREE.BoxGeometry(0.09, 0.09, 0.75), WEAPONS.pulse.color),
-    lance: new BulletPool(sc, 70, new THREE.BoxGeometry(0.16, 0.16, 3.2), WEAPONS.lance.color),
-    nova: new BulletPool(sc, 70, new THREE.TorusGeometry(0.5, 0.09, 8, 24), WEAPONS.nova.color),
-  };
-  wv = { renderer, sc, cam, craftM, disc, target, pools, fireT: 0.4, t: 0 };
-  return wv;
-}
-function wvSetCraft() {
-  if (!wv || !wv.craftM) return;
-  const p = wv.craftM.position, ry = wv.craftM.rotation.y;
-  wv.sc.remove(wv.craftM);
-  const m = makeNinja(craftOf(S.craft)); m.scale.setScalar(1.6); m.position.copy(p); m.rotation.y = ry; wv.sc.add(m);
-  wv.craftM = m; wv.disc.material.color.setHex(craftOf(S.craft).color);
-}
-function sizeWeaponPreview() {
-  if (!wv) return;
-  const canvas = wv.renderer.domElement;
-  const w = canvas.clientWidth, h = canvas.clientHeight;
-  if (!w || !h) return;
-  const pr = wv.renderer.getPixelRatio();
-  if (canvas.width !== Math.round(w * pr) || canvas.height !== Math.round(h * pr)) {
-    wv.renderer.setSize(w, h, false);
-    wv.cam.aspect = w / h; wv.cam.updateProjectionMatrix();
+// ---------------------------------------------------------------- weapon-select page: captured real gameplay
+// The clips are recorded from this game's actual renderer at LV.6 and include
+// each weapon's ultimate. Video uses one lightweight element instead of a second
+// WebGL scene, leaving the phone's GPU budget for the craft preview and gameplay.
+function syncWeaponVideo() {
+  const v = $('weapon-video'); if (!v) return;
+  const src = `./assets/weapon-${selWeapon}.webm`;
+  const poster = `./assets/weapon-${selWeapon}-poster.jpg`;
+  if (v.dataset.weapon !== selWeapon) {
+    v.pause(); v.dataset.weapon = selWeapon; v.poster = poster; v.src = src; v.load();
   }
-}
-function renderWeaponDemo(dt) {
-  if (!wv || !weaponOpen()) return;
-  sizeWeaponPreview();
-  const w = wv; w.t += dt;
-  w.craftM.rotation.y = Math.sin(w.t * 0.6) * 0.25;
-  updateNinja(w.craftM, dt, w.t, 0, 0, 0.55);
-  w.target.position.x = Math.sin(w.t * 0.7) * 1.8;
-  if (w.target.userData.spin) w.target.userData.spin.rotation.z += dt * 2;
-  w.fireT -= dt;
-  const sol = fireSolution(selWeapon, 1, false);
-  if (w.fireT <= 0) {
-    w.fireT = Math.max(sol.rate, 0.22);
-    for (const [ox, ang] of sol.shots) {
-      w.pools[selWeapon].add(ox, -0.3, Math.sin(ang) * sol.speed, -Math.cos(ang) * sol.speed, { scale: sol.scale || 1, rotX: selWeapon === 'nova' ? Math.PI / 2 : 0 });
-    }
-  }
-  for (const k of WEAPON_KEYS) {
-    const pool = w.pools[k];
-    for (let i = pool.list.length - 1; i >= 0; i--) { const b = pool.list[i]; b.x += b.vx * dt * 0.35; b.z += b.vz * dt * 0.35; if (b.z < -5.5) pool.list.splice(i, 1); }
-    pool.sync(0.32);
-  }
-  w.renderer.render(w.sc, w.cam);
+  if (weaponOpen()) v.play().catch(() => { /* poster remains until a user gesture */ });
 }
 function renderWeaponSelect() {
   const lang = i18n.isZh() ? 'zh' : 'en';
@@ -609,7 +570,7 @@ function renderWeaponSelect() {
       <span class="hs-code">${w.name[lang === 'zh' ? 'en' : 'zh']}</span>
     </button>`;
   }).join('');
-  for (const b of row.querySelectorAll('[data-wsel]')) b.addEventListener('click', () => { if (selWeapon === b.dataset.wsel) return; audio.init(); audio.select(); selWeapon = b.dataset.wsel; store.set('startWeapon', selWeapon); renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); if (wv) for (const k of WEAPON_KEYS) wv.pools[k].clear(); });
+  for (const b of row.querySelectorAll('[data-wsel]')) b.addEventListener('click', () => { if (selWeapon === b.dataset.wsel) return; audio.init(); audio.select(); selWeapon = b.dataset.wsel; store.set('startWeapon', selWeapon); renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); syncWeaponVideo(); });
 }
 function renderWeaponInfo() {
   const lang = i18n.isZh() ? 'zh' : 'en';
@@ -629,7 +590,18 @@ function renderWeaponInfo() {
     ].map(([l, v]) => `<span class="ws-stat"><em>${l}</em><b>${v}</b></span>`).join('');
   }
 }
-renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo();
+function renderDifficulty() {
+  const row = $('difficulty-row'); if (!row) return;
+  const lang = i18n.isZh() ? 'zh' : 'en';
+  row.innerHTML = Object.keys(DIFFICULTIES).map(k => `<button type="button" class="diff-btn ${selDifficulty === k ? 'sel' : ''}" data-diff="${k}"><b>${t('diff.' + k)}</b><small>${t('diffTag.' + k)}</small></button>`).join('');
+  $('difficulty-desc').textContent = t('diffDesc.' + selDifficulty);
+  for (const b of row.querySelectorAll('[data-diff]')) b.addEventListener('click', () => {
+    if (selDifficulty === b.dataset.diff) return;
+    audio.init(); audio.select(); selDifficulty = b.dataset.diff; S.difficulty = selDifficulty; store.set('difficulty', selDifficulty);
+    PLAYER.maxHp = C().hp + D().bonusHp; renderDifficulty();
+  });
+}
+renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficulty();
 ui.on('btn-settings-pause', () => { try { audio.click(); } catch (_) {} ui.settings({ audio, stage, onOpen: () => { try { audio.click(); } catch (_) {} } }); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
@@ -654,7 +626,7 @@ ui.mountSettings({
 });
 
 
-i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); });
+i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficulty(); });
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
 Platform.onBack(() => { if (ui.closeModal()) return true; if (S.state === 'playing') { pause(); return true; } if (S.state === 'paused') { resume(); return true; } if (S.state === 'over') { overToMenu(); return true; } return false; });
 Platform.onPause(() => { if (!S.demo) pause(); });
@@ -664,6 +636,7 @@ S.api = {
   overdrive: () => { S.od = 100; doOverdrive(); },
   craft: (key) => setCraft(key),
   weapon: (key, level = 1) => { if (!WEAPONS[key]) return; S.ults[S.weapon] = S.ult; S.weapon = key; S.weaponLevels[key] = Math.max(1, Math.min(6, level)); S.power = S.weaponLevels[key]; S.ult = S.ults[key]; S.fireT = 0; updateHUD(); },
+  difficulty: (key) => { if (!DIFFICULTIES[key]) return; selDifficulty = key; S.difficulty = key; PLAYER.maxHp = C().hp + D().bonusHp; S.hp = Math.min(S.hp, PLAYER.maxHp); renderDifficulty(); updateHUD(); },
   drop: (kind, key) => dropPickup(S.x, S.z - 1.2, kind, key),
   dropAt: (x, z, kind, key) => dropPickup(x, z, kind, key),
   shots: () => ({ pulse: pools.pulse.list.length, lance: pools.lance.list.length, nova: pools.nova.list.length }),
@@ -755,7 +728,7 @@ function sim(dt) {
   // terrain hazard: a telegraphed vertical sweep cuts one lane of the map
   S.hazardT -= dt;
   if (S.hazardT <= 0 && S.state === 'playing' && !S.demo && S.wave > 1) {
-    spawnHazard(); S.hazardT = 8 + Math.random() * 5;
+    spawnHazard(); S.hazardT = (8 + Math.random() * 5) * (S.mission?.map.hazard || 1) / D().fireRate;
   }
   for (let i = S.hazards.length - 1; i >= 0; i--) {
     const h = S.hazards[i]; h.t += dt;
@@ -768,7 +741,7 @@ function sim(dt) {
   }
   // drifting debris: slow map obstacles that force a lateral decision
   S.rockT -= dt;
-  if (S.rockT <= 0 && S.state === 'playing' && !S.demo && S.wave > 1) { spawnRock(); S.rockT = 8 + Math.random() * 5; }
+  if (S.rockT <= 0 && S.state === 'playing' && !S.demo && S.wave > 1) { spawnRock(); S.rockT = (8 + Math.random() * 5) * (S.mission?.map.rocks || 1) / D().fireRate; }
   for (let i = S.rocks.length - 1; i >= 0; i--) {
     const r = S.rocks[i]; r.t += dt; r.x += r.vx * dt; r.z += r.vz * dt;
     r.g.position.set(r.x, 0.45 + Math.sin(r.t * 1.4) * 0.12, r.z);
@@ -816,7 +789,7 @@ function sim(dt) {
       if (e.mode === 0) { e.z += e.vz * dt; if (e.z >= e.stopZ) { e.mode = 1; e.holdT = 0; } }
       else if (e.mode === 1) {
         e.holdT += dt;
-        e.fireT -= dt * sc;
+        e.fireT -= dt * sc * D().fireRate;
         if (e.fireT <= 0) {
           e.fireT = e.def.fire / sc;
           const a = aimAt(e.x, e.z);
@@ -848,7 +821,7 @@ function sim(dt) {
     }
     // Drone/weaver/splitter fire aimed pressure; without this the player only ever dodges Dashers.
     if ((e.type === 'drone' || e.type === 'weaver' || e.type === 'splitter') && S.state === 'playing' && e.z > FIELD.top + 1 && e.z < S.z + 1) {
-      e.fireT -= dt * sc;
+      e.fireT -= dt * sc * D().fireRate;
       if (e.fireT <= 0) {
         e.fireT = e.def.fire / sc;
         const a = aimAt(e.x, e.z);
@@ -883,35 +856,35 @@ function sim(dt) {
       }
       B.phaseT += dt;
       const p = B.phase;
-      const rate = (B.variant.rate || 1) * (1 + (p - 1) * 0.2);
+      const rate = (B.variant.rate || 1) * (1 + (p - 1) * 0.16) * D().fireRate;
       B.x = Math.sin(B.t * (0.5 + p * 0.08)) * (FIELD.halfW - 2.4);
       B.z = -15 + Math.sin(B.t * 0.7) * 1.0;
       B.atkT -= dt * rate;
       if (B.atkT <= 0) {
         const seq = p === 1 ? [0, 2, 0] : p === 2 ? [0, 1, 3, 2] : [0, 1, 3, 4, 2];
         B.atk = seq[B.seq++ % seq.length];
-        const speed = ENEMY_BULLET_SPEED * (0.85 + p * 0.08);
+        const speed = ENEMY_BULLET_SPEED * (0.78 + p * 0.07);
         if (B.atk === 0) {
-          const n = 12 + p * 4;
-          for (let i = 0; i < n; i++) enemyFire(B.x, B.z, (i / n) * Math.PI * 2 + B.t * 0.8, speed * 0.9);
-          B.atkT = p === 3 ? 1.1 : 1.5;
+          const n = 10 + p * 3;
+          for (let i = 0; i < n; i++) enemyFire(B.x, B.z, (i / n) * Math.PI * 2 + B.t * 0.8, speed * 0.88);
+          B.atkT = p === 3 ? 1.3 : 1.65;
         } else if (B.atk === 1) {
-          const n = 4 + p;
+          const n = 3 + p;
           for (let i = 0; i < n; i++) enemyFire(B.x, B.z, B.spiralA + (i / n) * Math.PI * 2, speed);
-          B.spiralA += 0.55 + p * 0.12;
-          B.atkT = 0.42;
+          B.spiralA += 0.62 + p * 0.12;
+          B.atkT = 0.58;
           if ((B.spiralN = (B.spiralN || 0) + 1) % 4 === 0) B.atk = 2;
         } else if (B.atk === 2) {
           const a = aimAt(B.x, B.z);
-          for (const o of [-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3]) enemyFire(B.x, B.z + 1.2, a + o, speed * 1.08);
-          B.atkT = p === 3 ? 0.75 : 1.1;
+          for (const o of [-0.26, -0.13, 0, 0.13, 0.26]) enemyFire(B.x, B.z + 1.2, a + o, speed * 1.04);
+          B.atkT = p === 3 ? 0.95 : 1.25;
         } else if (B.atk === 3) {
-          // wall with a moving gap: the player has to commit to one side
+          // A wider travelling gap and larger bullet spacing stay readable on phones.
           const gap = (Math.random() * 2 - 1) * 3.4;
-          for (let x = -FIELD.halfW + 0.7; x <= FIELD.halfW - 0.7; x += 1.05) {
-            if (Math.abs(x - gap) > 1.1) enemyFire(x, B.z + 0.5, 0, speed * 0.9);
+          for (let x = -FIELD.halfW + 0.7; x <= FIELD.halfW - 0.7; x += 1.25) {
+            if (Math.abs(x - gap) > 1.35) enemyFire(x, B.z + 0.5, 0, speed * 0.88);
           }
-          B.atkT = p === 3 ? 0.95 : 1.35;
+          B.atkT = p === 3 ? 1.15 : 1.5;
         } else {
           // crossfire from both sides, aimed at the player's current lane
           const a = aimAt(B.x, B.z);
@@ -919,7 +892,7 @@ function sim(dt) {
             enemyFire(B.x + side * 2.2, B.z + 0.6, a + side * 0.34, speed);
             enemyFire(B.x + side * 2.2, B.z + 0.6, a + side * 0.16, speed);
           }
-          B.atkT = 0.8;
+          B.atkT = 1.0;
         }
         if (S.state === 'playing') audio.enemyShot();
       }
@@ -1074,13 +1047,12 @@ function tick(rawDt, time) {
   S.heartT = (S.heartT || 0) - rawDt;
   if (S.state === 'playing' && S.hp === 1 && S.heartT <= 0) { audio.heartbeat(); S.heartT = 1.1; }
   for (const k of WEAPON_KEYS) pools[k].sync(k === 'nova' ? 0.35 : 0.2);
-  ebullets.sync(0.3); ecores.list = ebullets.list; ecores.sync(0.3);
+  ebullets.sync(0.3); ecores.list = ebullets.list; ecores.sync(0.47);
   world.update(dt, S.t, S.state === 'paused' || S.state === 'over' ? 0.15 : 1);
   particles.update(dt); waves.update(dt);
   frameCamera(rawDt, time); fx.applyPost(stage, time); ui.tick(rawDt);
   stage.render(rawDt);
   renderPreview(rawDt);
-  renderWeaponDemo(rawDt);
 }
 
 async function boot() {

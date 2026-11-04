@@ -39,7 +39,7 @@ with sync_playwright() as p:
 
     for key, short in [('pulse', '脈衝'), ('lance', '相位'), ('nova', '震波')]:
         pg.evaluate(f"() => __ninja.api.weapon('{key}', 3)")
-        pg.wait_for_timeout(250)
+        pg.wait_for_function(f"() => __ninja.api.shots()['{key}'] > 0", timeout=8000)
         got = pg.evaluate("() => ({w:__ninja.weapon,p:__ninja.power,h:document.querySelector('#hud-weapon').textContent,shots:__ninja.api.shots()})")
         print(key, got)
         check(got['w'] == key and got['p'] == 3, f'{key}: switch keeps its own level')
@@ -94,7 +94,12 @@ with sync_playwright() as p:
     print('od start', got)
     check(got['odT'] >= 0 and got['od'] < 10, 'overdrive consumes the meter and starts')
     check('active' in got['cls'], 'overdrive button shows active')
-    pg.evaluate("() => { __ninja.odT = 3.99; }")
+    pg.evaluate("() => { __ninja.ult = 100; __ninja.ultT = -1; __ninja.ultMode = null; __ninja.api.ult(); }")
+    pg.wait_for_timeout(220)
+    combo = pg.evaluate("() => ({od:__ninja.odT, ult:__ninja.ultT, mode:__ninja.ultMode})")
+    print('overdrive + ultimate', combo)
+    check(combo['od'] >= 0 and combo['ult'] >= 0 and combo['mode'] == 'pulse', 'weapon ultimate can interrupt overdrive')
+    pg.evaluate("() => { __ninja.ultT = -1; __ninja.ultMode = null; __ninja.odT = 3.99; }")
     pg.wait_for_function("() => __ninja.noFireT > 0", timeout=8000)
     got = pg.evaluate("() => ({odT:__ninja.odT, noFire:__ninja.noFireT, cls:document.querySelector('#btn-od').className})")
     print('od end', got)
