@@ -118,18 +118,9 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .cc-stat .bars i { height: 4px; flex: 1; background: rgba(255,255,255,.1); }
 .cc-stat .bars i.on { background: var(--cc); box-shadow: 0 0 5px var(--cc); }
 
-/* tech tree */
-.tree-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
-.tree-tab { flex: 1; cursor: pointer; pointer-events: auto; padding: 7px 4px; text-align: center; font-family: var(--font-zh); font-size: 11px; letter-spacing: 2px; color: #dfe8ff;
-  background: rgba(10,4,30,.6); border: 1px solid color-mix(in srgb, var(--tc, var(--c1)) 38%, transparent);
-  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
-.tree-tab small { display: block; font-family: 'Orbitron', sans-serif; font-size: 6.5px; letter-spacing: 1.5px; color: var(--tc); opacity: .85; margin-top: 2px; }
-.tree-tab.sel { background: linear-gradient(160deg, color-mix(in srgb, var(--tc) 22%, rgba(14,6,40,.9)), rgba(6,2,20,.85)); border-color: var(--tc); color: #fff; box-shadow: 0 0 14px color-mix(in srgb, var(--tc) 40%, transparent); }
+/* tech tree (weapon page — follows the selected weapon) */
 .tree-detail { padding: 12px 12px 10px; background: linear-gradient(165deg, rgba(14,6,40,.85), rgba(6,2,20,.8)); border: 1px solid color-mix(in srgb, var(--tc, var(--c1)) 45%, transparent);
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
-.td-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
-.td-head b { font-size: 15px; letter-spacing: 2px; color: #fff; text-shadow: 0 0 10px var(--tc); }
-.td-head span { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 1.5px; color: var(--tc); }
 .td-desc { font-size: 10px; line-height: 1.65; color: #b9c8ff; margin-bottom: 10px; }
 .td-nodes { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
 .td-nodes::before { content: ''; position: absolute; left: 4%; right: 4%; top: 15px; height: 2px; background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 55%, transparent), color-mix(in srgb, var(--tc) 20%, transparent)); }
@@ -197,15 +188,11 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .hangar-craft-id b { display: block; font-family: var(--font-zh); font-size: 24px; font-weight: 900; letter-spacing: 5px; color: #fff; text-shadow: 0 0 12px var(--cc, var(--c1)); }
 .hangar-craft-id span { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2.5px; color: var(--cc, var(--c1)); }
 .hangar-info { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; width: 100%; padding: 8px 1px 2px; }
+/* craft page has no tech tree — centre its info block in the freed space */
+#screen-hangar .hangar-info { display: flex; flex-direction: column; justify-content: center; }
 .ci-passive { font-size: 11.5px; line-height: 1.55; letter-spacing: .5px; color: #b9c8ff; padding: 6px 10px; margin-bottom: 6px; background: rgba(10,4,30,.5); border: 1px solid color-mix(in srgb, var(--cc, var(--c1)) 35%, transparent);
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
 .ci-blurb { font-size: 10.5px; line-height: 1.6; color: #9fb0e8; margin: 2px 0 6px; padding: 0 2px; }
-.ci-ult { display: flex; gap: 10px; align-items: center; margin-top: 6px; padding: 8px 10px; background: color-mix(in srgb, var(--tc, var(--c1)) 12%, rgba(5,1,15,.7)); border: 1px solid color-mix(in srgb, var(--tc, var(--c1)) 55%, transparent);
-  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
-.ci-ult .u-ico { flex: 0 0 auto; width: 30px; height: 30px; }
-.ci-ult b { font-size: 12px; letter-spacing: 2px; color: #fff; text-shadow: 0 0 8px var(--tc, var(--c1)); }
-.ci-ult b small { font-family: 'Orbitron', sans-serif; font-size: 7px; letter-spacing: 1.5px; color: var(--tc, var(--c1)); margin-left: 6px; }
-.ci-ult small { display: block; font-size: 9px; color: #b9c8ff; line-height: 1.5; margin-top: 2px; }
 .ws-stat { display: grid; gap: 3px; text-align: center; padding: 6px 2px 7px; background: rgba(10,4,30,.5); border: 1px solid color-mix(in srgb, var(--cc, var(--c1)) 30%, transparent);
   clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
 .ws-stat em { font-family: 'Orbitron', sans-serif; font-style: normal; font-size: 6.5px; letter-spacing: 1.5px; color: color-mix(in srgb, var(--cc, var(--c1)) 80%, white); }
@@ -254,9 +241,6 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   .hangar-craft-id b { font-size: 18px; }
   .ci-passive { font-size: 10px; margin-bottom: 4px; padding: 4px 8px; }
   .ci-blurb { font-size: 9px; margin-bottom: 4px; }
-  .tree-tab { padding: 5px 4px; font-size: 10px; }
-  .tree-tab small { margin-top: 1px; }
-  .td-head { margin-bottom: 4px; }
   .td-desc { font-size: 9px; margin-bottom: 6px; }
   .td-node .nd { width: 22px; height: 22px; font-size: 7px; }
   .td-node small { margin-top: 4px; font-size: 6px; }

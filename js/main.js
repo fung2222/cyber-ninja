@@ -386,9 +386,9 @@ cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', 
 // ——— Hangar: craft page → weapon page → launch ———
 const hangarOpen = () => !$('screen-hangar').classList.contains('hidden');
 const weaponOpen = () => !$('screen-weapon').classList.contains('hidden');
-function openHangar() { renderCraftSelect(); renderCraftInfo(); renderTechTree(); ensurePreview(); $('screen-weapon').classList.add('hidden'); $('screen-hangar').classList.remove('hidden'); }
+function openHangar() { renderCraftSelect(); renderCraftInfo(); ensurePreview(); $('screen-weapon').classList.add('hidden'); $('screen-hangar').classList.remove('hidden'); }
 function closeHangar() { $('screen-hangar').classList.add('hidden'); }
-function openWeapon() { renderWeaponSelect(); renderWeaponInfo(); ensureWeaponPreview(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); }
+function openWeapon() { renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); ensureWeaponPreview(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); }
 function closeWeapon() { $('screen-weapon').classList.add('hidden'); }
 function confirmWeapon() { closeWeapon(); closeHangar(); beginRun(); }
 
@@ -472,24 +472,18 @@ function levelStat(key, lv) {
   if (key === 'lance') return lang === 'zh' ? `貫${L.pierce}` : `P${L.pierce}`;
   return lang === 'zh' ? `範${L.aoe}` : `R${L.aoe}`;
 }
-let treeKey = 'pulse';
+// the 6-level tech tree now lives on the weapon page and follows the selected weapon
 function renderTechTree() {
-  const tabs = $('tree-tabs'), det = $('tree-detail');
-  if (!tabs || !det) return;
+  const det = $('tree-detail'); if (!det) return;
   const lang = i18n.isZh() ? 'zh' : 'en';
-  tabs.innerHTML = WEAPON_KEYS.map((k) => {
-    const w = WEAPONS[k];
-    return `<button type="button" class="tree-tab ${treeKey === k ? 'sel' : ''}" data-w="${k}" style="--tc:${hex(w.color)}">${w.short[lang]}<small>${w.name[lang === 'zh' ? 'en' : 'zh']}</small></button>`;
-  }).join('');
-  for (const b of tabs.querySelectorAll('[data-w]')) b.addEventListener('click', () => { treeKey = b.dataset.w; audio.init(); try { audio.click(); } catch (_) {} renderTechTree(); });
-  const w = WEAPONS[treeKey];
-  const nodes = w.levels.map((L, i) => `<div class="td-node"><div class="nd ${i === 5 ? 'max' : ''}"><i>${i + 1}</i></div><small>${levelStat(treeKey, i + 1)}<br>${L.dmg}${lang === 'zh' ? '傷' : 'DMG'}</small></div>`).join('');
+  const key = selWeapon;
+  const w = WEAPONS[key];
+  const nodes = w.levels.map((L, i) => `<div class="td-node"><div class="nd ${i === 5 ? 'max' : ''}"><i>${i + 1}</i></div><small>${levelStat(key, i + 1)}<br>${L.dmg}${lang === 'zh' ? '傷' : 'DMG'}</small></div>`).join('');
   det.style.setProperty('--tc', hex(w.color));
   det.innerHTML = `
-    <div class="td-head"><b>${w.name[lang]}</b><span>${w.name[lang === 'zh' ? 'en' : 'zh']}</span></div>
-    <div class="td-desc">${t('techDesc.' + treeKey)}</div>
+    <div class="td-desc">${t('techDesc.' + key)}</div>
     <div class="td-nodes">${nodes}</div>
-    <div class="td-ult"><span class="u-ico">${ULT_SVG[treeKey](hex(w.color))}</span><div><b>${w.ult[lang]}</b><small>${t('ultDesc.' + treeKey)}</small></div></div>
+    <div class="td-ult"><span class="u-ico">${ULT_SVG[key](hex(w.color))}</span><div><b>${w.ult[lang]}</b><small>${t('ultDesc.' + key)}</small></div></div>
     <div class="td-foot">${t('techFoot')}</div>`;
 }
 
@@ -615,7 +609,7 @@ function renderWeaponSelect() {
       <span class="hs-code">${w.name[lang === 'zh' ? 'en' : 'zh']}</span>
     </button>`;
   }).join('');
-  for (const b of row.querySelectorAll('[data-wsel]')) b.addEventListener('click', () => { if (selWeapon === b.dataset.wsel) return; audio.init(); audio.select(); selWeapon = b.dataset.wsel; store.set('startWeapon', selWeapon); renderWeaponSelect(); renderWeaponInfo(); if (wv) for (const k of WEAPON_KEYS) wv.pools[k].clear(); });
+  for (const b of row.querySelectorAll('[data-wsel]')) b.addEventListener('click', () => { if (selWeapon === b.dataset.wsel) return; audio.init(); audio.select(); selWeapon = b.dataset.wsel; store.set('startWeapon', selWeapon); renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); if (wv) for (const k of WEAPON_KEYS) wv.pools[k].clear(); });
 }
 function renderWeaponInfo() {
   const lang = i18n.isZh() ? 'zh' : 'en';
@@ -623,8 +617,6 @@ function renderWeaponInfo() {
   const L = w.levels[0];
   const idEl = $('weapon-id');
   if (idEl) idEl.innerHTML = `<b style="--tc:${hex(w.color)}">${w.name[lang]}</b><span style="--tc:${hex(w.color)}">${w.name[lang === 'zh' ? 'en' : 'zh']}</span>`;
-  const dEl = $('weapon-desc');
-  if (dEl) dEl.textContent = t('techDesc.' + selWeapon);
   const sEl = $('weapon-stats');
   if (sEl) {
     sEl.style.setProperty('--cc', hex(w.color));
@@ -635,11 +627,6 @@ function renderWeaponInfo() {
       [lang === 'zh' ? '射速' : 'RATE', (1 / L.rate).toFixed(1) + '/s'],
       [lang === 'zh' ? '特性' : 'TRAIT', trait],
     ].map(([l, v]) => `<span class="ws-stat"><em>${l}</em><b>${v}</b></span>`).join('');
-  }
-  const uEl = $('weapon-ult');
-  if (uEl) {
-    uEl.style.setProperty('--tc', hex(w.color));
-    uEl.innerHTML = `<span class="u-ico">${ULT_SVG[selWeapon](hex(w.color))}</span><div><b>${w.ult[lang]}<small>${w.ult[lang === 'zh' ? 'en' : 'zh']}</small></b><small>${t('ultDesc.' + selWeapon)}</small></div>`;
   }
 }
 renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo();
