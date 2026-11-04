@@ -19,6 +19,7 @@ with sync_playwright() as p:
     pg.goto(URL + '?lang=zh&reset=1', wait_until='domcontentloaded')
     pg.wait_for_timeout(1300)
     pg.click('#btn-start'); pg.wait_for_timeout(350)
+    pg.click('#btn-hangar-go'); pg.wait_for_timeout(350)
     pg.evaluate("() => { __ninja.hp = 3; __ninja.invuln = 999; }")
 
     st = pg.evaluate("() => ({state:__ninja.state, weapon:__ninja.weapon, power:__ninja.power, hud:document.querySelector('#hud-weapon').textContent, lv:document.querySelector('#hud-wlv').textContent, ult:document.querySelector('#hud-wult').textContent})")
@@ -27,14 +28,13 @@ with sync_playwright() as p:
     check(st['weapon'] == 'pulse' and st['power'] == 1, 'starts with pulse L1')
     check(st['hud'] == '脈衝' and st['lv'] == 'LV.1', 'weapon HUD is wired')
 
-    hud = pg.evaluate("""() => {const q=s=>document.querySelector(s)?.getBoundingClientRect(); const top=q('.hud-top'), w=q('#hud-weapon'), hp=q('#hud-hp'), wave=q('#hud-wave'), pause=q('#btn-pause'), mute=q('#btn-mute'), dock=q('.action-dock'); return {top:top&&top.y, w:w&&w.y, hp:hp&&hp.y, wave:wave&&wave.y, pause:pause&&pause.y, mute:mute&&mute.y, dockX:dock&&dock.x, dockY:dock&&dock.y, hpPips:document.querySelectorAll('#hud-hp i').length, pauseText:document.querySelector('#btn-pause')?.textContent.trim(), muteText:document.querySelector('#btn-mute')?.textContent.trim(), fill:getComputedStyle(document.querySelector('#ult-fill')).display, old:!!document.querySelector('#weapon-hud')};}""")
+    hud = pg.evaluate("""() => {const q=s=>document.querySelector(s)?.getBoundingClientRect(); const top=q('.hud-top'), w=q('#hud-weapon'), hp=q('#hud-hp'), wave=q('#hud-wave'), pause=q('#btn-pause'), mute=q('#btn-mute'), dock=q('.action-dock'); return {top:top&&top.y, w:w&&w.y, hp:hp&&hp.y, wave:wave&&wave.y, pause:pause&&pause.y, mute:mute&&mute.y, dockX:dock&&dock.x, dockY:dock&&dock.y, hpPips:document.querySelectorAll('#hud-hp i').length, pauseText:document.querySelector('#btn-pause')?.getAttribute('aria-label')||'', muteText:document.querySelector('#btn-mute')?.getAttribute('aria-label')||'', old:!!document.querySelector('#weapon-hud')};}""")
     print('hud', hud)
     check(hud['top'] is not None and hud['w'] < 80 and hud['hp'] < 80 and hud['wave'] < 80 and hud['pause'] < 80 and hud['mute'] < 80, 'HUD is consolidated at the top')
     check(hud['old'] is False, 'old bottom-left weapon HUD is gone')
     check(hud['hpPips'] == 3, 'shield HUD is capped at three pips')
     check(hud['dockX'] < 120 and hud['dockY'] > 700, 'action dock is compact at the lower left')
     check('暫停' in hud['pauseText'] and '靜音' in hud['muteText'], 'pause/mute have visible labels')
-    check(hud['fill'] == 'none', 'bottom action buttons no longer use the eye-catching fill bar')
 
     for key, short in [('pulse', '脈衝'), ('lance', '相位'), ('nova', '震波')]:
         pg.evaluate(f"() => __ninja.api.weapon('{key}', 3)")

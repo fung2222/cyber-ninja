@@ -249,6 +249,8 @@ i18n.add({
   "selectCraftS": ["3 種性能唔同嘅機體 · 各自擁有專用被動技能", "3 airframes · each with its own passive"],
   "techTree": ["武器技能樹", "WEAPON TECH TREE"],
   "techTreeS": ["每種武器 6 級 · 儲能大招 · 執 W 換裝", "SIX LEVELS EACH · CHARGED ULT · W TO SWAP"],
+  "confirmLaunch": ["確認出擊", "CONFIRM LAUNCH"],
+  "confirmLaunchS": ["ENTER", "ENTER"],
   "combo": ["連擊", "COMBO"],
   "shieldUp": ["裝甲修復 +1", "PLATING +1"],
   "statHp": ["耐久", "ARMOR"],

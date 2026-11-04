@@ -162,7 +162,7 @@ function beginRun() {
   resetRun(); setState('playing'); audio.confirm();
   ui.banner(t('waveN', { n: 1 }), '', t('firstHint'));
 }
-function showAttract() { setState('attract'); resetRun(); refreshStart(); }
+function showAttract() { closeHangar(); setState('attract'); resetRun(); refreshStart(); }
 
 // ---------------------------------------------------------------- spawning
 function spawnEnemy(ev) {
@@ -377,12 +377,19 @@ cv.addEventListener('pointerdown', (e) => { if (S.state !== 'playing' || S.demo)
 cv.addEventListener('pointermove', (e) => { if (!drag || e.pointerId !== drag.id) return; S.tx = drag.px + (e.clientX - drag.sx) * drag.k; S.tz = drag.pz + (e.clientY - drag.sy) * drag.k * 1.25; });
 const endDrag = (e) => { if (drag && e.pointerId === drag.id) drag = null; };
 cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+
+// ——— Hangar (craft-select screen) ———
+const hangarOpen = () => !$('screen-hangar').classList.contains('hidden');
+function openHangar() { renderCraftSelect(); renderTechTree(); $('screen-hangar').classList.remove('hidden'); }
+function closeHangar() { $('screen-hangar').classList.add('hidden'); }
+function confirmHangar() { closeHangar(); beginRun(); }
+
 createInput({
   anyGesture() { audio.init(); audio.startMusic(); },
   action(a) {
     if (ui.modalOpen) { if (a === 'pause') ui.closeModal(); return; }
-    if (a === 'primary') { if (S.state === 'attract') beginRun(); else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
-    else if (a === 'pause') { if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
+    if (a === 'primary') { if (S.state === 'attract') hangarOpen() ? confirmHangar() : openHangar(); else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
+    else if (a === 'pause') { if (hangarOpen()) closeHangar(); else if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
     else if (a === 'mute') { audio.init(); ui.setMuted(audio.toggleMute()); }
     else if (a === 'ult') doUlt();
     else if (a === 'overdrive') doOverdrive();
@@ -390,7 +397,9 @@ createInput({
     else if (a === 'fps') $('fps').classList.toggle('hidden');
   },
 }, { swipe: 'once', actions: { KeyX: 'ult', KeyJ: 'ult', KeyK: 'ult', KeyQ: 'overdrive', KeyO: 'overdrive' } });
-ui.on('btn-start', () => { audio.init(); beginRun(); });
+ui.on('btn-start', () => { audio.init(); if (S.demo || flags.autostart) beginRun(); else openHangar(); });
+ui.on('btn-hangar-go', () => { audio.init(); confirmHangar(); });
+ui.on('btn-hangar-back', () => { audio.back(); closeHangar(); });
 const __hub = readHub();
 if (shouldShowArcadeMenu(__hub)) { const b = document.getElementById('btn-arcade-menu'); if (b) b.classList.remove('hidden'); }
 ui.on('btn-arcade-menu', () => { try { audio.back(); } catch {} returnToHub({ gameId: 'cyber-ninja', openStore: false }); });

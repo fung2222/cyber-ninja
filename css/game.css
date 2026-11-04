@@ -100,7 +100,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .popup.shield-pop { color: #3bff8a; text-shadow: 0 0 12px #3bff8a; }
 
 /* ---------------- start screen: craft select + tech tree ---------------- */
-.menu-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; width: 100%; display: flex; flex-direction: column; align-items: center; padding: 8px 0 12px; pointer-events: none; }
+/* craft select + tech tree moved to #screen-hangar (see .hangar rules below) */
 .menu-select, .tech-tree { width: min(620px, 100%); margin: 14px auto 0; padding: 0 max(16px, env(safe-area-inset-left)) 0 max(16px, env(safe-area-inset-right)); pointer-events: auto; }
 .select-title { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-zh); font-size: 13px; letter-spacing: 3px; color: var(--c1); text-shadow: 0 0 8px var(--c1); margin-bottom: 8px; }
 .select-title em { font-style: normal; font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2px; color: var(--c3); opacity: .85; }
@@ -186,19 +186,22 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .hi-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 20px; }
 .hi-line .hi { white-space: nowrap; }
 
-/* phone portrait: LAUNCH floats above the hi-line, pinned to the viewport while
-   the home column scrolls (fixed — survives old WebViews that botch flex/sticky) */
-@media (max-width: 760px) and (min-height: 560px) {
-  .screen.hero .menu-cta { position: fixed; left: 0; right: 0; bottom: max(58px, calc(env(safe-area-inset-bottom) + 42px)); margin: 0 auto; z-index: 30; pointer-events: auto; }
-  /* room for the fixed CTA + hi-line so the scrolled tree never lands under them */
-  .screen.hero .menu-mid { padding-bottom: max(156px, calc(env(safe-area-inset-bottom) + 140px)); }
-}
+/* hangar: full-screen craft-select + tech-tree stage shown after pressing LAUNCH */
+#screen-hangar { z-index: 40; background: linear-gradient(180deg, #0a0618 0%, #120826 55%, #0a0618 100%); }
+.hangar { display: flex; flex-direction: column; width: 100%; height: 100%; max-width: 980px; margin: 0 auto; padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+.hangar-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 10px; }
+.hangar-title { margin: 0; text-align: left; }
+.hangar-back { flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid var(--c3); background: rgba(10, 6, 24, .6); color: var(--c3); font-size: 18px; line-height: 1; cursor: pointer; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+.hangar-back:active { background: rgba(255, 60, 120, .25); }
+.hangar-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; width: 100%; }
+.hangar-foot { flex: 0 0 auto; padding-top: 10px; width: 100%; }
+.hangar-foot .neon-btn { width: 100%; }
 
-/* desktop: the hangar panel sits on the right, brand + launch stay left */
+/* desktop: hangar body splits craft row and tech tree side by side */
 @media (min-width: 761px) {
-  .screen.hero .menu-scroll { position: absolute; top: max(20px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); width: min(400px, 36vw); padding: 2px 2px 8px; justify-content: flex-start; }
-  .screen.hero .menu-mid { padding-right: min(424px, 40vw); }
-  .screen.hero .menu-mid .menu-meta { left: 16px; transform: none; justify-content: flex-start; padding-left: 0; max-width: calc(100% - min(424px, 40vw) - 32px); }
+  .hangar-body { flex-direction: row; align-items: flex-start; gap: 18px; }
+  .hangar-body .menu-select { flex: 0 0 340px; }
+  .hangar-body .tech-tree { flex: 1 1 auto; min-width: 0; }
   .menu-select, .tech-tree { padding: 0; }
   .craft-row { gap: 10px; }
   .hud-score .value { font-size: 26px; }
@@ -227,7 +230,6 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
      above the hi-line — old in-app WebViews ignore flex-shrink, which used to let
      the craft cards spill under the LAUNCH button */
   .screen.hero .menu-mid { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .screen.hero .menu-scroll { flex: 0 0 auto; overflow: visible; padding-bottom: 20px; }
   .screen.hero { align-items: flex-end; padding-bottom: max(36px, env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(5,1,15,0) 0%, rgba(5,1,15,.35) 35%, rgba(5,1,15,.92) 72%); }
   .title { font-size: 64px; letter-spacing: 8px; }
   .tagline { font-size: 13px; margin-bottom: 14px; }

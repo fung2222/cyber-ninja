@@ -37,7 +37,10 @@ def run(p, name, w, h, mobile):
         set_lang('en')
         check(lang() == 'en' and 'LAUNCH' in pg.inner_text('#btn-start'), f'{name}: toggle back -> en')
     st = lambda: pg.evaluate('({s: __ninja.state, x: __ninja.x, z: __ninja.z, score: __ninja.score, wave: __ninja.wave, hp: __ninja.hp, ult: __ninja.ult, boss: !!__ninja.boss, kills: __ninja.kills})')
-    pg.click('#btn-start'); pg.wait_for_timeout(800)
+    pg.click('#btn-start'); pg.wait_for_timeout(600)
+    hangar = pg.evaluate("() => ({open: !document.getElementById('screen-hangar').classList.contains('hidden'), crafts: document.querySelectorAll('#craft-row .craft-card').length, tabs: document.querySelectorAll('#tree-tabs button').length})")
+    check(hangar['open'] and hangar['crafts'] == 3 and hangar['tabs'] >= 3, f'{name}: LAUNCH -> hangar ({hangar})')
+    pg.click('#btn-hangar-go'); pg.wait_for_timeout(800)
     check(st()['s'] == 'playing', f'{name}: start -> playing')
     x0 = st()['x']
     cx, cy = w // 2, int(h * 0.6)

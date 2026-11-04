@@ -21,6 +21,7 @@ with sync_playwright() as p:
     pg.wait_for_timeout(2200)
     pg.evaluate("() => { __ninja.ultReadyShown = true; __ninja.ult = 100; }")
     pg.click('#btn-start')
+    pg.click('#btn-hangar-go')
     pg.wait_for_function("() => __ninja.state === 'playing'", timeout=8000)
     pg.wait_for_timeout(200)
     state = pg.evaluate("() => ({ultReadyShown:__ninja.ultReadyShown, ult:__ninja.ult, wave:__ninja.wave, state:__ninja.state})")
