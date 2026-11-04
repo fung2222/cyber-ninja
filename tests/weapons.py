@@ -19,7 +19,8 @@ with sync_playwright() as p:
     pg.goto(URL + '?lang=zh&reset=1', wait_until='domcontentloaded')
     pg.wait_for_timeout(1300)
     pg.click('#btn-start'); pg.wait_for_timeout(350)
-    pg.click('#btn-hangar-go'); pg.wait_for_timeout(350)
+    pg.click('#btn-hangar-next'); pg.wait_for_timeout(400)
+    pg.click('#btn-weapon-go'); pg.wait_for_timeout(350)
     pg.evaluate("() => { __ninja.hp = 3; __ninja.invuln = 999; }")
 
     st = pg.evaluate("() => ({state:__ninja.state, weapon:__ninja.weapon, power:__ninja.power, hud:document.querySelector('#hud-weapon').textContent, lv:document.querySelector('#hud-wlv').textContent, ult:document.querySelector('#hud-wult').textContent})")

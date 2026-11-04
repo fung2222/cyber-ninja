@@ -27,6 +27,8 @@ const ads = createAds({ gameId: GAME_ID, ...ADS, onAdOpen: (on) => audio.duckAll
 
 // ---------------------------------------------------------------- player craft (selectable airframe)
 const savedCraft = store.get('craft', 'falcon');
+const savedStartWeapon = store.get('startWeapon', 'pulse');
+let selWeapon = WEAPON_KEYS.includes(savedStartWeapon) ? savedStartWeapon : 'pulse';
 let ninja = makeNinja(craftOf(savedCraft)); ninja.scale.setScalar(1.55); scene.add(ninja);
 function setCraft(key, silent = false) {
   if (!CRAFTS[key]) key = 'falcon';
@@ -40,6 +42,7 @@ function setCraft(key, silent = false) {
   updateHUD();
   renderCraftSelect(); renderCraftInfo();
   if (pv) pvSetModel(C);
+  if (wv) wvSetCraft();
 }
 const pools = {
   pulse: new BulletPool(scene, 320, new THREE.BoxGeometry(0.09, 0.09, 0.75), WEAPONS.pulse.color),
@@ -134,7 +137,7 @@ function clearField() {
 function resetRun() {
   clearField();
   Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.maxHp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
-    weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
+    weapon: selWeapon, weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
     combo: { chain: 0, timer: 0, mult: 1 }, gemChain: 0, gemChainT: 0, sinceHit: 99 });
   world.setDistrict('city');
   beam.visible = false; beam.material.opacity = 0;
@@ -164,7 +167,7 @@ function beginRun() {
   resetRun(); setState('playing'); audio.confirm();
   ui.banner(t('waveN', { n: 1 }), '', t('firstHint'));
 }
-function showAttract() { closeHangar(); setState('attract'); resetRun(); refreshStart(); }
+function showAttract() { closeHangar(); closeWeapon(); setState('attract'); resetRun(); refreshStart(); }
 
 // ---------------------------------------------------------------- spawning
 function spawnEnemy(ev) {
@@ -380,18 +383,21 @@ cv.addEventListener('pointermove', (e) => { if (!drag || e.pointerId !== drag.id
 const endDrag = (e) => { if (drag && e.pointerId === drag.id) drag = null; };
 cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
 
-// ——— Hangar (craft-select screen) ———
+// ——— Hangar: craft page → weapon page → launch ———
 const hangarOpen = () => !$('screen-hangar').classList.contains('hidden');
-function openHangar() { renderCraftSelect(); renderCraftInfo(); renderTechTree(); ensurePreview(); $('screen-hangar').classList.remove('hidden'); }
+const weaponOpen = () => !$('screen-weapon').classList.contains('hidden');
+function openHangar() { renderCraftSelect(); renderCraftInfo(); renderTechTree(); ensurePreview(); $('screen-weapon').classList.add('hidden'); $('screen-hangar').classList.remove('hidden'); }
 function closeHangar() { $('screen-hangar').classList.add('hidden'); }
-function confirmHangar() { closeHangar(); beginRun(); }
+function openWeapon() { renderWeaponSelect(); renderWeaponInfo(); ensureWeaponPreview(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); }
+function closeWeapon() { $('screen-weapon').classList.add('hidden'); }
+function confirmWeapon() { closeWeapon(); closeHangar(); beginRun(); }
 
 createInput({
   anyGesture() { audio.init(); audio.startMusic(); },
   action(a) {
     if (ui.modalOpen) { if (a === 'pause') ui.closeModal(); return; }
-    if (a === 'primary') { if (S.state === 'attract') hangarOpen() ? confirmHangar() : openHangar(); else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
-    else if (a === 'pause') { if (hangarOpen()) closeHangar(); else if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
+    if (a === 'primary') { if (S.state === 'attract') { if (weaponOpen()) confirmWeapon(); else if (hangarOpen()) openWeapon(); else openHangar(); } else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
+    else if (a === 'pause') { if (weaponOpen()) closeWeapon(); else if (hangarOpen()) closeHangar(); else if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
     else if (a === 'mute') { audio.init(); ui.setMuted(audio.toggleMute()); }
     else if (a === 'ult') doUlt();
     else if (a === 'overdrive') doOverdrive();
@@ -400,8 +406,10 @@ createInput({
   },
 }, { swipe: 'once', actions: { KeyX: 'ult', KeyJ: 'ult', KeyK: 'ult', KeyQ: 'overdrive', KeyO: 'overdrive' } });
 ui.on('btn-start', () => { audio.init(); if (S.demo || flags.autostart) beginRun(); else openHangar(); });
-ui.on('btn-hangar-go', () => { audio.init(); confirmHangar(); });
+ui.on('btn-hangar-next', () => { audio.init(); try { audio.click(); } catch (_) {} openWeapon(); });
 ui.on('btn-hangar-back', () => { audio.back(); closeHangar(); });
+ui.on('btn-weapon-back', () => { audio.back(); closeWeapon(); openHangar(); });
+ui.on('btn-weapon-go', () => { audio.init(); confirmWeapon(); });
 const __hub = readHub();
 if (shouldShowArcadeMenu(__hub)) { const b = document.getElementById('btn-arcade-menu'); if (b) b.classList.remove('hidden'); }
 ui.on('btn-arcade-menu', () => { try { audio.back(); } catch {} returnToHub({ gameId: 'cyber-ninja', openStore: false }); });
@@ -438,6 +446,8 @@ function renderCraftInfo() {
   if (idEl) idEl.innerHTML = `<b style="--cc:${hex(c.color)}">${c.name[lang]}</b><span style="--cc:${hex(c.color)}">${c.code[lang]} · ${c.role[lang]}</span>`;
   const pvEl = $('craft-passive');
   if (pvEl) pvEl.textContent = c.passive[lang];
+  const blEl = $('craft-blurb');
+  if (blEl) blEl.textContent = c.blurb[lang];
   const stEl = $('craft-stats');
   if (stEl) {
     const stats = [
@@ -477,9 +487,9 @@ function renderTechTree() {
   det.style.setProperty('--tc', hex(w.color));
   det.innerHTML = `
     <div class="td-head"><b>${w.name[lang]}</b><span>${w.name[lang === 'zh' ? 'en' : 'zh']}</span></div>
-    <div class="td-desc">${t('techDesc')[treeKey]?.[lang === 'zh' ? 0 : 1] || ''}</div>
+    <div class="td-desc">${t('techDesc.' + treeKey)}</div>
     <div class="td-nodes">${nodes}</div>
-    <div class="td-ult"><span class="u-ico">${ULT_SVG[treeKey](hex(w.color))}</span><div><b>${w.ult[lang]}</b><small>${t('ultDesc')[treeKey]?.[lang === 'zh' ? 0 : 1] || ''}</small></div></div>
+    <div class="td-ult"><span class="u-ico">${ULT_SVG[treeKey](hex(w.color))}</span><div><b>${w.ult[lang]}</b><small>${t('ultDesc.' + treeKey)}</small></div></div>
     <div class="td-foot">${t('techFoot')}</div>`;
 }
 
@@ -526,7 +536,113 @@ function renderPreview(dt) {
   updateNinja(pv.model, dt, S.t, 0, 0, 0.55);
   pv.renderer.render(pv.sc, pv.cam);
 }
-renderCraftSelect(); renderCraftInfo(); renderTechTree();
+
+// ---------------------------------------------------------------- weapon-select page (second hangar page)
+let wv = null;
+function ensureWeaponPreview() {
+  if (wv) return wv;
+  const canvas = $('weapon-canvas'); if (!canvas) return null;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  const sc = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
+  cam.position.set(0, 4.6, 4.8); cam.lookAt(0, 0.2, -1.6);
+  sc.add(new THREE.HemisphereLight(0x9fc0ff, 0x1a0b2e, 1.4));
+  const keyL = new THREE.DirectionalLight(0xffffff, 1.8); keyL.position.set(2.5, 4, 3); sc.add(keyL);
+  const rimL = new THREE.DirectionalLight(0xff2bd6, 1.2); rimL.position.set(-3, 1.5, -2.5); sc.add(rimL);
+  // demo field: the selected craft auto-fires at a drifting target drone
+  const craftM = makeNinja(craftOf(S.craft)); craftM.scale.setScalar(1.6); craftM.position.set(0, 0, 0.2); sc.add(craftM);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(1.3, 40), new THREE.MeshBasicMaterial({ color: craftOf(S.craft).color, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false }));
+  disc.rotation.x = -Math.PI / 2; disc.position.set(0, -0.02, 0.2); sc.add(disc);
+  const target = makeEnemy('drone'); target.scale.setScalar(1.3); target.position.set(0, 0, -3.4); sc.add(target);
+  const pools = {
+    pulse: new BulletPool(sc, 140, new THREE.BoxGeometry(0.09, 0.09, 0.75), WEAPONS.pulse.color),
+    lance: new BulletPool(sc, 70, new THREE.BoxGeometry(0.16, 0.16, 3.2), WEAPONS.lance.color),
+    nova: new BulletPool(sc, 70, new THREE.TorusGeometry(0.5, 0.09, 8, 24), WEAPONS.nova.color),
+  };
+  wv = { renderer, sc, cam, craftM, disc, target, pools, fireT: 0.4, t: 0 };
+  return wv;
+}
+function wvSetCraft() {
+  if (!wv || !wv.craftM) return;
+  const p = wv.craftM.position, ry = wv.craftM.rotation.y;
+  wv.sc.remove(wv.craftM);
+  const m = makeNinja(craftOf(S.craft)); m.scale.setScalar(1.6); m.position.copy(p); m.rotation.y = ry; wv.sc.add(m);
+  wv.craftM = m; wv.disc.material.color.setHex(craftOf(S.craft).color);
+}
+function sizeWeaponPreview() {
+  if (!wv) return;
+  const canvas = wv.renderer.domElement;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
+  const pr = wv.renderer.getPixelRatio();
+  if (canvas.width !== Math.round(w * pr) || canvas.height !== Math.round(h * pr)) {
+    wv.renderer.setSize(w, h, false);
+    wv.cam.aspect = w / h; wv.cam.updateProjectionMatrix();
+  }
+}
+function renderWeaponDemo(dt) {
+  if (!wv || !weaponOpen()) return;
+  sizeWeaponPreview();
+  const w = wv; w.t += dt;
+  w.craftM.rotation.y = Math.sin(w.t * 0.6) * 0.25;
+  updateNinja(w.craftM, dt, w.t, 0, 0, 0.55);
+  w.target.position.x = Math.sin(w.t * 0.7) * 1.8;
+  if (w.target.userData.spin) w.target.userData.spin.rotation.z += dt * 2;
+  w.fireT -= dt;
+  const sol = fireSolution(selWeapon, 1, false);
+  if (w.fireT <= 0) {
+    w.fireT = Math.max(sol.rate, 0.22);
+    for (const [ox, ang] of sol.shots) {
+      w.pools[selWeapon].add(ox, -0.3, Math.sin(ang) * sol.speed, -Math.cos(ang) * sol.speed, { scale: sol.scale || 1, rotX: selWeapon === 'nova' ? Math.PI / 2 : 0 });
+    }
+  }
+  for (const k of WEAPON_KEYS) {
+    const pool = w.pools[k];
+    for (let i = pool.list.length - 1; i >= 0; i--) { const b = pool.list[i]; b.x += b.vx * dt * 0.35; b.z += b.vz * dt * 0.35; if (b.z < -5.5) pool.list.splice(i, 1); }
+    pool.sync(0.32);
+  }
+  w.renderer.render(w.sc, w.cam);
+}
+function renderWeaponSelect() {
+  const lang = i18n.isZh() ? 'zh' : 'en';
+  const row = $('weapon-row'); if (!row) return;
+  row.innerHTML = WEAPON_KEYS.map((k) => {
+    const w = WEAPONS[k];
+    return `<button type="button" class="hs-btn ${selWeapon === k ? 'sel' : ''}" data-wsel="${k}" style="--cc:${hex(w.color)}">
+      <span class="hs-svg">${ULT_SVG[k](hex(w.color))}</span>
+      <span class="hs-name">${w.short[lang]}</span>
+      <span class="hs-code">${w.name[lang === 'zh' ? 'en' : 'zh']}</span>
+    </button>`;
+  }).join('');
+  for (const b of row.querySelectorAll('[data-wsel]')) b.addEventListener('click', () => { if (selWeapon === b.dataset.wsel) return; audio.init(); audio.select(); selWeapon = b.dataset.wsel; store.set('startWeapon', selWeapon); renderWeaponSelect(); renderWeaponInfo(); if (wv) for (const k of WEAPON_KEYS) wv.pools[k].clear(); });
+}
+function renderWeaponInfo() {
+  const lang = i18n.isZh() ? 'zh' : 'en';
+  const w = WEAPONS[selWeapon];
+  const L = w.levels[0];
+  const idEl = $('weapon-id');
+  if (idEl) idEl.innerHTML = `<b style="--tc:${hex(w.color)}">${w.name[lang]}</b><span style="--tc:${hex(w.color)}">${w.name[lang === 'zh' ? 'en' : 'zh']}</span>`;
+  const dEl = $('weapon-desc');
+  if (dEl) dEl.textContent = t('techDesc.' + selWeapon);
+  const sEl = $('weapon-stats');
+  if (sEl) {
+    sEl.style.setProperty('--cc', hex(w.color));
+    const trait = selWeapon === 'pulse' ? (lang === 'zh' ? '散射' : 'SPREAD') : selWeapon === 'lance' ? (lang === 'zh' ? `貫穿 ×${L.pierce}` : `PIERCE ${L.pierce}`) : (lang === 'zh' ? `範圍 ${L.aoe}` : `AOE ${L.aoe}`);
+    sEl.innerHTML = [
+      [lang === 'zh' ? '傷害' : 'DMG', L.dmg],
+      [lang === 'zh' ? '彈數' : 'SHOTS', L.shots.length],
+      [lang === 'zh' ? '射速' : 'RATE', (1 / L.rate).toFixed(1) + '/s'],
+      [lang === 'zh' ? '特性' : 'TRAIT', trait],
+    ].map(([l, v]) => `<span class="ws-stat"><em>${l}</em><b>${v}</b></span>`).join('');
+  }
+  const uEl = $('weapon-ult');
+  if (uEl) {
+    uEl.style.setProperty('--tc', hex(w.color));
+    uEl.innerHTML = `<span class="u-ico">${ULT_SVG[selWeapon](hex(w.color))}</span><div><b>${w.ult[lang]}<small>${w.ult[lang === 'zh' ? 'en' : 'zh']}</small></b><small>${t('ultDesc.' + selWeapon)}</small></div>`;
+  }
+}
+renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo();
 ui.on('btn-settings-pause', () => { try { audio.click(); } catch (_) {} ui.settings({ audio, stage, onOpen: () => { try { audio.click(); } catch (_) {} } }); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
@@ -551,7 +667,7 @@ ui.mountSettings({
 });
 
 
-i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); renderCraftSelect(); renderCraftInfo(); renderTechTree(); });
+i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); });
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
 Platform.onBack(() => { if (ui.closeModal()) return true; if (S.state === 'playing') { pause(); return true; } if (S.state === 'paused') { resume(); return true; } if (S.state === 'over') { overToMenu(); return true; } return false; });
 Platform.onPause(() => { if (!S.demo) pause(); });
@@ -977,6 +1093,7 @@ function tick(rawDt, time) {
   frameCamera(rawDt, time); fx.applyPost(stage, time); ui.tick(rawDt);
   stage.render(rawDt);
   renderPreview(rawDt);
+  renderWeaponDemo(rawDt);
 }
 
 async function boot() {
