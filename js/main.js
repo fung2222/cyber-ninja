@@ -603,7 +603,8 @@ function sim(dt) {
   for (let i = S.rocks.length - 1; i >= 0; i--) {
     const r = S.rocks[i]; r.t += dt; r.x += r.vx * dt; r.z += r.vz * dt;
     r.g.position.set(r.x, 0.45 + Math.sin(r.t * 1.4) * 0.12, r.z);
-    r.g.rotation.x += dt * 0.35; r.g.rotation.y += dt * 0.22;
+    r.g.userData.spin.rotation.x += dt * 0.35; r.g.userData.spin.rotation.y += dt * 0.22;
+    r.g.userData.glow.material.opacity = 0.26 + 0.13 * Math.sin(r.t * 6);
     if (S.state === 'playing' && Math.hypot(r.x - S.x, r.z - S.z) < r.r + PLAYER.radius) hurtPlayer();
     if (r.z > FIELD.bottom + 3) { scene.remove(r.g); S.rocks.splice(i, 1); }
   }
