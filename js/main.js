@@ -2,10 +2,10 @@
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, DIFFICULTIES, difficultyOf, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
-import { CAMPAIGN_LEVELS, campaignForWave, campaignLabel } from './campaign.js';
-import './strings.js?v=0.3.25';
+import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, campaignForWave, campaignLabel, normalizeProgress, isLevelUnlocked, recordLevel } from './campaign.js?v=1.3';
+import './strings.js?v=0.3.26';
 import { World } from './world.js';
-import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js';
+import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.3';
 import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.25';
 import { CRAFTS, CRAFT_KEYS, craftOf, craftName, COMBO, comboMult } from './crafts.js?v=1.0';
 import { NinjaAudio } from './audio.js?v=0.3.25';
@@ -32,7 +32,16 @@ const savedStartWeapon = store.get('startWeapon', 'pulse');
 const savedDifficulty = store.get('difficulty', 'normal');
 let selWeapon = WEAPON_KEYS.includes(savedStartWeapon) ? savedStartWeapon : 'pulse';
 let selDifficulty = DIFFICULTIES[savedDifficulty] ? savedDifficulty : 'normal';
+let missionProgress = normalizeProgress(store.get('missionProgress', null));
+let selWave = Math.min(missionProgress.unlocked, CAMPAIGN_LEVELS);
+let selChapter = Math.ceil(selWave / LEVELS_PER_CHAPTER);
 const D = () => difficultyOf(selDifficulty);
+function saveMissionProgress() { store.set('missionProgress', missionProgress); }
+function saveLevelResult(wave, score, cleared) {
+  if (wave < 1 || wave > CAMPAIGN_LEVELS) return;
+  missionProgress = recordLevel(missionProgress, wave, score, cleared);
+  saveMissionProgress();
+}
 let ninja = makeNinja(craftOf(savedCraft)); ninja.scale.setScalar(1.55); scene.add(ninja);
 function setCraft(key, silent = false) {
   if (!CRAFTS[key]) key = 'falcon';
@@ -61,6 +70,66 @@ ecores.mesh.material.color.setHex(0xffffff).multiplyScalar(0.9);
 // weapon-ultimate beam (laser) — a wide plane over the play field
 const beam = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 38), new THREE.MeshBasicMaterial({ color: new THREE.Color(WEAPONS.lance.color).multiplyScalar(2.4), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
 beam.rotation.x = -Math.PI / 2; beam.position.set(0, 0.35, -10); beam.visible = false; scene.add(beam);
+
+// Level-dependent weapon visuals are decorative pools linked to real bullets.
+// They add no damage or collision, preserving the tested weapon number table.
+const decorPools = {
+  lance: new BulletPool(scene, 220, new THREE.BoxGeometry(.075, .075, 3.5), 0x8ed8ff),
+  nova: new BulletPool(scene, 180, new THREE.TorusGeometry(.5, .026, 6, 32), 0xffb05c),
+};
+for (const p of Object.values(decorPools)) { p.mesh.material.transparent = true; p.mesh.material.opacity = .72; p.mesh.material.blending = THREE.AdditiveBlending; p.mesh.material.depthWrite = false; }
+const LANCE_COLORS = [0xa78bff, 0x91b8ff, 0x78d9ff, 0xb8a0ff, 0x78f2ff, 0xe0d2ff].map(c => new THREE.Color(c));
+const NOVA_COLORS = [0xff7a3b, 0xffa53b, 0xffcf5c, 0xff6c9e, 0xff9e63, 0xffe2a1].map(c => new THREE.Color(c));
+function spawnWeaponDecor(b, key, level, overdrive) {
+  if (!b || key === 'pulse') return;
+  const count = key === 'lance' ? level - 1 : level;
+  for (let i = 0; i < count; i++) {
+    const side = i % 2 ? 1 : -1, row = Math.floor(i / 2);
+    decorPools[key].add(b.x, b.z, b.vx, b.vz, {
+      source: b, ox: key === 'lance' ? side * (.17 + row * .13) : 0, oz: key === 'lance' ? row * .08 : i * .025,
+      scale: key === 'lance' ? .8 : .55 + i * .14, scaleX: key === 'lance' ? .65 : 1,
+      color: key === 'lance' ? LANCE_COLORS[(i + level) % 6] : NOVA_COLORS[(i + level) % 6], phase: i * .7,
+    });
+  }
+}
+
+// Procedural lightning: readable jagged 3D lines, brief enough to avoid bloom soup.
+const lightningBolts = [];
+function strikeLightning(x, z, length = 7, color = 0x9feaff, spread = 1.1) {
+  if (lightningBolts.length > 48) return;
+  const pts = [], drift = (Math.random() - .5) * spread;
+  for (let i = 0; i <= 10; i++) {
+    const k = i / 10;
+    pts.push(new THREE.Vector3(x + drift * k + (i === 0 || i === 10 ? 0 : (Math.random() - .5) * spread), .48 + Math.sin(k * Math.PI) * .16, z - length * k));
+  }
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false }));
+  scene.add(line); lightningBolts.push({ line, life: .16 + Math.random() * .1, max: .26 });
+}
+const beamExtras = Array.from({ length: 4 }, (_, i) => {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(i < 2 ? .28 : .13, 38), new THREE.MeshBasicMaterial({ color: i % 2 ? 0x77eaff : 0xe1c8ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  m.rotation.x = -Math.PI / 2; m.position.set(0, .38 + i * .015, -10); m.visible = false; scene.add(m); return m;
+});
+const novaUlt = new THREE.Group(); novaUlt.visible = false; scene.add(novaUlt);
+const novaUltRings = Array.from({ length: 5 }, (_, i) => {
+  const m = new THREE.Mesh(new THREE.TorusGeometry(1, .025 + i * .005, 6, 64), new THREE.MeshBasicMaterial({ color: NOVA_COLORS[i], transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false }));
+  m.rotation.x = Math.PI / 2 + (i - 2) * .08; novaUlt.add(m); return m;
+});
+const novaCore = new THREE.Mesh(new THREE.IcosahedronGeometry(.65, 1), new THREE.MeshBasicMaterial({ color: 0xffd29a, wireframe: true, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false })); novaUlt.add(novaCore);
+function updateWeaponFx(dt) {
+  for (const [key, pool] of Object.entries(decorPools)) {
+    for (const d of pool.list) {
+      const b = d.source;
+      if (!b || b.dead) { d.dead = true; continue; }
+      d.x = b.x + d.ox; d.z = b.z + d.oz; d.vx = b.vx; d.vz = b.vz;
+      if (key === 'nova') d.scale = (b.scale || 1) * (.55 + d.phase * .2) * (1 + Math.sin(S.t * 9 + d.phase) * .07);
+    }
+    pool.list = pool.list.filter(d => !d.dead);
+  }
+  for (let i = lightningBolts.length - 1; i >= 0; i--) {
+    const b = lightningBolts[i]; b.life -= dt; b.line.material.opacity = Math.max(0, b.life / b.max);
+    if (b.life <= 0) { scene.remove(b.line); b.line.geometry.dispose(); b.line.material.dispose(); lightningBolts.splice(i, 1); }
+  }
+}
 
 const S = {
   state: 'attract', demo: !!flags.demo,
@@ -105,7 +174,7 @@ function updateHUD() {
   $('ult-label').textContent = ultShort(S.weapon, lang);
   $('ult-sub').textContent = S.ult >= 100 ? (lang === 'zh' ? '就緒' : 'READY') : Math.round(S.ult) + '%';
   setRing($('btn-ult'), S.ult);
-  $('btn-ult').classList.toggle('ready', S.ult >= 100 && S.ultT < 0 && S.noFireT <= 0);
+  $('btn-ult').classList.toggle('ready', S.ult >= 100 && S.ultT < 0);
   const odReady = S.od >= 100 && S.odT < 0 && S.noFireT <= 0 && S.ultT < 0;
   $('btn-od').classList.toggle('ready', odReady);
   $('btn-od').classList.toggle('active', S.odT >= 0);
@@ -141,18 +210,24 @@ function clearField() {
   for (const r of (S.rocks || [])) scene.remove(r.g); S.rocks = [];
   for (const k of WEAPON_KEYS) pools[k].clear();
   ebullets.clear(); beam.visible = false; beam.material.opacity = 0;
+  for (const p of Object.values(decorPools)) p.clear();
+  for (const b of lightningBolts) { scene.remove(b.line); b.line.geometry.dispose(); b.line.material.dispose(); } lightningBolts.length = 0;
+  for (const m of beamExtras) { m.visible = false; m.material.opacity = 0; }
+  novaUlt.visible = false;
 }
 function resetRun() {
   clearField();
-  Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.maxHp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: 0, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
-    weapon: selWeapon, difficulty: selDifficulty, mission: campaignForWave(1), weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
+  const startWave = S.demo || flags.autostart ? 1 : selWave;
+  Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.maxHp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: startWave - 1, runStartWave: startWave, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
+    weapon: selWeapon, difficulty: selDifficulty, mission: campaignForWave(startWave), weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
     combo: { chain: 0, timer: 0, mult: 1 }, gemChain: 0, gemChainT: 0, sinceHit: 99 });
   world.setDistrict('city');
   beam.visible = false; beam.material.opacity = 0;
   theme.set(1); audio.setBoss(false); nextWave();
 }
 function nextWave() {
-  S.wave++; S.spec = waveSpec(S.wave); S.waveT = 0; S.nextEv = 0; S.betweenT = 0;
+  if (S.state === 'playing' && !S.demo && S.wave >= S.runStartWave && S.wave <= CAMPAIGN_LEVELS) saveLevelResult(S.wave, S.score - (S.levelStartScore || 0), true);
+  S.wave++; S.spec = waveSpec(S.wave); S.waveT = 0; S.nextEv = 0; S.betweenT = 0; S.levelStartScore = S.score;
   const m = campaignForWave(S.wave); S.mission = m;
   const changed = world.setMission(m);
   const districtChanged = changed !== S.district; S.district = changed;
@@ -180,9 +255,9 @@ function beginRun() {
   audio.init(); audio.startMusic(); audio.unduckMusic();
   resetRun(); setState('playing'); audio.confirm();
   const m = S.mission, lang = i18n.isZh() ? 'zh' : 'en';
-  ui.banner(t('chapterStage', { chapter: 1, stage: 1, name: m.name[lang] }), m.story[lang], t('firstHint'));
+  ui.banner(t('chapterStage', { chapter: m.chapter, stage: m.stage, name: m.name[lang] }), m.stage === 1 ? m.story[lang] : m.stageName[lang], t('firstHint'));
 }
-function showAttract() { closeHangar(); closeWeapon(); setState('attract'); resetRun(); refreshStart(); }
+function showAttract() { closeHangar(); closeWeapon(); closeMission(); if (!S.demo) { selWave = missionProgress.unlocked; selChapter = Math.ceil(selWave / LEVELS_PER_CHAPTER); } setState('attract'); resetRun(); refreshStart(); }
 
 // ---------------------------------------------------------------- spawning
 function spawnEnemy(ev) {
@@ -200,12 +275,71 @@ function spawnEnemy(ev) {
 }
 function spawnBoss(hp, variant = { zh: '星海魔獸', en: 'COSMIC MONSTER', rate: 1 }) {
   const g = makeBoss(); g.scale.setScalar(1.15); scene.add(g);
-  S.boss = { g, x: 0, z: FIELD.top - 4, hp, maxHp: hp, t: 0, atk: 0, atkT: 2.5, spiralA: 0, spiralN: 0, seq: 0, phase: 1, entering: true, variant };
+  S.boss = { g, x: 0, z: FIELD.top - 4, hp, maxHp: hp, t: 0, atk: 0, atkT: 2.5, spiralA: 0, spiralN: 0, seq: 0, phase: 1, entering: true, variant, chapter: S.mission.chapter, lastPattern: 'entry' };
   refreshBossName();
   g.position.set(0, 0, S.boss.z);
 }
-function enemyFire(x, z, ang, speed = ENEMY_BULLET_SPEED) { const v = speed * D().bulletSpeed; ebullets.add(x, z, Math.sin(ang) * v, Math.cos(ang) * v); }
+function enemyFire(x, z, ang, speed = ENEMY_BULLET_SPEED, extra = {}) { const v = speed * D().bulletSpeed; return ebullets.add(x, z, Math.sin(ang) * v, Math.cos(ang) * v, extra); }
 const aimAt = (x, z) => Math.atan2(S.x - x, S.z - z);
+
+// Each chapter has its own boss grammar, not merely a recolour or faster rate.
+function fireBossPattern(B, p) {
+  const speed = ENEMY_BULLET_SPEED * (0.78 + p * 0.07), seq = B.seq++;
+  let chapter = B.chapter;
+  if (chapter === 10) chapter = [1, 2, 3, 7, 9][(seq + p) % 5];
+  B.lastPattern = `ch${chapter}-p${p}-${seq % 4}`;
+  const aimed = aimAt(B.x, B.z);
+  if (chapter === 1) {
+    if (seq % 3 === 2) {
+      const gap = Math.sin(B.t * 0.7) * 3.2;
+      for (let x = -FIELD.halfW + .7; x < FIELD.halfW; x += 1.25) if (Math.abs(x - gap) > 1.45) enemyFire(x, B.z + .5, 0, speed * .88);
+    } else for (const o of [-.38, -.22, -.08, .08, .22, .38]) enemyFire(B.x, B.z + 1, aimed + o, speed);
+    B.atkT = 1.15;
+  } else if (chapter === 2) {
+    const arms = 2 + (p === 3 ? 1 : 0);
+    for (let i = 0; i < arms; i++) enemyFire(B.x, B.z, B.spiralA + i * Math.PI * 2 / arms, speed);
+    B.spiralA += .43 + p * .06; B.atkT = .22;
+    if (seq % 8 === 7) for (const o of [-.18, 0, .18]) enemyFire(B.x, B.z, aimed + o, speed * 1.12);
+  } else if (chapter === 3) {
+    for (const side of [-1, 1]) for (const slope of [.25, .48, .72]) enemyFire(B.x + side * 1.8, B.z + .5, side * slope + (side > 0 ? Math.PI : 0), speed * .9);
+    if (p > 1) enemyFire(B.x, B.z, aimed, speed * 1.15);
+    B.atkT = .85;
+  } else if (chapter === 4) {
+    const side = seq % 2 ? 1 : -1;
+    for (const mirror of [-1, 1]) {
+      const x = B.x + mirror * 2.5, a = aimAt(x, B.z);
+      for (const o of [-.18, 0, .18]) enemyFire(x, B.z + .4, a + o * side, speed * (mirror === side ? 1.08 : .92));
+    }
+    B.atkT = .72;
+  } else if (chapter === 5) {
+    const n = 15 + p * 2, gap = Math.floor((aimed + Math.PI * 4) / (Math.PI * 2) * n) % n;
+    for (let i = 0; i < n; i++) if (Math.abs(i - gap) > 1) enemyFire(B.x, B.z, i * Math.PI * 2 / n + B.t * .22, speed * .8);
+    if (seq % 2) enemyFire(B.x, B.z, aimed, speed * 1.5, { scale: 1.3 });
+    B.atkT = 1.15;
+  } else if (chapter === 6) {
+    spawnHazard(); // orange lane telegraphs precede the actual damaging ruin laser
+    for (const o of [-.45, -.22, 0, .22, .45]) enemyFire(B.x, B.z, aimed + o, speed * .9);
+    B.atkT = 1.65;
+  } else if (chapter === 7) {
+    const n = 8 + p * 2;
+    for (let layer = 0; layer < 2; layer++) for (let i = 0; i < n; i++) {
+      const a = i * Math.PI * 2 / n + B.t * .55 + layer * .16 + Math.sin(i * Math.PI * 4 / n) * .19;
+      enemyFire(B.x, B.z, a, speed * (layer ? .72 : .94));
+    }
+    B.atkT = 1.05;
+  } else if (chapter === 8) {
+    const arms = 4 + p;
+    for (let i = 0; i < arms; i++) enemyFire(B.x, B.z, B.spiralA + i * Math.PI * 2 / arms, speed * .85);
+    for (let i = 0; i < 3; i++) enemyFire(B.x, B.z, -B.spiralA * .7 + i * Math.PI * 2 / 3, speed * .72);
+    B.spiralA += .34; B.atkT = .36;
+  } else {
+    if (seq % 3 === 0) for (let i = 0; i < 12 + p * 2; i++) enemyFire(B.x, B.z, i * Math.PI * 2 / (12 + p * 2), speed * .82);
+    else {
+      for (const o of [-.28, -.14, 0, .14, .28]) enemyFire(B.x, B.z, aimed + o, speed, o === 0 ? { homing: .8, turn: 1.25 } : {});
+    }
+    B.atkT = .95;
+  }
+}
 
 // ---------------------------------------------------------------- damage / kills
 function bumpCombo() {
@@ -336,11 +470,18 @@ function bossDown() {
   theme.set(1 + S.wave / 5); audio.setBoss(false);
 }
 function doUlt() {
-  if (S.ult < 100 || S.ultT >= 0 || S.noFireT > 0 || !(S.state === 'playing' || S.state === 'attract')) return;
+  if (S.ult < 100 || S.ultT >= 0 || !(S.state === 'playing' || S.state === 'attract')) return;
   const mode = S.weapon;
   S.ult = 0; S.ults[mode] = 0; S.ultReadyShown = false; S.ultT = 0; S.ultFireT = 0; S.ultMode = mode; S.novaR = 2; S.invuln = Math.max(S.invuln, 0.35);
-  beam.visible = mode === 'lance';
-  if (mode === 'lance') { beam.position.x = S.x; beam.material.color.setHex(WEAPONS.lance.color).multiplyScalar(2.4); }
+  beam.visible = mode === 'lance'; novaUlt.visible = mode === 'nova';
+  for (const m of beamExtras) m.visible = mode === 'lance';
+  if (mode === 'lance') {
+    beam.position.x = S.x; beam.material.color.setHex(WEAPONS.lance.color).multiplyScalar(2.4);
+    for (let i = 0; i < 7; i++) strikeLightning(S.x + (Math.random() - .5) * 2.4, S.z - 1 - i * 2.2, 5 + Math.random() * 4, i % 2 ? 0xc7b5ff : 0x8cecff, 1.8);
+  } else if (mode === 'nova') {
+    novaUlt.position.set(S.x, .4, S.z);
+    for (let i = 0; i < 4; i++) waves.spawn(new THREE.Vector3(S.x, 0, S.z), NOVA_COLORS[i], { r0: .6 + i * .4, r1: 7 + i * 3, h: 1 + i * .25, dur: .75 + i * .12, a: 2.5 });
+  }
   for (const b of ebullets.list) particles.emit(new THREE.Vector3(b.x, 0, b.z), new THREE.Vector3(0, 2, 0), new THREE.Color(0xffffff), { life: 0.4, size: 0.8 });
   ebullets.clear();
   if (S.state !== 'attract') { audio.ult(mode); ui.banner(ultName(mode, i18n.isZh() ? 'zh' : 'en'), '', ''); Platform.haptic('heavy'); }
@@ -364,6 +505,7 @@ function gameOver() {
   setTimeout(() => {
     if (S.demo) { beginRun(); return; }
     S.newRecord = store.submitBest(S.score); store.setNum('bestWave', Math.max(store.getNum('bestWave', 0), S.wave));
+    if (S.wave <= CAMPAIGN_LEVELS) saveLevelResult(S.wave, S.score - (S.levelStartScore || 0), false);
     ui.setText('over-score', S.score.toLocaleString('en-US')); ui.setText('over-wave', S.wave); ui.setText('over-kills', S.kills); ui.setText('over-best', store.best.toLocaleString('en-US'));
     $('newrecord').classList.toggle('hidden', !S.newRecord);
     $('btn-revive').classList.toggle('hidden', S.continued || !ads.rewardedAvailable());
@@ -378,7 +520,7 @@ async function revive() {
   S.ult = 100; S.ults[S.weapon] = 100; S.od = 100;
   // clean restart of the power systems: no stale overdrive / cease-fire / ult
   S.odT = -1; S.noFireT = 0; S.ultT = -1; S.ultMode = null; S.ultFireT = 0; S.novaR = 0;
-  beam.visible = false; beam.material.opacity = 0;
+  beam.visible = false; beam.material.opacity = 0; novaUlt.visible = false; for (const m of beamExtras) { m.visible = false; m.material.opacity = 0; }
   setState('playing'); audio.unduckMusic(); ui.banner(t('revived'), '', t('ultFull'));
 }
 async function retry() { if (S.state !== 'over') return; audio.click(); await ads.naturalBreak('gameover'); ninja.visible = true; beginRun(); }
@@ -398,21 +540,24 @@ cv.addEventListener('pointermove', (e) => { if (!drag || e.pointerId !== drag.id
 const endDrag = (e) => { if (drag && e.pointerId === drag.id) drag = null; };
 cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
 
-// ——— Hangar: craft page → weapon page → launch ———
+// ——— Hangar: craft page → weapon page → mission / difficulty → launch ———
 const hangarOpen = () => !$('screen-hangar').classList.contains('hidden');
 const weaponOpen = () => !$('screen-weapon').classList.contains('hidden');
-function openHangar() { renderCraftSelect(); renderCraftInfo(); ensurePreview(); $('screen-weapon').classList.add('hidden'); $('screen-hangar').classList.remove('hidden'); }
+const missionOpen = () => !$('screen-mission').classList.contains('hidden');
+function openHangar() { renderCraftSelect(); renderCraftInfo(); ensurePreview(); closeWeapon(); closeMission(); $('screen-hangar').classList.remove('hidden'); }
 function closeHangar() { $('screen-hangar').classList.add('hidden'); }
-function openWeapon() { renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); renderDifficulty(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); syncWeaponVideo(); }
+function openWeapon() { renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); closeMission(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); syncWeaponVideo(); }
 function closeWeapon() { $('screen-weapon').classList.add('hidden'); const v = $('weapon-video'); if (v) v.pause(); }
-function confirmWeapon() { closeWeapon(); closeHangar(); beginRun(); }
+function closeMission() { $('screen-mission').classList.add('hidden'); }
+function confirmWeapon() { closeWeapon(); closeHangar(); openMission(); }
+function startSelectedMission() { if (!isLevelUnlocked(missionProgress, selWave)) return; closeMission(); closeWeapon(); closeHangar(); beginRun(); }
 
 createInput({
   anyGesture() { audio.init(); audio.startMusic(); },
   action(a) {
     if (ui.modalOpen) { if (a === 'pause') ui.closeModal(); return; }
-    if (a === 'primary') { if (S.state === 'attract') { if (weaponOpen()) confirmWeapon(); else if (hangarOpen()) openWeapon(); else openHangar(); } else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
-    else if (a === 'pause') { if (weaponOpen()) closeWeapon(); else if (hangarOpen()) closeHangar(); else if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
+    if (a === 'primary') { if (S.state === 'attract') { if (missionOpen()) startSelectedMission(); else if (weaponOpen()) confirmWeapon(); else if (hangarOpen()) openWeapon(); else openHangar(); } else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
+    else if (a === 'pause') { if (missionOpen()) { closeMission(); openWeapon(); } else if (weaponOpen()) { closeWeapon(); openHangar(); } else if (hangarOpen()) closeHangar(); else if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
     else if (a === 'mute') { audio.init(); ui.setMuted(audio.toggleMute()); }
     else if (a === 'ult') doUlt();
     else if (a === 'overdrive') doOverdrive();
@@ -424,7 +569,9 @@ ui.on('btn-start', () => { audio.init(); if (S.demo || flags.autostart) beginRun
 ui.on('btn-hangar-next', () => { audio.init(); try { audio.click(); } catch (_) {} openWeapon(); });
 ui.on('btn-hangar-back', () => { audio.back(); closeHangar(); });
 ui.on('btn-weapon-back', () => { audio.back(); closeWeapon(); openHangar(); });
-ui.on('btn-weapon-go', () => { audio.init(); confirmWeapon(); });
+ui.on('btn-weapon-go', () => { audio.init(); audio.click(); confirmWeapon(); });
+ui.on('btn-mission-back', () => { audio.back(); closeMission(); openWeapon(); });
+ui.on('btn-mission-go', () => { audio.init(); startSelectedMission(); });
 const __hub = readHub();
 if (shouldShowArcadeMenu(__hub)) { const b = document.getElementById('btn-arcade-menu'); if (b) b.classList.remove('hidden'); }
 ui.on('btn-arcade-menu', () => { try { audio.back(); } catch {} returnToHub({ gameId: 'cyber-ninja', openStore: false }); });
@@ -497,6 +644,7 @@ function renderTechTree() {
   det.style.setProperty('--tc', hex(w.color));
   det.innerHTML = `
     <div class="td-desc">${t('techDesc.' + key)}</div>
+    <div class="td-evolution">${t('levelFx.' + key)}</div>
     <div class="td-nodes">${nodes}</div>
     <div class="td-ult"><span class="u-ico">${ULT_SVG[key](hex(w.color))}</span><div><b>${w.ult[lang]}</b><small>${t('ultDesc.' + key)}</small></div></div>
     <div class="td-foot">${t('techFoot')}</div>`;
@@ -601,6 +749,46 @@ function renderDifficulty() {
     PLAYER.maxHp = C().hp + D().bonusHp; renderDifficulty();
   });
 }
+function openMission() {
+  if (!isLevelUnlocked(missionProgress, selWave)) selWave = missionProgress.unlocked;
+  selChapter = Math.ceil(selWave / LEVELS_PER_CHAPTER);
+  renderMission(); renderDifficulty(); $('screen-mission').classList.remove('hidden');
+}
+function renderMission() {
+  const nav = $('chapter-nav'); if (!nav) return;
+  const lang = i18n.isZh() ? 'zh' : 'en';
+  nav.innerHTML = Array.from({ length: CHAPTER_COUNT }, (_, i) => {
+    const chapter = i + 1, first = i * LEVELS_PER_CHAPTER + 1;
+    const unlocked = isLevelUnlocked(missionProgress, first);
+    const m = campaignForWave(first);
+    return `<button type="button" class="chapter-btn ${selChapter === chapter ? 'sel' : ''}" data-chapter="${chapter}" ${unlocked ? '' : 'disabled'}><b>${String(chapter).padStart(2, '0')}</b><span>${unlocked ? m.name[lang] : t('locked')}</span></button>`;
+  }).join('');
+  for (const b of nav.querySelectorAll('[data-chapter]')) b.addEventListener('click', () => {
+    const chapter = Number(b.dataset.chapter), first = (chapter - 1) * LEVELS_PER_CHAPTER + 1;
+    if (!isLevelUnlocked(missionProgress, first)) return;
+    audio.select(); selChapter = chapter; selWave = first; renderMission();
+  });
+  const selected = campaignForWave(selWave), rec = missionProgress.records[selected.key] || { best: 0, clears: 0 };
+  $('mission-code').textContent = `CH.${String(selected.chapter).padStart(2, '0')}-${selected.stage} · ${selected.place[lang]}`;
+  $('mission-name').textContent = `${selected.name[lang]} / ${selected.stageName[lang]}`;
+  $('mission-story').textContent = selected.stage === 5 ? t('bossStyle.' + selected.chapter) : selected.story[lang];
+  $('mission-clear').textContent = rec.clears ? t('clearedCount', { n: rec.clears }) : t('notCleared');
+  $('mission-clear').classList.toggle('done', rec.clears > 0);
+  const grid = $('level-grid');
+  grid.innerHTML = Array.from({ length: LEVELS_PER_CHAPTER }, (_, i) => {
+    const wave = (selChapter - 1) * LEVELS_PER_CHAPTER + i + 1, m = campaignForWave(wave);
+    const unlocked = isLevelUnlocked(missionProgress, wave), r = missionProgress.records[m.key] || { best: 0, clears: 0 };
+    const status = !unlocked ? t('locked') : r.clears ? `✓ ${t('cleared')}` : t('available');
+    return `<button type="button" class="level-card ${selWave === wave ? 'sel' : ''} ${r.clears ? 'done' : ''}" data-level="${wave}" ${unlocked ? '' : 'disabled'}>
+      <span class="level-num">${String(m.stage).padStart(2, '0')}</span><span class="level-info"><b>${m.stageName[lang]}</b><small>${status}</small><em>${t('levelBest')} ${r.best.toLocaleString('en-US')}</em></span><span class="level-mark">${!unlocked ? '◇' : r.clears ? '✓' : '›'}</span></button>`;
+  }).join('');
+  for (const b of grid.querySelectorAll('[data-level]')) b.addEventListener('click', () => {
+    const wave = Number(b.dataset.level); if (!isLevelUnlocked(missionProgress, wave)) return;
+    audio.select(); selWave = wave; renderMission();
+  });
+  $('mission-loadout').innerHTML = `<span>${t('loadout')}</span><b>${craftName(S.craft, lang)} · ${WEAPONS[selWeapon].name[lang]}</b>`;
+  $('mission-selection').innerHTML = `<span>${campaignLabel(selected, lang)}</span><b>${selected.stageName[lang]} · ${t('levelBest')} ${rec.best.toLocaleString('en-US')}</b>`;
+}
 renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficulty();
 ui.on('btn-settings-pause', () => { try { audio.click(); } catch (_) {} ui.settings({ audio, stage, onOpen: () => { try { audio.click(); } catch (_) {} } }); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
@@ -626,7 +814,7 @@ ui.mountSettings({
 });
 
 
-i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficulty(); });
+i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficulty(); renderMission(); });
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
 Platform.onBack(() => { if (ui.closeModal()) return true; if (S.state === 'playing') { pause(); return true; } if (S.state === 'paused') { resume(); return true; } if (S.state === 'over') { overToMenu(); return true; } return false; });
 Platform.onPause(() => { if (!S.demo) pause(); });
@@ -640,9 +828,11 @@ S.api = {
   drop: (kind, key) => dropPickup(S.x, S.z - 1.2, kind, key),
   dropAt: (x, z, kind, key) => dropPickup(x, z, kind, key),
   shots: () => ({ pulse: pools.pulse.list.length, lance: pools.lance.list.length, nova: pools.nova.list.length }),
+  fx: () => ({ lanceDecor: decorPools.lance.list.length, novaDecor: decorPools.nova.list.length, lightning: lightningBolts.length, beamExtras: beamExtras.filter(m => m.visible).length, novaRings: novaUlt.visible ? novaUltRings.length : 0 }),
+  progress: () => JSON.parse(JSON.stringify(missionProgress)),
   pulseVectors: () => pools.pulse.list.map(b => ({ vx: b.vx, vz: b.vz })),
-  clearShots: () => { for (const k of WEAPON_KEYS) pools[k].clear(); },
-  threat: () => ({ enemies: S.enemies.length, bullets: ebullets.list.length, hazards: S.hazards.length, gems: S.gems.length, rocks: S.rocks.length, bossPhase: S.boss ? S.boss.phase : null }),
+  clearShots: () => { for (const k of WEAPON_KEYS) pools[k].clear(); for (const p of Object.values(decorPools)) p.clear(); },
+  threat: () => ({ enemies: S.enemies.length, bullets: ebullets.list.length, hazards: S.hazards.length, gems: S.gems.length, rocks: S.rocks.length, bossPhase: S.boss ? S.boss.phase : null, bossChapter: S.boss ? S.boss.chapter : null, bossPattern: S.boss ? S.boss.lastPattern : null }),
   hazard: () => spawnHazard(),
   rock: () => spawnRock(),
   spawn: (ev) => spawnEnemy(ev),
@@ -709,10 +899,20 @@ function sim(dt) {
     S.fireT = sol.rate;
     const pool = pools[S.weapon];
     for (const [ox, ang] of sol.shots) {
-      pool.add(S.x + ox, S.z - 0.6, Math.sin(ang) * sol.speed, -Math.cos(ang) * sol.speed, {
-        kind: S.weapon, dmg: sol.dmg * C().dmg, pierce: sol.pierce || 0, aoe: sol.aoe || 0, hit: new Set(),
+      const visualLevel = Math.min(6, S.power + (S.odT >= 0 ? 2 : 0));
+      const b = pool.add(S.x + ox, S.z - 0.6, Math.sin(ang) * sol.speed, -Math.cos(ang) * sol.speed, {
+        kind: S.weapon, level: visualLevel, dmg: sol.dmg * C().dmg, pierce: sol.pierce || 0, aoe: sol.aoe || 0, hit: new Set(),
         scale: (sol.scale || 1) * (S.odT >= 0 ? 1.22 : 1), rotX: S.weapon === 'nova' ? Math.PI / 2 : 0,
+        scaleX: S.weapon === 'lance' ? .72 + visualLevel * .14 : 1, scaleZ: S.weapon === 'lance' ? .85 + visualLevel * .08 : 1,
+        color: S.weapon === 'lance' ? LANCE_COLORS[visualLevel - 1] : S.weapon === 'nova' ? NOVA_COLORS[visualLevel - 1] : BulletPool.white,
       });
+      spawnWeaponDecor(b, S.weapon, visualLevel, S.odT >= 0);
+      if (S.weapon === 'lance' && visualLevel >= 3) {
+        const forks = 1 + Math.floor((visualLevel - 3) / 2) + (S.odT >= 0 ? 1 : 0);
+        for (let j = 0; j < forks; j++) strikeLightning(S.x + ox, S.z - .7, 3.2 + visualLevel * .45, visualLevel >= 5 ? 0xa8f6ff : 0xbca8ff, .65 + visualLevel * .12);
+      } else if (S.weapon === 'nova' && visualLevel >= 3) {
+        for (let j = 0; j < Math.min(4, visualLevel - 1); j++) particles.emit(new THREE.Vector3(S.x + ox, .38, S.z - .6), new THREE.Vector3((Math.random() - .5) * visualLevel, .5, -2 - Math.random() * 3), NOVA_COLORS[(j + visualLevel) % 6], { life: .28, size: .7, grav: 0 });
+      }
     }
     // muzzle flash
     particles.emit(new THREE.Vector3(S.x, 0.35, S.z - 0.8), new THREE.Vector3((Math.random() - 0.5) * 1.2, 1.2, -4), new THREE.Color(C().color), { life: 0.14, size: 0.85, grav: 0 });
@@ -861,39 +1061,7 @@ function sim(dt) {
       B.z = -15 + Math.sin(B.t * 0.7) * 1.0;
       B.atkT -= dt * rate;
       if (B.atkT <= 0) {
-        const seq = p === 1 ? [0, 2, 0] : p === 2 ? [0, 1, 3, 2] : [0, 1, 3, 4, 2];
-        B.atk = seq[B.seq++ % seq.length];
-        const speed = ENEMY_BULLET_SPEED * (0.78 + p * 0.07);
-        if (B.atk === 0) {
-          const n = 10 + p * 3;
-          for (let i = 0; i < n; i++) enemyFire(B.x, B.z, (i / n) * Math.PI * 2 + B.t * 0.8, speed * 0.88);
-          B.atkT = p === 3 ? 1.3 : 1.65;
-        } else if (B.atk === 1) {
-          const n = 3 + p;
-          for (let i = 0; i < n; i++) enemyFire(B.x, B.z, B.spiralA + (i / n) * Math.PI * 2, speed);
-          B.spiralA += 0.62 + p * 0.12;
-          B.atkT = 0.58;
-          if ((B.spiralN = (B.spiralN || 0) + 1) % 4 === 0) B.atk = 2;
-        } else if (B.atk === 2) {
-          const a = aimAt(B.x, B.z);
-          for (const o of [-0.26, -0.13, 0, 0.13, 0.26]) enemyFire(B.x, B.z + 1.2, a + o, speed * 1.04);
-          B.atkT = p === 3 ? 0.95 : 1.25;
-        } else if (B.atk === 3) {
-          // A wider travelling gap and larger bullet spacing stay readable on phones.
-          const gap = (Math.random() * 2 - 1) * 3.4;
-          for (let x = -FIELD.halfW + 0.7; x <= FIELD.halfW - 0.7; x += 1.25) {
-            if (Math.abs(x - gap) > 1.35) enemyFire(x, B.z + 0.5, 0, speed * 0.88);
-          }
-          B.atkT = p === 3 ? 1.15 : 1.5;
-        } else {
-          // crossfire from both sides, aimed at the player's current lane
-          const a = aimAt(B.x, B.z);
-          for (const side of [-1, 1]) {
-            enemyFire(B.x + side * 2.2, B.z + 0.6, a + side * 0.34, speed);
-            enemyFire(B.x + side * 2.2, B.z + 0.6, a + side * 0.16, speed);
-          }
-          B.atkT = 1.0;
-        }
+        fireBossPattern(B, p);
         if (S.state === 'playing') audio.enemyShot();
       }
     }
@@ -927,6 +1095,13 @@ function sim(dt) {
   }
   // enemy bullets
   for (const b of ebullets.list) {
+    if (b.homing > 0) {
+      b.homing -= dt;
+      const speed = Math.hypot(b.vx, b.vz), current = Math.atan2(b.vx, b.vz);
+      let delta = aimAt(b.x, b.z) - current; delta = Math.atan2(Math.sin(delta), Math.cos(delta));
+      const next = current + THREE.MathUtils.clamp(delta, -(b.turn || 1) * dt, (b.turn || 1) * dt);
+      b.vx = Math.sin(next) * speed; b.vz = Math.cos(next) * speed;
+    }
     b.x += b.vx * dt; b.z += b.vz * dt;
     if (b.z > FIELD.bottom + 2 || b.z < FIELD.top - 4 || Math.abs(b.x) > FIELD.halfW + 3) b.dead = true;
     else if (Math.hypot(b.x - S.x, b.z - S.z) < PLAYER.radius + 0.12 && S.state !== 'dying') { b.dead = true; hurtPlayer(); }
@@ -952,7 +1127,10 @@ function sim(dt) {
       }
     } else if (mode === 'lance') {
       beam.position.x = S.x; beam.material.opacity = Math.sin(k * Math.PI) * 0.8;
+      beamExtras.forEach((m, i) => { m.position.x = S.x + (i - 1.5) * .65 + Math.sin(S.ultT * 28 + i) * .13; m.material.opacity = Math.sin(k * Math.PI) * (.45 + i * .08); });
       while (S.ultFireT <= 0) {
+        for (let j = 0; j < 3; j++) strikeLightning(S.x + (Math.random() - .5) * 3.4, S.z - Math.random() * 9, 6 + Math.random() * 8, j % 2 ? 0xcdb9ff : 0x8cf4ff, 2.1);
+        particles.burst(new THREE.Vector3(S.x + (Math.random() - .5) * 2, .5, S.z - 3 - Math.random() * 9), new THREE.Color(0x9feaff), 8, { speed: 5, up: 1, life: .35, size: .75, grav: 0 });
         for (let i = S.enemies.length - 1; i >= 0; i--) {
           const e = S.enemies[i];
           if (Math.abs(e.x - S.x) < 2.2 && e.z < S.z + 1) hurtEnemy(e, i, 3.2 * C().dmg);
@@ -962,7 +1140,11 @@ function sim(dt) {
       }
     } else if (mode === 'nova') {
       S.novaR = 2 + k * 20;
+      novaUlt.position.set(S.x, .42, S.z); novaUlt.rotation.y += dt * 1.8;
+      novaUltRings.forEach((m, i) => { const r = S.novaR * (.17 + i * .075) * (1 + Math.sin(S.ultT * 8 + i) * .06); m.scale.setScalar(r); m.rotation.z += dt * (i % 2 ? -2.4 : 2.1); m.material.opacity = .35 + Math.sin(k * Math.PI) * .55; });
+      novaCore.scale.setScalar(1 + k * 4); novaCore.rotation.y += dt * 5; novaCore.rotation.x += dt * 3;
       while (S.ultFireT <= 0) {
+        particles.burst(new THREE.Vector3(S.x, .45, S.z), NOVA_COLORS[Math.floor(S.ultFireT * 20 + 6) % 6], 28, { speed: 10 + k * 10, up: 3, life: .65, size: 1.1, grav: 0 });
         for (let i = S.enemies.length - 1; i >= 0; i--) {
           const e = S.enemies[i];
           if (Math.hypot(e.x - S.x, e.z - S.z) < S.novaR) hurtEnemy(e, i, 2.5 * C().dmg);
@@ -973,7 +1155,7 @@ function sim(dt) {
         S.ultFireT += 0.14;
       }
     }
-    if (k >= 1) { S.ultT = -1; S.ultMode = null; beam.visible = false; beam.material.opacity = 0; }
+    if (k >= 1) { S.ultT = -1; S.ultMode = null; beam.visible = false; beam.material.opacity = 0; novaUlt.visible = false; for (const m of beamExtras) { m.visible = false; m.material.opacity = 0; } }
   }
   // pickups: P/S/E magnetise; weapon canisters never do — the player must choose to fly into them
   for (let i = S.pickups.length - 1; i >= 0; i--) {
@@ -1046,7 +1228,9 @@ function tick(rawDt, time) {
   // low-shield heartbeat
   S.heartT = (S.heartT || 0) - rawDt;
   if (S.state === 'playing' && S.hp === 1 && S.heartT <= 0) { audio.heartbeat(); S.heartT = 1.1; }
+  updateWeaponFx(dt);
   for (const k of WEAPON_KEYS) pools[k].sync(k === 'nova' ? 0.35 : 0.2);
+  decorPools.lance.sync(.24); decorPools.nova.sync(.39);
   ebullets.sync(0.3); ecores.list = ebullets.list; ecores.sync(0.47);
   world.update(dt, S.t, S.state === 'paused' || S.state === 'over' ? 0.15 : 1);
   particles.update(dt); waves.update(dt);

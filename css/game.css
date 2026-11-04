@@ -294,3 +294,93 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   .hangar-select { padding: 5px 0; }
   .hangar-foot .neon-btn { min-height: 44px; }
 }
+
+/* ---------------- three-step sortie: chapter / level / difficulty ---------------- */
+#screen-mission { z-index: 40; padding: 0; background: radial-gradient(110% 90% at 50% 8%, #171039 0%, #08051a 52%, #03010c 100%); }
+#screen-mission::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .17; background-image: linear-gradient(rgba(0,229,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,.09) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(to bottom, black, transparent 80%); }
+.mission-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 10px 2px 4px; scrollbar-width: thin; }
+.mission-main > .chapter-nav, .mission-main > .mission-brief, .mission-main > .mission-tuning { flex: 0 0 auto; }
+.chapter-nav { display: grid; grid-template-columns: repeat(10, minmax(74px, 1fr)); gap: 5px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
+.chapter-btn { min-height: 52px; padding: 5px 7px; display: flex; align-items: center; gap: 7px; text-align: left; color: #bac9eb; background: rgba(12,7,32,.7); border: 1px solid rgba(0,229,255,.18); cursor: pointer; scroll-snap-align: start; }
+.chapter-btn b { font: 18px/1 'Orbitron', sans-serif; color: var(--c1); }
+.chapter-btn span { font-size: 10px; line-height: 1.3; }
+.chapter-btn.sel { color: #fff; border-color: var(--c1); background: linear-gradient(135deg, rgba(0,229,255,.2), rgba(90,30,140,.2)); box-shadow: inset 0 -2px var(--c1); }
+.chapter-btn:disabled { opacity: .25; filter: saturate(.2); cursor: not-allowed; }
+.mission-brief { padding: 9px 0 12px; border-bottom: 1px solid rgba(166,107,255,.25); }
+.mission-brief-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.mission-brief h2 { margin: 2px 0 5px; font-size: clamp(20px, 4vw, 30px); letter-spacing: 2px; color: #fff; text-shadow: 0 0 14px rgba(0,229,255,.35); }
+.mission-brief p { margin: 0 0 10px; max-width: 920px; color: #acbbe1; font-size: 11px; line-height: 1.55; }
+.mission-clear { flex: 0 0 auto; font-size: 10px; letter-spacing: 1px; color: #9aa8c7; }
+.mission-clear.done { color: var(--c3); }
+.level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.level-card { position: relative; min-width: 0; min-height: 105px; padding: 10px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; color: #e5edff; background: linear-gradient(155deg, rgba(20,11,48,.85), rgba(6,3,20,.85)); border: 1px solid rgba(0,229,255,.25); cursor: pointer; }
+.level-card.sel { border-color: var(--c1); box-shadow: 0 0 18px rgba(0,229,255,.18), inset 0 0 20px rgba(0,229,255,.08); }
+.level-card.done { border-color: rgba(255,60,120,.45); }
+.level-card:disabled { opacity: .25; filter: grayscale(.7); cursor: not-allowed; }
+.level-num { font: 22px/1 'Orbitron', sans-serif; color: var(--c1); margin-bottom: 8px; }
+.level-info { display: flex; flex-direction: column; min-width: 0; }
+.level-info b { font-size: 12px; line-height: 1.35; }
+.level-info small { margin-top: 5px; color: var(--c3); font-size: 9px; }
+.level-info em { margin-top: 6px; font: normal 8px/1.35 'Orbitron', sans-serif; color: #aab9da; }
+.level-mark { position: absolute; top: 9px; right: 10px; font: 20px/1 'Orbitron', sans-serif; color: var(--c3); }
+.mission-tuning { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(180px, .7fr); gap: 18px; align-items: end; padding: 8px 0 4px; margin-top: auto; margin-bottom: auto; }
+.difficulty-block { padding: 4px 0; }
+.difficulty-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 7px; }
+.difficulty-head > span { font-size: 14px; letter-spacing: 2px; color: #fff; }
+.difficulty-head small { color: #aebce0; font-size: 10px; line-height: 1.4; text-align: right; }
+.difficulty-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.diff-btn { min-height: 54px; padding: 7px; color: #bbc9e8; background: rgba(10,5,28,.7); border: 1px solid rgba(166,107,255,.28); cursor: pointer; }
+.diff-btn b { display: block; font-size: 14px; letter-spacing: 2px; }
+.diff-btn small { display: block; margin-top: 3px; font: 7px/1.3 'Orbitron', sans-serif; letter-spacing: 1px; }
+.diff-btn.sel { color: #fff; border-color: var(--c3); background: rgba(255,60,120,.12); box-shadow: inset 0 -2px var(--c3); }
+.mission-loadout { padding: 9px 0 9px 12px; border-left: 2px solid var(--c2); }
+.mission-loadout span { display: block; color: #8e9fc3; font: 8px/1.4 'Orbitron', sans-serif; letter-spacing: 2px; }
+.mission-loadout b { display: block; margin-top: 6px; color: #e8eeff; font-size: 12px; line-height: 1.5; }
+.mission-foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 36%); gap: 18px; align-items: center; padding-top: 8px; border-top: 1px solid rgba(0,229,255,.2); }
+.mission-selection { min-width: 0; }
+.mission-selection span, .mission-selection b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mission-selection span { font: 10px/1.5 'Orbitron', sans-serif; color: var(--c1); }
+.mission-selection b { margin-top: 3px; font-size: 11px; color: #c5d1eb; }
+.mission-foot .neon-btn { width: 100%; margin: 0; }
+.td-evolution { margin: 0 0 10px; padding: 8px 10px; border-left: 2px solid var(--tc); background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 9%, transparent), transparent); color: #b9c9eb; font-size: 11px; line-height: 1.55; }
+
+/* Cooldown belongs to the overdrive ring only. Never let vent graphics cover ULT. */
+.action-dock { isolation: isolate; z-index: 6; }
+.action-dock .ult-btn { z-index: 2; overflow: visible; }
+.action-dock .ult-btn::before { border-radius: 50%; }
+.action-dock .od-btn { z-index: 1; contain: paint; }
+.action-dock .od-btn.venting { opacity: .82; pointer-events: auto; }
+.action-dock .od-btn.venting::after { content: ''; position: absolute; inset: 6px; border: 1px dashed rgba(255,180,130,.45); border-radius: 50%; pointer-events: none; animation: ventSpin 3s linear infinite; }
+@keyframes ventSpin { to { transform: rotate(360deg); } }
+
+@media (max-width: 700px) {
+  .mission-main { padding-top: 8px; }
+  .chapter-nav { grid-template-columns: repeat(10, 68px); }
+  .chapter-btn { min-height: 46px; padding: 4px 6px; gap: 5px; }
+  .chapter-btn b { font-size: 16px; }
+  .chapter-btn span { font-size: 9px; }
+  .mission-brief { padding-top: 7px; }
+  .mission-brief h2 { font-size: 20px; letter-spacing: 1px; }
+  .mission-brief p { font-size: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .level-grid { grid-template-columns: 1fr; gap: 5px; }
+  .level-card { min-height: 55px; padding: 7px 10px; flex-direction: row; align-items: center; gap: 12px; }
+  .level-num { flex: 0 0 30px; margin: 0; font-size: 19px; }
+  .level-info { flex: 1; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px; }
+  .level-info b { font-size: 12px; }
+  .level-info small { margin: 0; grid-row: 1; grid-column: 2; }
+  .level-info em { grid-column: 1 / 3; margin: 0; }
+  .level-mark { position: static; font-size: 17px; }
+  .mission-tuning { grid-template-columns: 1fr; gap: 2px; padding-top: 4px; }
+  .difficulty-head { margin-bottom: 5px; }
+  .difficulty-head small { max-width: 65%; font-size: 9px; }
+  .diff-btn { min-height: 48px; }
+  .mission-loadout { display: none; }
+  .mission-foot { grid-template-columns: minmax(0, .8fr) minmax(175px, 1.2fr); gap: 10px; }
+  .mission-selection b { font-size: 9px; }
+}
+@media (max-height: 700px) and (max-width: 700px) {
+  .mission-brief p { display: none; }
+  .mission-brief h2 { margin-bottom: 7px; }
+  .level-card { min-height: 49px; }
+  .mission-foot { padding-top: 5px; }
+}

@@ -1,6 +1,7 @@
 # XENO NIGHTMARE 異域凶間 — Handoff
 
-Status: **web build v1.2 campaign/readability pass** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+Status: **web build v1.3 mission/progression/combat-FX pass** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+2026-11-05: three-page craft → weapon → mission/difficulty flow, sequential level unlocks, per-level clears/best scores, ten chapter-specific boss attack families, vent-safe ultimate controls, six-level lance/nova visuals, lightning and multi-ring ultimates.
 2026-11-04: full-width loadout redesign, real recorded max-power weapon previews, three difficulty modes, 10×5 campaign and 50 map fingerprints, outline-only dark-enemy readability, boss bullet/bloom tuning, ultimate-during-OVERDRIVE.
 2026-11-03 core pass: three-weapon system + per-weapon ultimates + OVERDRIVE; authored wave formations, aimed enemy fire, map laser hazards, three-phase bosses, dynamic boss music. Earlier deep pass: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md).
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
@@ -8,12 +9,12 @@ Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from 
 ## 1. Design
 - Vertical shooter seen from a high chase camera: the pilot rides a hover-glider above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
 - **Relative drag** anywhere moves the craft (finger never covers it), keyboard alternative. **Auto-fire** always on.
-- **Airframes & hangar (two pages)**: the home screen is unchanged (brand + LAUNCH + records). LAUNCH opens page 1 (`#screen-hangar`): a full-width/low-frame layout with a fully framed rotating `makeNinja` model (`#craft-canvas`), larger passive/stat/blurb typography, story briefing and horizontal craft buttons. Page 2 (`#screen-weapon`) replaces the schematic second WebGL renderer with `#weapon-video`: three looping **real gameplay recordings** at LV.6 + OVERDRIVE + ultimate (`assets/weapon-{pulse,lance,nova}.webm`, JPEG posters). `syncWeaponVideo()` swaps/pauses/plays the clip; the rich stats + six-level tree remain. `renderDifficulty()` adds Story/Normal/Nightmare before launch. 開始出擊 starts with `selWeapon` and `selDifficulty`; craft, starter weapon and difficulty persist in store keys `craft`, `startWeapon`, `difficulty`. Desktop uses a two-column loadout; short phones scroll only the weapon information pane while selectors/launch stay fixed. Airframes: FALCON speed +14%, BASTION 4 shields + regen, WRAITH +28% dmg/+40% charge/+1s OD but 2 base shields.
+- **Airframes & hangar (three pages)**: the home screen is unchanged (brand + LAUNCH + records). Page 1 (`#screen-hangar`) is the full-width rotating 3D craft preview. Page 2 (`#screen-weapon`) uses `#weapon-video` real LV.6 + OVERDRIVE + ultimate recordings, rich stats, six-level tree and per-level visual-effect notes; it contains no difficulty controls. Page 3 (`#screen-mission`) has ten chapter tabs, five level cards, difficulty and the actual launch button. `normalizeProgress` / `recordLevel` in campaign.js validate local records; a clear unlocks only the next sortie. Cards show locked/available/cleared, clear count and per-level best (score delta from `levelStartScore`, not cumulative run score). `selWave` drives resetRun/start banners. Store keys: `craft`, `startWeapon`, `difficulty`, `missionProgress` (`{unlocked, records}`). Desktop uses wide layouts; phone mission content scrolls while launch stays fixed. Airframes: FALCON speed +14%, BASTION 4 shields + regen, WRAITH +28% dmg/+40% charge/+1s OD but 2 base shields.
 - **i18n note**: cyber-kit `i18n.add()` flattens nested tables into [zh, en] pairs and **destroys nested objects** — use dotted flat keys (`techDesc.pulse`, registered as `"techDesc.pulse": [zh, en]`), never `techDesc: { pulse: [...] }`.
 - **Enemy/obstacle readability**: dark-metal enemies (drone, turret, dasher) carry three whitened, slightly scaled additive **line-only** edge passes (`whiteOutline` in js/entities.js) so HIGH bloom creates a glowing silhouette without filling the hull; colourful bodies (weaver/splitter/mite) are untouched. Drifting rocks stay near-black with amber `EdgesGeometry` lines only (no under-glow).
 - **Three weapons × six levels** (`js/weapons.js`): PULSE REPEATER (spread), PHASE LANCE (piercing line), NOVA SURGE (AoE). **W** canisters only drop from elites and bosses; they do **not** magnetise, and switching also raises that weapon by one level. **P** raises the current level.
-- **Per-weapon ultimate** on Space / blue button: BULLET STORM (180° forward fan), PRISM PIERCE (wide lane beam), SINGULARITY (expanding nova). The craft is invulnerable while the ultimate is active; charge comes from kills, boss hits and E pickups. Each weapon has its own shot and ultimate timbre.
-- **OVERDRIVE** on Q / orange button: ascends the current weapon for 4 s (effective level +2, faster and stronger), then forces a **3 s cease-fire**. A charged weapon ultimate **can interrupt active OVERDRIVE** (`doUlt()` no longer rejects `odT >= 0`); OD cannot be started during an ultimate or venting.
+- **Per-weapon ultimate** on Space / blue button: BULLET STORM (180° forward fan), PRISM PIERCE (wide lane beam + four satellite beams + procedural chain lightning), SINGULARITY (expanding nova + five rotating corona rings + meteor particles). The craft is invulnerable while active. Lance levels change bolt tint/width/length, linked decorative rails and forked lightning; nova levels add linked concentric rings and particles. Decorative pools follow real bullets but never add damage/collision. `weapons.js` numbers are unchanged.
+- **OVERDRIVE** on Q / orange button: ascends the current weapon for 4 s (effective level +2, faster and stronger), then forces a **3 s normal-fire cease-fire**. A charged weapon ultimate can interrupt active OVERDRIVE and also fire during venting (`doUlt()` rejects neither `odT >= 0` nor `noFireT > 0`). The vent spinner is clipped inside the orange OD button; the separate blue ultimate remains hittable. OD cannot be started during an ultimate or venting.
 - Enemies arrive in authored formations (`line`, `pincer`, `wall`, `crossfire`, `rush`, `weave`, `elite`), fire aimed patterns (drones single, weavers 3-way, turrets 5-way, elites denser), and scale speed/HP with the wave. Telegraphed **laser lanes** cut one lane of the map every 8–13 s.
 - **Gems** are gold/white crystals (deliberately not magenta like enemy bullets or cyan like player shots); they wait 0.55 s, then spiral-home into the craft. Counts scale with enemy tier/level (boss burst 18–32). Gems add score plus a small amount of ultimate/OVERDRIVE charge.
 - **Map**: drifting asteroids (`makeRock`) plus telegraphed laser lanes; both force lateral movement beyond the enemy waves.
@@ -21,7 +22,7 @@ Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from 
 - **Difficulty**: `DIFFICULTIES` in config.js scales enemy/boss HP, hostile bullet speed, enemy/boss fire rate, bonus shields, post-hit invulnerability, drops and score. Story has +2 shields and the lowest pressure; Normal is the gentler default; Nightmare pays 1.5× score. Wave 1 has six drones (not seven), wave 2 has a smaller pincer, early enemies approach/fire later, and terrain cadence also respects mission/difficulty.
 - **HUD**: HP, weapon name/level/charge, score, campaign mission label, level and pause/mute are in the top strip. OVERDRIVE and weapon ultimate are stacked at the lower-left.
 - **Full-field movement**: `FIELD.playerMinZ = -21`, so the craft can fly from the bottom to the top of the play field.
-- **Boss every 5 waves — the cosmic monster**: phase 1 ring/aimed, phase 2 adds spiral + gap walls, phase 3 adds crossfire and tighter timings; phases change at 66 % / 33 % HP. The boss visually unfolds armour plates and a phase ring at phase 2, then exposes the core in phase 3. Drops P/S/E on death; zone colour shifts.
+- **Boss every 5 waves — ten attack grammars**: `fireBossPattern()` reads `S.mission.chapter`. CH1 aimed fans/gap sweep; CH2 twin spirals; CH3 diagonal crossfire; CH4 mirrored wing bursts; CH5 gapped rings/snipers; CH6 telegraphed ruin lanes/scatter; CH7 layered petals; CH8 multi-arm/counter-rotating spirals; CH9 radial/aimed bursts with limited homing; CH10 hybrids switch by phase. All retain three HP phases at 66% / 33%, readable magenta shells/white cores and controlled bloom. Armour unfolds at phase 2 and the core opens in phase 3.
 - Base shields are 2/3/4 by airframe; Story adds 2. A hit costs a shield + 1 power level, grants difficulty-based invulnerability and clears nearby bullets. Shield pickups top up automatically; there is no manual shield key. The two action buttons sit in a compact vertical dock at the lower left; pause/mute are labelled at the top right.
 - Game over → **continue once** via rewarded hook (full shields, ult charged) or retry.
 - Attract mode = the AI flies behind the start screen (invulnerable). `?demo=1` = the AI plays real runs on a loop.
@@ -45,7 +46,7 @@ Drag · arrows/WASD · Space/Enter/X/J weapon ultimate · Q/O OVERDRIVE · P/Esc
 | `speedScale` / `hpScale` | +5 %/wave (max +85 %) / +40 % HP per 5 waves (capped ×3.2) |
 | `bossHp(n)` | 240 + 90 per cycle, capped at 1100 |
 | `bossVariant(c)` | 6 species, then Mk.N variants; attack-rate ×(1+0.06(c−1)) capped at 1.6 |
-| `boss phases` | 66 % / 33 % HP; ring, spiral, gap wall, crossfire |
+| `boss phases` | 66 % / 33 % HP; ten chapter-specific drivers, final-boss hybrids |
 | `hazard` | lane sweep every 8–13 s, 1.1 s warning then 1 s active |
 | `gems` | gold/white crystals; tier 0/1/2 = 8/18/40 score; 0.55 s then spiral-home; boss burst 18–32 |
 | `rocks` | drifting asteroids every 8–13 s; collision damage; scales 0.75–1.45 |
@@ -60,11 +61,11 @@ Drag · arrows/WASD · Space/Enter/X/J weapon ultimate · Q/O OVERDRIVE · P/Esc
 
 ## 4. File map
 ```
-index.html       HUD, campaign mission label, loadout screens, difficulty selector, start / pause / over screens
-css/game.css     responsive HUD + full-width/low-frame craft and weapon layouts
+index.html       HUD, craft / weapon / mission screens, level and difficulty selectors
+css/game.css     responsive HUD + three-page loadout/mission layouts + safe action dock
 assets/          three 4 s real-gameplay WebM previews + JPEG posters
 js/config.js     difficulty table + constants + authored waveSpec (pure, unit-tested)
-js/campaign.js   10×5 bilingual campaign data + 50 deterministic map fingerprints
+js/campaign.js   10×5 campaign/maps + validated sequential progression and per-level records
 js/weapons.js    weapon table, level curves, OVERDRIVE solution, pickups
 js/world.js      sky dome, scrolling megacity shader, mission map variations, towers, ruins, lights
 js/entities.js   craft, line-only dark-enemy outlines, enemies, boss, bullet pools, pickups
@@ -73,10 +74,10 @@ js/main.js       states, input, combat simulation, campaign/difficulty wiring, r
 vendor/cyber-kit cyber-kit v0.3.19
 tests/           Node unit tests + browser combat/layout suites + record-previews.py
 ```
-Test hook: `window.__ninja` (state, x, z, score, wave, hp, weapon, power, ult, od, boss, hazards, difficulty, mission; `api.wave/weapon/charge/ult/overdrive/drop/kill/boss/spawn/enemyFire/hazard/bossHurt/difficulty`).
+Test hook: `window.__ninja` (state, x, z, score, wave, hp, weapon, power, ult, od, boss, hazards, difficulty, mission; `api.wave/weapon/charge/ult/overdrive/drop/kill/boss/spawn/enemyFire/hazard/bossHurt/difficulty`). Additional guards: `api.progress()` returns validated level records; `api.fx()` returns lance/nova decoration, lightning, beam and corona-ring counts; `api.threat()` includes `bossChapter` / `bossPattern`.
 
 ## 5. Tests
-`node --test tests/` · `python tests/weapons.py [url]` · `python tests/core.py [url]` · `python tests/ult-reset.py [url]` · `python tests/brand.py [url]` · `python tests/smoke.py [url] [out|none] [all|mobile|desktop]` — weapon levels/pickups/ults/OVERDRIVE interruption, enemy aimed fire, hazards, boss phases, campaign districts, 50→51 endless transition, real-video switching, persisted difficulty, start/drag/keyboard/kills/pause/gameover/demo/language and zero console errors. Browser waits follow game state rather than wall-clock frame counts under SwiftShader. Last run 2026-11-04: **9 Node tests PASS; weapons/core/ult-reset/brand PASS; complete mobile and desktop smoke suites PASS; all three WebM clips decode PASS**.
+`node --test tests/` · `python tests/weapons.py [url]` · `python tests/core.py [url]` · `python tests/ult-reset.py [url]` · `python tests/brand.py [url]` · `python tests/smoke.py [url] [out|none] [all|mobile|desktop]` — three-page navigation, locked levels, clear/best records, six visual densities per lance/nova, ultimate FX, vent-safe touch target, ten boss families, campaign/endless, real-video switching, movement/pause/gameover/demo/language and zero console errors. Browser waits follow game state rather than wall-clock frame counts under SwiftShader. Last run 2026-11-05: **10 Node tests PASS; weapons/core/ult-reset/brand PASS; complete mobile and desktop smoke suites PASS; all three refreshed 4 s WebM clips decode PASS; mobile/desktop mission layouts inspected with no horizontal overflow; zero console errors**.
 
 ## 6. Android packaging
 As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `hk.fung2222.xenonightmare`; lock portrait).

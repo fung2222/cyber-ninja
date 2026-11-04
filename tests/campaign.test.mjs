@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CHAPTER_COUNT, LEVELS_PER_CHAPTER, CAMPAIGN_LEVELS, campaignForWave, campaignLabel } from '../js/campaign.js';
+import { CHAPTER_COUNT, LEVELS_PER_CHAPTER, CAMPAIGN_LEVELS, campaignForWave, campaignLabel, normalizeProgress, isLevelUnlocked, recordLevel } from '../js/campaign.js';
 import { DIFFICULTIES, difficultyOf } from '../js/config.js';
 
 test('campaign has ten chapters, five sorties each and fifty distinct maps', () => {
@@ -22,6 +22,29 @@ test('campaign has ten chapters, five sorties each and fifty distinct maps', () 
   assert.equal(keys.size, 50);
   assert.equal(fingerprints.size, 50);
   assert.equal(campaignForWave(51).campaign, false);
+});
+
+test('level records retain best scores and clears unlock only the next sortie', () => {
+  let p = normalizeProgress(null);
+  assert.equal(p.unlocked, 1);
+  assert.equal(isLevelUnlocked(p, 1), true);
+  assert.equal(isLevelUnlocked(p, 2), false);
+  p = recordLevel(p, 1, 1200, false);
+  assert.equal(p.records['1-1'].best, 1200);
+  assert.equal(p.unlocked, 1);
+  p = recordLevel(p, 1, 900, true);
+  p = recordLevel(p, 1, 2400, true);
+  assert.equal(p.records['1-1'].best, 2400);
+  assert.equal(p.records['1-1'].clears, 2);
+  assert.equal(p.unlocked, 2);
+  assert.equal(isLevelUnlocked(p, 2), true);
+  assert.equal(isLevelUnlocked(p, 3), false);
+  p = recordLevel(p, 50, 99999, true);
+  assert.equal(p.unlocked, 50, 'campaign unlock never spills into endless mode');
+  const safe = normalizeProgress({ unlocked: 999, records: { '1-1': { best: -5, clears: '2' }, bad: { best: 99 } } });
+  assert.equal(safe.unlocked, 50);
+  assert.deepEqual(safe.records['1-1'], { best: 0, clears: 2 });
+  assert.equal(safe.records.bad, undefined);
 });
 
 test('three difficulty contracts are ordered and fall back safely', () => {

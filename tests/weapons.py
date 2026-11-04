@@ -20,7 +20,8 @@ with sync_playwright() as p:
     pg.wait_for_timeout(1300)
     pg.click('#btn-start'); pg.wait_for_timeout(350)
     pg.click('#btn-hangar-next'); pg.wait_for_timeout(400)
-    pg.click('#btn-weapon-go'); pg.wait_for_timeout(350)
+    pg.click('#btn-weapon-go'); pg.wait_for_timeout(250)
+    pg.click('#btn-mission-go'); pg.wait_for_timeout(350)
     pg.evaluate("() => { __ninja.hp = 3; __ninja.invuln = 999; }")
 
     st = pg.evaluate("() => ({state:__ninja.state, weapon:__ninja.weapon, power:__ninja.power, hud:document.querySelector('#hud-weapon').textContent, lv:document.querySelector('#hud-wlv').textContent, ult:document.querySelector('#hud-wult').textContent})")
@@ -46,6 +47,18 @@ with sync_playwright() as p:
         check(got['h'] == short, f'{key}: HUD name updates')
         check(sum(got['shots'].values()) > 0, f'{key}: auto-fire produces shots')
 
+    # every lance / nova level has a distinct decorative rig, without changing damage data
+    for key, field in [('lance', 'lanceDecor'), ('nova', 'novaDecor')]:
+        counts = []
+        for level in range(1, 7):
+            pg.evaluate(f"() => {{ __ninja.ultT=-1; __ninja.ultMode=null; __ninja.odT=-1; __ninja.noFireT=0; __ninja.api.weapon('{key}', {level}); __ninja.api.clearShots(); __ninja.fireT=0; }}")
+            pg.wait_for_function(f"() => __ninja.api.shots()['{key}'] > 0", timeout=8000)
+            pg.wait_for_timeout(80)
+            fx = pg.evaluate('__ninja.api.fx()')
+            counts.append(fx[field])
+            check(fx[field] >= (level - 1 if key == 'lance' else level), f'{key} LV.{level}: level-specific visuals are active')
+        check(len(set(counts)) == 6, f'{key}: all six levels have different effect density ({counts})')
+
     # a W drop must replace the current weapon
     pg.evaluate("() => __ninja.api.weapon('pulse', 2)")
     pg.evaluate("() => __ninja.api.drop('W', 'nova')")
@@ -64,9 +77,11 @@ with sync_playwright() as p:
         pg.evaluate("() => { __ninja.ultT = -1; __ninja.ultMode = null; __ninja.odT = -1; __ninja.noFireT = 0; }")
         pg.evaluate(f"() => {{ __ninja.api.weapon('{key}', 4); __ninja.api.charge(100); __ninja.api.ult(); }}")
         pg.wait_for_timeout(220)
-        got = pg.evaluate("() => ({mode:__ninja.ultMode,t:__ninja.ultT,state:__ninja.state})")
+        got = pg.evaluate("() => ({mode:__ninja.ultMode,t:__ninja.ultT,state:__ninja.state,fx:__ninja.api.fx()})")
         print('ult', key, got)
         check(got['mode'] == key and got['t'] >= 0, f'{key}: own ultimate starts')
+        if key == 'lance': check(got['fx']['beamExtras'] == 4 and got['fx']['lightning'] > 0, 'lance ultimate has satellite beams and electricity')
+        if key == 'nova': check(got['fx']['novaRings'] == 5, 'nova ultimate has five animated corona rings')
         pg.evaluate("() => { __ninja.ultT = -1; __ninja.ultMode = null; }")
 
     # pulse ultimate must be a 180° forward fan, never a radial/backward storm
@@ -105,6 +120,12 @@ with sync_playwright() as p:
     print('od end', got)
     check(got['odT'] < 0 and got['noFire'] > 0, 'overdrive ends into a forced cease-fire')
     check('venting' in got['cls'], 'overdrive button shows venting')
+    pg.evaluate("() => { __ninja.ult=100; __ninja.ultT=-1; __ninja.ultMode=null; __ninja.api.ult(); }")
+    pg.wait_for_timeout(180)
+    vent_ult = pg.evaluate("() => ({mode:__ninja.ultMode,t:__ninja.ultT,noFire:__ninja.noFireT})")
+    check(vent_ult['mode'] == 'pulse' and vent_ult['t'] >= 0 and vent_ult['noFire'] > 0, 'charged ultimate remains usable during overdrive venting')
+    hit = pg.evaluate("""() => {const r=document.querySelector('#btn-ult').getBoundingClientRect(); const el=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2); return el && (el.id==='btn-ult' || !!el.closest('#btn-ult'));}""")
+    check(hit, 'vent graphics never cover the ultimate touch target')
 
     check(len(errs) == 0, f'zero console errors ({errs[:3]})')
     c.close(); b.close()

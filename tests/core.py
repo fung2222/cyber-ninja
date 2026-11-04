@@ -19,7 +19,8 @@ with sync_playwright() as p:
     pg.goto(URL + '?lang=zh&reset=1', wait_until='domcontentloaded'); pg.wait_for_timeout(1200)
     pg.click('#btn-start'); pg.wait_for_timeout(300)
     pg.click('#btn-hangar-next'); pg.wait_for_timeout(400)
-    pg.click('#btn-weapon-go'); pg.wait_for_timeout(300)
+    pg.click('#btn-weapon-go'); pg.wait_for_timeout(200)
+    pg.click('#btn-mission-go'); pg.wait_for_timeout(300)
     pg.evaluate("() => { __ninja.hp = 3; __ninja.invuln = 999; }")
 
     pg.evaluate("() => { __ninja.api.wave(4); __ninja.api.spawn({type:'drone', x:0, phase:0, pattern:'dive', elite:false}); const e=__ninja.enemies[__ninja.enemies.length-1]; e.z=-8; e.hp=999; e.fireT=0; }")
@@ -73,6 +74,14 @@ with sync_playwright() as p:
     b3 = pg.evaluate("() => ({phase:__ninja.boss.phase,hp:__ninja.boss.hp})")
     print('boss phase 3', b3)
     check(b3['phase'] == 3, 'boss changes to phase 3 at 33%')
+    patterns = []
+    for chapter in range(1, 11):
+        pg.evaluate(f"() => {{ __ninja.invuln=999; __ninja.api.wave({chapter * 5}); __ninja.boss.entering=false; __ninja.boss.z=-15; __ninja.boss.atkT=0; }}")
+        pg.wait_for_function("() => __ninja.boss && __ninja.boss.lastPattern !== 'entry'", timeout=8000)
+        boss = pg.evaluate("() => ({chapter:__ninja.boss.chapter,pattern:__ninja.boss.lastPattern})")
+        check(boss['chapter'] == chapter and boss['pattern'].startswith('ch'), f'chapter {chapter} boss executes its own attack driver')
+        patterns.append(boss['pattern'].split('-p')[0])
+    check(len(set(patterns[:9])) == 9, f'chapters 1–9 have nine distinct pattern families ({patterns})')
     pg.evaluate("() => __ninja.api.wave(26)")
     pg.wait_for_timeout(300)
     check(pg.evaluate("() => __ninja.district") == 'ruins', 'level 26 enters the chapter 6 ruins district')

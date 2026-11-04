@@ -15,8 +15,8 @@ Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城�
 主頁保持品牌＋出擊＋紀錄。按 **出擊 LAUNCH** 後：
 
 1. **選擇機體**：全闊 3D 旋轉展示完整機體，配上被動技能、四項屬性、機體介紹同故事簡報。底部水平三掣切換機體。
-2. **選擇武器**：頂部播放由正式遊戲渲染器錄製嘅**實機滿級戰鬥影片**，每段包括 LV.6、OVERDRIVE 同專屬大招。下方保留性能表、完整六級技能樹、大招說明及操作提示。
-3. **選擇難度**：故事／標準／凶間三種版本，再按 **開始出擊**。機體、開局武器及難度均會記住。
+2. **選擇武器**：頂部播放由正式遊戲渲染器錄製嘅**實機滿級戰鬥影片**，每段包括 LV.6、OVERDRIVE 同專屬大招。下方保留性能表、完整六級技能樹、逐級外觀變化、大招說明及操作提示；難度不再佔用此頁。
+3. **章節關卡／難度**：上方切換 10 章及每章 5 關，已完成關卡顯示剔號、完成次數及該關最高分；下一關可挑戰，其後未解鎖關卡變暗且不可進入。中間選故事／標準／凶間，底部 **正式開始突入** 才由所選關卡開始。機體、武器、關卡進度、逐關最高分及難度均保存在目前瀏覽器。
 
 ### 難度 Difficulty
 - **故事 STORY**：額外 2 格護盾、敵彈速度 ×0.72、敵人射速 ×0.62、較多道具、受擊無敵 2.2 秒；適合新手同欣賞劇情。
@@ -26,16 +26,16 @@ Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城�
 ## 玩法 How to play
 - 喺畫面**任何位置拖動**移動戰機（相對拖動，手指唔會遮住角色）；戰機會**自動開火**，亦可飛到全版圖上方。
 - **三種機體**：蒼隼速度 +14%；壁壘 4 格護盾兼 8 秒無傷回復 1 格；幽影傷害 +28%、充能 +40%、OVERDRIVE +1 秒，但只有 2 格基礎護盾。
-- **三種武器、每種 6 級**：脈衝連發（散射）、相位長槍（貫穿）、星爆震波（範圍爆炸）。**W** 即時換槍並升該武器 1 級；**P** 提升目前武器一級。各武器保留獨立等級及儲能。
-- **專屬大招**：彈幕洪流（180° 向前掃射）、稜鏡貫穿（直線光束）、奇點爆發（擴散衝擊波兼消彈）。大招期間無敵。
-- **OVERDRIVE**：武器昇華 4 秒；**超載生效期間可以隨時插入武器大招**。超載完結後強制停火散熱 3 秒。
+- **三種武器、每種 6 級**：脈衝連發（散射）、相位長槍（貫穿）、星爆震波（範圍爆炸）。**W** 即時換槍並升該武器 1 級；**P** 提升目前武器一級。各武器保留獨立等級及儲能。鐳射逐級增加束寬、雙軌、電弧、分裂閃電；光圈逐級增加環層、脈衝、旋渦粒子與星冕。
+- **專屬大招**：彈幕洪流（180° 向前掃射）、稜鏡貫穿（多束直線光束＋連鎖雷擊）、奇點爆發（擴散衝擊波＋五重旋轉星環＋隕星粒子兼消彈）。大招期間無敵。
+- **OVERDRIVE**：武器昇華 4 秒；**超載生效及完結散熱期間，只要能量已滿都可插入武器大招**。超載完結後強制普通開火停火散熱 3 秒；散熱圖只留在橙色掣內，不會遮擋藍色大招觸控。
 - 敵人使用編排隊形、瞄準彈及衝鋒；地圖有預警激光欄同漂移隕石。全黑敵機只加強發光輪廓線，唔會高亮整個機身；彩色敵人維持原設計。
-- 每 5 關迎戰三階段星海魔獸。Boss 彈幕已降低密度、擴闊彈牆缺口及安全間距；高畫質光暈亦降低彈體融合，粉紅彈殼配白色彈心，較容易分辨。
+- 每 5 關迎戰三階段星海魔獸。十章分別使用追蹤扇射、雙螺旋、交叉火網、鏡像夾擊、收縮圓環、預警雷射、花瓣綻放、反向彈輪、追蹤齊射及最終混合模式。粉紅彈殼配白色彈心，並控制高畫質光暈融合，保持彈道可讀。
 - 擊破敵人跌出金色／白色晶石，自動飛向戰機，提供分數及充能。被擊中會失去 1 格護盾及 1 級目前武器；護盾歸零可復活一次。
 - 無盡模式沿用五十種地圖指紋循環變化，敵人 HP、Boss HP 同射速設有上限；每 10 關有里程碑獎勵及護盾補滿。
 
 ## English
-**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Ouroboros, a digital virus, is devouring the cyber world; three pilots fight through **10 chapters × 5 levels and 50 map variations** before endless mode unlocks. The loadout flow includes a full-craft 3D preview, real recorded LV.6/OVERDRIVE/ultimate gameplay for all three weapons, a six-level tree and selectable **Story / Normal / Nightmare** rules. Drag anywhere to move with auto-fire. Each weapon retains its own level and charged ultimate, and an ultimate can now interrupt active OVERDRIVE. Dark enemies use glowing outline-only silhouettes; boss bullets have wider spacing and controlled bloom for readability. Choices and records persist locally in the current browser.
+**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Ouroboros, a digital virus, is devouring the cyber world; three pilots fight through **10 chapters × 5 levels and 50 map variations** before endless mode unlocks. The three-page flow is craft → weapon → mission/difficulty. The mission page locks future levels, shows per-level clears and best scores, and starts directly at the selected sortie. Weapon previews are real recorded LV.6/OVERDRIVE/ultimate gameplay; lance and nova now have six distinct visual levels plus lightning and multi-ring ultimate effects. Each chapter boss uses a different attack family. A charged ultimate works during active OVERDRIVE and its venting cooldown, whose graphics never cover the ultimate touch target. Choices and records persist locally in the current browser.
 
 ## 操作 Controls
 | 動作 | 手機 | 鍵盤 |

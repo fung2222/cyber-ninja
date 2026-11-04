@@ -61,3 +61,34 @@ export function campaignForWave(wave) {
 export function campaignLabel(m, lang = 'zh') {
   return `CH.${String(m.chapter).padStart(2, '0')}-${m.stage} · ${m.place[lang] || m.place.zh}`;
 }
+
+// Defensive local progression. Records are per sortie; a clear unlocks only the
+// next sortie, so chapter buttons can never bypass the campaign sequence.
+export function normalizeProgress(raw) {
+  const records = {};
+  const source = raw && typeof raw === 'object' && raw.records && typeof raw.records === 'object' ? raw.records : {};
+  for (let wave = 1; wave <= CAMPAIGN_LEVELS; wave++) {
+    const key = campaignForWave(wave).key;
+    const r = source[key];
+    if (!r || typeof r !== 'object') continue;
+    const best = Math.max(0, Math.floor(Number(r.best) || 0));
+    const clears = Math.max(0, Math.floor(Number(r.clears) || 0));
+    if (best || clears) records[key] = { best, clears };
+  }
+  return { unlocked: Math.max(1, Math.min(CAMPAIGN_LEVELS, Math.floor(Number(raw?.unlocked) || 1))), records };
+}
+
+export function isLevelUnlocked(progress, wave) {
+  const p = normalizeProgress(progress);
+  return Number.isInteger(wave) && wave >= 1 && wave <= p.unlocked && wave <= CAMPAIGN_LEVELS;
+}
+
+export function recordLevel(progress, wave, score, cleared) {
+  const p = normalizeProgress(progress);
+  if (!Number.isInteger(wave) || wave < 1 || wave > CAMPAIGN_LEVELS) return p;
+  const key = campaignForWave(wave).key;
+  const old = p.records[key] || { best: 0, clears: 0 };
+  p.records[key] = { best: Math.max(old.best, Math.max(0, Math.floor(Number(score) || 0))), clears: old.clears + (cleared ? 1 : 0) };
+  if (cleared) p.unlocked = Math.max(p.unlocked, Math.min(CAMPAIGN_LEVELS, wave + 1));
+  return p;
+}

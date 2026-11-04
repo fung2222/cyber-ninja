@@ -217,10 +217,16 @@ export class BulletPool {
   clear() { this.list.length = 0; }
   sync(y = 0) {
     const L = this.list; this.mesh.count = L.length;
-    for (let i = 0; i < L.length; i++) { const b = L[i]; this.e.set(b.rotX || 0, Math.atan2(b.vx, b.vz), 0); this.q.setFromEuler(this.e); this.p.set(b.x, y, b.z); const sc = b.scale || 1; this.s.set(sc, sc, sc); this.m.compose(this.p, this.q, this.s); this.mesh.setMatrixAt(i, this.m); }
+    for (let i = 0; i < L.length; i++) {
+      const b = L[i]; this.e.set(b.rotX || 0, Math.atan2(b.vx, b.vz), b.rotZ || 0); this.q.setFromEuler(this.e); this.p.set(b.x, b.y ?? y, b.z);
+      const sc = b.scale || 1; this.s.set(sc * (b.scaleX || 1), sc * (b.scaleY || 1), sc * (b.scaleZ || 1)); this.m.compose(this.p, this.q, this.s); this.mesh.setMatrixAt(i, this.m);
+      this.mesh.setColorAt(i, b.color || BulletPool.white);
+    }
     this.mesh.instanceMatrix.needsUpdate = true;
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
   }
 }
+BulletPool.white = new THREE.Color(0xffffff);
 
 // power-ups: P = power (weapon level), S = shield/HP, E = energy, W = weapon swap
 export const PICKUPS = {
