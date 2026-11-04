@@ -38,6 +38,8 @@ function setCraft(key, silent = false) {
   PLAYER.maxHp = C.hp;
   if (!silent && S.state === 'attract') { /* rebuilt under the start screen */ }
   updateHUD();
+  renderCraftSelect(); renderCraftInfo();
+  if (pv) pvSetModel(C);
 }
 const pools = {
   pulse: new BulletPool(scene, 320, new THREE.BoxGeometry(0.09, 0.09, 0.75), WEAPONS.pulse.color),
@@ -380,7 +382,7 @@ cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', 
 
 // ——— Hangar (craft-select screen) ———
 const hangarOpen = () => !$('screen-hangar').classList.contains('hidden');
-function openHangar() { renderCraftSelect(); renderTechTree(); $('screen-hangar').classList.remove('hidden'); }
+function openHangar() { renderCraftSelect(); renderCraftInfo(); renderTechTree(); ensurePreview(); $('screen-hangar').classList.remove('hidden'); }
 function closeHangar() { $('screen-hangar').classList.add('hidden'); }
 function confirmHangar() { closeHangar(); beginRun(); }
 
@@ -419,23 +421,34 @@ function renderCraftSelect() {
   const row = $('craft-row'); if (!row) return;
   row.innerHTML = CRAFT_KEYS.map((k) => {
     const c = CRAFTS[k];
+    return `<button type="button" class="hs-btn ${S.craft === k ? 'sel' : ''}" data-craft="${k}" style="--cc:${hex(c.color)}">
+      <span class="hs-svg">${CRAFT_SVG[k](hex(c.color), hex(c.accent))}</span>
+      <span class="hs-name">${c.name[lang]}</span>
+      <span class="hs-code">${c.code[lang]} · ${c.role[lang]}</span>
+    </button>`;
+  }).join('');
+  for (const b of row.querySelectorAll('[data-craft]')) b.addEventListener('click', () => { if (S.craft === b.dataset.craft) return; audio.init(); audio.select(); setCraft(b.dataset.craft); });
+}
+function renderCraftInfo() {
+  const lang = i18n.isZh() ? 'zh' : 'en';
+  const c = craftOf(S.craft);
+  const info = $('craft-info');
+  if (info) info.style.setProperty('--cc', hex(c.color));
+  const idEl = $('craft-id');
+  if (idEl) idEl.innerHTML = `<b style="--cc:${hex(c.color)}">${c.name[lang]}</b><span style="--cc:${hex(c.color)}">${c.code[lang]} · ${c.role[lang]}</span>`;
+  const pvEl = $('craft-passive');
+  if (pvEl) pvEl.textContent = c.passive[lang];
+  const stEl = $('craft-stats');
+  if (stEl) {
     const stats = [
       [t('statHp'), Math.round(c.hp / 4 * 5)],
       [t('statDmg'), Math.round(c.dmg / 1.3 * 5)],
       [t('statSpd'), Math.round(c.speed / 1.15 * 5)],
       [t('statChg'), Math.round(c.charge / 1.4 * 5)],
     ];
-    return `<button type="button" class="craft-card ${S.craft === k ? 'sel' : ''}" data-craft="${k}" style="--cc:${hex(c.color)}">
-      <span class="cc-svg">${CRAFT_SVG[k](hex(c.color), hex(c.accent))}</span>
-      <span class="cc-info">
-        <span class="cc-code">${c.code[lang]} · ${c.role[lang]}</span>
-        <span class="cc-name">${c.name[lang]}</span>
-        <span class="cc-passive">${c.passive[lang]}</span>
-      </span>
-      <span class="cc-stats">${stats.map(([l, n]) => `<span class="cc-stat"><em>${l}</em>${statBars(n)}</span>`).join('')}</span>
-    </button>`;
-  }).join('');
-  for (const b of row.querySelectorAll('[data-craft]')) b.addEventListener('click', () => { if (S.craft === b.dataset.craft) return; audio.init(); audio.select(); setCraft(b.dataset.craft); renderCraftSelect(); });
+    stEl.style.setProperty('--cc', hex(c.color));
+    stEl.innerHTML = stats.map(([l, n]) => `<span class="cc-stat"><em>${l}</em>${statBars(n)}</span>`).join('');
+  }
 }
 const ULT_SVG = {
   pulse: (c) => `<svg viewBox="0 0 30 30"><g fill="none" stroke="${c}" stroke-width="1.6"><path d="M15 26 L15 4 M15 26 L6 10 M15 26 L24 10 M15 26 L2 18 M15 26 L28 18"/></g></svg>`,
@@ -469,7 +482,51 @@ function renderTechTree() {
     <div class="td-ult"><span class="u-ico">${ULT_SVG[treeKey](hex(w.color))}</span><div><b>${w.ult[lang]}</b><small>${t('ultDesc')[treeKey]?.[lang === 'zh' ? 0 : 1] || ''}</small></div></div>
     <div class="td-foot">${t('techFoot')}</div>`;
 }
-renderCraftSelect(); renderTechTree();
+
+// ---------------------------------------------------------------- hangar 3D preview (top stage)
+let pv = null;
+function ensurePreview() {
+  if (pv) return pv;
+  const canvas = $('craft-canvas'); if (!canvas) return null;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  const sc = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(36, 1, 0.1, 60);
+  cam.position.set(0, 1.75, 5.1); cam.lookAt(0, 0.35, 0);
+  sc.add(new THREE.HemisphereLight(0x9fc0ff, 0x1a0b2e, 1.5));
+  const keyL = new THREE.DirectionalLight(0xffffff, 2.0); keyL.position.set(2.5, 4, 3); sc.add(keyL);
+  const rimL = new THREE.DirectionalLight(0xff2bd6, 1.5); rimL.position.set(-3, 1.5, -2.5); sc.add(rimL);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(1.55, 40), new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.14, blending: THREE.AdditiveBlending, depthWrite: false }));
+  disc.rotation.x = -Math.PI / 2; disc.position.y = -0.62; sc.add(disc);
+  pv = { renderer, sc, cam, disc, model: null };
+  pvSetModel(craftOf(S.craft));
+  return pv;
+}
+function pvSetModel(c) {
+  if (!pv) return;
+  if (pv.model) pv.sc.remove(pv.model);
+  const m = makeNinja(c); m.scale.setScalar(2.0); m.rotation.y = 0.6; pv.sc.add(m); pv.model = m;
+  pv.disc.material.color.setHex(c.color);
+}
+function sizePreview() {
+  if (!pv) return;
+  const canvas = pv.renderer.domElement;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
+  const pr = pv.renderer.getPixelRatio();
+  if (canvas.width !== Math.round(w * pr) || canvas.height !== Math.round(h * pr)) {
+    pv.renderer.setSize(w, h, false);
+    pv.cam.aspect = w / h; pv.cam.updateProjectionMatrix();
+  }
+}
+function renderPreview(dt) {
+  if (!pv || !hangarOpen()) return;
+  sizePreview();
+  pv.model.rotation.y += dt * 0.65;
+  updateNinja(pv.model, dt, S.t, 0, 0, 0.55);
+  pv.renderer.render(pv.sc, pv.cam);
+}
+renderCraftSelect(); renderCraftInfo(); renderTechTree();
 ui.on('btn-settings-pause', () => { try { audio.click(); } catch (_) {} ui.settings({ audio, stage, onOpen: () => { try { audio.click(); } catch (_) {} } }); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
@@ -494,7 +551,7 @@ ui.mountSettings({
 });
 
 
-i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); renderCraftSelect(); renderTechTree(); });
+i18n.onChange(() => { refreshBossName(); if (S.state === 'over') ui.setText('revive-sub', t(ads.isNative ? 'reviveAd' : 'reviveFree')); renderCraftSelect(); renderCraftInfo(); renderTechTree(); });
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
 Platform.onBack(() => { if (ui.closeModal()) return true; if (S.state === 'playing') { pause(); return true; } if (S.state === 'paused') { resume(); return true; } if (S.state === 'over') { overToMenu(); return true; } return false; });
 Platform.onPause(() => { if (!S.demo) pause(); });
@@ -613,7 +670,6 @@ function sim(dt) {
     const r = S.rocks[i]; r.t += dt; r.x += r.vx * dt; r.z += r.vz * dt;
     r.g.position.set(r.x, 0.45 + Math.sin(r.t * 1.4) * 0.12, r.z);
     r.g.userData.spin.rotation.x += dt * 0.35; r.g.userData.spin.rotation.y += dt * 0.22;
-    r.g.userData.glow.material.opacity = 0.26 + 0.13 * Math.sin(r.t * 6);
     if (S.state === 'playing' && Math.hypot(r.x - S.x, r.z - S.z) < r.r + PLAYER.radius) hurtPlayer();
     if (r.z > FIELD.bottom + 3) { scene.remove(r.g); S.rocks.splice(i, 1); }
   }
@@ -920,6 +976,7 @@ function tick(rawDt, time) {
   particles.update(dt); waves.update(dt);
   frameCamera(rawDt, time); fx.applyPost(stage, time); ui.tick(rawDt);
   stage.render(rawDt);
+  renderPreview(rawDt);
 }
 
 async function boot() {

@@ -99,24 +99,20 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .popup.hot { color: #ffd166; text-shadow: 0 0 12px #ffb32b, 0 0 26px #ff7a3b; }
 .popup.shield-pop { color: #3bff8a; text-shadow: 0 0 12px #3bff8a; }
 
-/* ---------------- start screen: craft select + tech tree ---------------- */
-/* craft select + tech tree moved to #screen-hangar (see .hangar rules below) */
-.menu-select, .tech-tree { width: min(620px, 100%); margin: 14px auto 0; padding: 0 max(16px, env(safe-area-inset-left)) 0 max(16px, env(safe-area-inset-right)); pointer-events: auto; }
+/* ---------------- hangar: bottom craft selector ---------------- */
+.tech-tree { width: 100%; margin-top: 8px; pointer-events: auto; }
 .select-title { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-zh); font-size: 13px; letter-spacing: 3px; color: var(--c1); text-shadow: 0 0 8px var(--c1); margin-bottom: 8px; }
 .select-title em { font-style: normal; font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2px; color: var(--c3); opacity: .85; }
-.craft-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.craft-card { position: relative; display: flex; flex-direction: column; text-align: left; cursor: pointer; pointer-events: auto; padding: 10px 9px 8px; color: #dfe8ff; font-family: var(--font-zh);
+.hangar-select { display: flex; gap: 8px; width: 100%; }
+.hs-btn { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 4px 8px; cursor: pointer; pointer-events: auto; color: #dfe8ff; font-family: var(--font-zh);
   background: linear-gradient(165deg, rgba(14,6,40,.82), rgba(6,2,20,.78)); border: 1px solid color-mix(in srgb, var(--cc, var(--c1)) 40%, transparent);
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); transition: transform .15s, box-shadow .15s; }
-.craft-card:hover { transform: translateY(-2px); }
-.craft-card.sel { border-color: var(--cc); box-shadow: 0 0 18px color-mix(in srgb, var(--cc) 55%, transparent), inset 0 0 22px color-mix(in srgb, var(--cc) 14%, transparent); }
-.cc-svg svg { display: block; width: 100%; height: 44px; margin: 2px 0 6px; }
-.cc-info { display: flex; flex-direction: column; gap: 3px; }
-.craft-card .cc-code { font-family: 'Orbitron', sans-serif; font-size: 7px; letter-spacing: 2px; color: var(--cc); opacity: .9; }
-.craft-card .cc-name { font-size: 17px; font-weight: 900; letter-spacing: 3px; color: #fff; text-shadow: 0 0 10px var(--cc); }
-.craft-card .cc-role { font-size: 8px; letter-spacing: 2px; color: var(--cc); }
-.craft-card .cc-passive { font-size: 9.5px; line-height: 1.5; color: #b9c8ff; opacity: .92; min-height: 28px; }
-.cc-stats { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px); transition: transform .15s, box-shadow .15s; }
+.hs-btn.sel { border-color: var(--cc); box-shadow: 0 0 16px color-mix(in srgb, var(--cc) 55%, transparent), inset 0 0 18px color-mix(in srgb, var(--cc) 14%, transparent); }
+.hs-btn:active { transform: translateY(1px); }
+.hs-svg svg { display: block; height: 26px; }
+.hs-name { font-size: 14px; font-weight: 900; letter-spacing: 3px; color: #fff; text-shadow: 0 0 10px var(--cc); }
+.hs-code { font-family: 'Orbitron', sans-serif; font-size: 7px; letter-spacing: 2px; color: var(--cc); opacity: .9; }
+.ci-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .cc-stat { display: grid; grid-template-columns: 26px 1fr; align-items: center; gap: 5px; font-family: 'Orbitron', sans-serif; font-size: 6.5px; letter-spacing: 1px; color: color-mix(in srgb, var(--cc) 80%, white); }
 .cc-stat .bars { display: flex; gap: 2px; }
 .cc-stat .bars i { height: 4px; flex: 1; background: rgba(255,255,255,.1); }
@@ -186,28 +182,35 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .hi-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 20px; }
 .hi-line .hi { white-space: nowrap; }
 
-/* hangar: full-screen craft-select + tech-tree stage shown after pressing LAUNCH */
-#screen-hangar { z-index: 40; background: linear-gradient(180deg, #0a0618 0%, #120826 55%, #0a0618 100%); }
-.hangar { display: flex; flex-direction: column; width: 100%; height: 100%; max-width: 980px; margin: 0 auto; padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
-.hangar-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 10px; }
+/* hangar: full-screen craft-select — top 3D stage / middle info+tree / bottom selector */
+#screen-hangar { z-index: 40; background: radial-gradient(130% 100% at 50% 0%, #171034 0%, #0a0618 58%, #05020f 100%); }
+.hangar { display: flex; flex-direction: column; width: 100%; height: 100%; max-width: 720px; margin: 0 auto; padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+.hangar-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; }
 .hangar-title { margin: 0; text-align: left; }
 .hangar-back { flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid var(--c3); background: rgba(10, 6, 24, .6); color: var(--c3); font-size: 18px; line-height: 1; cursor: pointer; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
 .hangar-back:active { background: rgba(255, 60, 120, .25); }
-.hangar-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; width: 100%; }
-.hangar-foot { flex: 0 0 auto; padding-top: 10px; width: 100%; }
+.hangar-stage { flex: 0 0 28vh; min-height: 148px; position: relative; border: 1px solid color-mix(in srgb, var(--c1) 30%, transparent);
+  background: linear-gradient(180deg, rgba(0,229,255,.06), rgba(255,43,214,.05) 70%, rgba(6,2,20,.2));
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); }
+.hangar-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hangar-craft-id { position: absolute; left: 12px; bottom: 8px; pointer-events: none; }
+.hangar-craft-id b { display: block; font-family: var(--font-zh); font-size: 24px; font-weight: 900; letter-spacing: 5px; color: #fff; text-shadow: 0 0 12px var(--cc, var(--c1)); }
+.hangar-craft-id span { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2.5px; color: var(--cc, var(--c1)); }
+.hangar-info { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; width: 100%; padding: 8px 1px 2px; }
+.ci-passive { font-size: 11.5px; line-height: 1.55; letter-spacing: .5px; color: #b9c8ff; padding: 6px 10px; margin-bottom: 6px; background: rgba(10,4,30,.5); border: 1px solid color-mix(in srgb, var(--cc, var(--c1)) 35%, transparent);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+.hangar-select { flex: 0 0 auto; display: flex; gap: 8px; width: 100%; padding: 8px 0 6px; }
+.hangar-foot { flex: 0 0 auto; width: 100%; }
 .hangar-foot .neon-btn { width: 100%; }
 
-/* desktop: hangar body splits craft row and tech tree side by side */
 @media (min-width: 761px) {
-  .hangar-body { flex-direction: row; align-items: flex-start; gap: 18px; }
-  .hangar-body .menu-select { flex: 0 0 340px; }
-  .hangar-body .tech-tree { flex: 1 1 auto; min-width: 0; }
-  .menu-select, .tech-tree { padding: 0; }
-  .craft-row { gap: 10px; }
+  .hangar { max-width: 860px; }
+  .hangar-stage { flex-basis: 34vh; }
   .hud-score .value { font-size: 26px; }
   .ult-btn { width: 84px; height: 84px; }
   .od-btn { width: 62px; height: 62px; }
 }
+
 
 @media (max-width: 760px) {
   .boss-bar { top: calc(max(10px, env(safe-area-inset-top)) + 96px); width: 80vw; }
@@ -217,15 +220,9 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   .od-txt b { font-size: 9px; }
   .ult-txt b { font-size: 13px; }
   #combo-chip { top: calc(max(10px, env(safe-area-inset-top)) + 96px); }
-  .craft-row { grid-template-columns: 1fr; }
-  .craft-card { flex-direction: row; flex-wrap: wrap; align-items: center; padding: 8px 10px; gap: 2px 10px; }
-  .cc-svg { flex: 0 0 76px; }
-  .cc-svg svg { height: 40px; margin: 0; }
-  .cc-info { flex: 1; min-width: 0; }
-  .craft-card .cc-passive { min-height: 0; }
-  .cc-stats { flex-basis: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 6px; }
   .td-nodes { gap: 4px; }
   .td-node .nd { width: 26px; height: 26px; font-size: 8px; }
+  .hangar-stage { flex-basis: 24vh; min-height: 128px; }
   /* robust home scroll: the whole middle column scrolls and the CTA stays pinned
      above the hi-line — old in-app WebViews ignore flex-shrink, which used to let
      the craft cards spill under the LAUNCH button */
@@ -235,4 +232,26 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   .tagline { font-size: 13px; margin-bottom: 14px; }
   .controls div:not(.touch-hint) { display: none; }
   .demo-tag { top: auto !important; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 8px) !important; left: max(16px, env(safe-area-inset-left)) !important; transform: none !important; }
+}
+
+/* short screens: compress so stats + the full tech tree still fit without scrolling */
+@media (max-height: 740px) {
+  .hangar { padding-top: 6px; padding-bottom: 6px; }
+  .hangar-head { padding-bottom: 4px; }
+  .hangar-info { padding-top: 6px; }
+  .hangar-stage { flex-basis: 19vh; min-height: 100px; }
+  .hangar-craft-id b { font-size: 18px; }
+  .ci-passive { font-size: 10px; margin-bottom: 4px; padding: 4px 8px; }
+  .tree-tab { padding: 5px 4px; font-size: 10px; }
+  .tree-tab small { margin-top: 1px; }
+  .td-head { margin-bottom: 4px; }
+  .td-desc { font-size: 9px; margin-bottom: 6px; }
+  .td-node .nd { width: 22px; height: 22px; font-size: 7px; }
+  .td-node small { margin-top: 4px; font-size: 6px; }
+  .td-ult { padding: 5px 8px; }
+  .td-ult small { font-size: 8px; }
+  .td-foot { margin-top: 5px; font-size: 8px; }
+  .hs-svg svg { height: 20px; }
+  .hs-name { font-size: 12px; }
+  .hangar-select { padding: 6px 0 4px; }
 }

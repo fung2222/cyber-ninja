@@ -276,16 +276,12 @@ export function makeGem(tier = 0) {
 
 // Drifting debris: a physical map obstacle, deliberately duller than loot and bullets.
 const ROCK_GEO = new THREE.DodecahedronGeometry(1.05, 0);
-const GLOW_DISC = new THREE.CircleGeometry(1, 20);
 export function makeRock() {
   const g = new THREE.Group();
   const mesh = new THREE.Mesh(ROCK_GEO, new THREE.MeshStandardMaterial({ color: 0x1c1226, metalness: 0.5, roughness: 0.8, emissive: 0x30184a }));
   const edge = new THREE.LineSegments(new THREE.EdgesGeometry(ROCK_GEO, 18), new THREE.LineBasicMaterial({ color: new THREE.Color(0xffb35c).multiplyScalar(1.5) }));
   const spin = new THREE.Group(); spin.add(mesh, edge); g.add(spin);
-  // warning under-glow: drifting rocks are a hazard — they must read in every district
-  const glow = new THREE.Mesh(GLOW_DISC, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff8a3c).multiplyScalar(1.2), transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
-  glow.rotation.x = -Math.PI / 2; glow.position.y = -0.6; glow.scale.setScalar(1.6);
-  g.add(glow);
-  g.userData.edge = edge; g.userData.glow = glow; g.userData.spin = spin;
+  // rocks stay near-black with amber edge lines only — no glow/highlight
+  g.userData.edge = edge; g.userData.spin = spin;
   return g;
 }

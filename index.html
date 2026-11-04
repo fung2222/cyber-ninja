@@ -101,14 +101,19 @@
       <div class="select-title hangar-title"><span data-i18n="selectCraft"></span><em data-i18n="selectCraftS"></em></div>
       <button type="button" class="hangar-back" id="btn-hangar-back" data-i18n-attr="aria-label:kit.back" aria-label="返回">✕</button>
     </div>
-    <div class="hangar-body">
-      <div class="menu-select"><div class="craft-row" id="craft-row"></div></div>
-      <div class="tech-tree" id="tech-tree">
-        <div class="select-title"><span data-i18n="techTree"></span><em data-i18n="techTreeS"></em></div>
+    <div class="hangar-stage">
+      <canvas id="craft-canvas"></canvas>
+      <div class="hangar-craft-id" id="craft-id"></div>
+    </div>
+    <div class="hangar-info">
+      <div class="ci-passive" id="craft-passive"></div>
+      <div class="ci-stats" id="craft-stats"></div>
+      <div class="tech-tree">
         <div class="tree-tabs" id="tree-tabs"></div>
         <div class="tree-detail" id="tree-detail"></div>
       </div>
     </div>
+    <div class="hangar-select" id="craft-row"></div>
     <div class="hangar-foot">
       <button class="neon-btn" id="btn-hangar-go"><span data-i18n="confirmLaunch"></span><small data-i18n="confirmLaunchS"></small></button>
     </div>
