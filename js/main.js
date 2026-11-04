@@ -465,7 +465,7 @@ ui.on('btn-settings-pause', () => { try { audio.click(); } catch (_) {} ui.setti
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
 $('btn-od').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doOverdrive(); });
-i18n.bindToggle($('btn-lang')); i18n.bindToggle($('btn-lang2'));
+i18n.bindToggle($('btn-lang')); const lang2btn = $('btn-lang2'); if (lang2btn) i18n.bindToggle(lang2btn);
 
 ui.mountHowto({
   privacyUrl: './privacy.html',

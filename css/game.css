@@ -182,6 +182,18 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 
 /* hub return */ #btn-arcade-menu { margin-top: 0; animation: none; }
 
+/* hi-line: label+number wrap as a unit, never orphan the value */
+.hi-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 20px; }
+.hi-line .hi { white-space: nowrap; }
+
+/* phone portrait: LAUNCH floats above the hi-line, pinned to the viewport while
+   the home column scrolls (fixed — survives old WebViews that botch flex/sticky) */
+@media (max-width: 760px) and (min-height: 560px) {
+  .screen.hero .menu-cta { position: fixed; left: 0; right: 0; bottom: max(58px, calc(env(safe-area-inset-bottom) + 42px)); margin: 0 auto; z-index: 30; pointer-events: auto; }
+  /* room for the fixed CTA + hi-line so the scrolled tree never lands under them */
+  .screen.hero .menu-mid { padding-bottom: max(156px, calc(env(safe-area-inset-bottom) + 140px)); }
+}
+
 /* desktop: the hangar panel sits on the right, brand + launch stay left */
 @media (min-width: 761px) {
   .screen.hero .menu-scroll { position: absolute; top: max(20px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); width: min(400px, 36vw); padding: 2px 2px 8px; justify-content: flex-start; }
@@ -211,6 +223,11 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   .cc-stats { flex-basis: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 6px; }
   .td-nodes { gap: 4px; }
   .td-node .nd { width: 26px; height: 26px; font-size: 8px; }
+  /* robust home scroll: the whole middle column scrolls and the CTA stays pinned
+     above the hi-line — old in-app WebViews ignore flex-shrink, which used to let
+     the craft cards spill under the LAUNCH button */
+  .screen.hero .menu-mid { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .screen.hero .menu-scroll { flex: 0 0 auto; overflow: visible; padding-bottom: 20px; }
   .screen.hero { align-items: flex-end; padding-bottom: max(36px, env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(5,1,15,0) 0%, rgba(5,1,15,.35) 35%, rgba(5,1,15,.92) 72%); }
   .title { font-size: 64px; letter-spacing: 8px; }
   .tagline { font-size: 13px; margin-bottom: 14px; }
