@@ -1,15 +1,17 @@
 # XENO NIGHTMARE 異域凶間 — Handoff
 
-Status: **web build v1.3 mission/progression/combat-FX pass** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+Status: **web build v1.4 cyberpunk airframe pass** · live https://fung2222.github.io/cyber-ninja/ · not yet packaged for Android.
+2026-11-05 v1.4: three distinct reference-inspired procedural aircraft—FALCON swept-wing twin-engine fighter, BASTION armored four-engine gunship, WRAITH stealth flying wing—with layered metallic panels, canopies, intakes, neon circuits, animated holographic arcs, fading energy flames and new selector silhouettes. Airframe stats/passives, weapons, campaign and home flow are unchanged.
 2026-11-05: three-page craft → weapon → mission/difficulty flow, sequential level unlocks, per-level clears/best scores, ten chapter-specific boss attack families, vent-safe ultimate controls, six-level lance/nova visuals, lightning and multi-ring ultimates.
 2026-11-04: full-width loadout redesign, real recorded max-power weapon previews, three difficulty modes, 10×5 campaign and 50 map fingerprints, outline-only dark-enemy readability, boss bullet/bloom tuning, ultimate-during-OVERDRIVE.
 2026-11-03 core pass: three-weapon system + per-weapon ultimates + OVERDRIVE; authored wave formations, aimed enemy fire, map laser hazards, three-phase bosses, dynamic boss music. Earlier deep pass: [`docs/DEEP-AUDIT-2026-11-03.md`](DEEP-AUDIT-2026-11-03.md).
 Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from SONO's canvas shooter; everything here is new code.
 
 ## 1. Design
-- Vertical shooter seen from a high chase camera: the pilot rides a hover-glider above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
+- Vertical shooter seen from a high chase camera: a cyberpunk combat aircraft flies above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
 - **Relative drag** anywhere moves the craft (finger never covers it), keyboard alternative. **Auto-fire** always on.
 - **Airframes & hangar (three pages)**: the home screen is unchanged (brand + LAUNCH + records). Page 1 (`#screen-hangar`) is the full-width rotating 3D craft preview. Page 2 (`#screen-weapon`) uses `#weapon-video` real LV.6 + OVERDRIVE + ultimate recordings, rich stats, six-level tree and per-level visual-effect notes; it contains no difficulty controls. Page 3 (`#screen-mission`) has ten chapter tabs, five level cards, difficulty and the actual launch button. `normalizeProgress` / `recordLevel` in campaign.js validate local records; a clear unlocks only the next sortie. Cards show locked/available/cleared, clear count and per-level best (score delta from `levelStartScore`, not cumulative run score). `selWave` drives resetRun/start banners. Store keys: `craft`, `startWeapon`, `difficulty`, `missionProgress` (`{unlocked, records}`). Desktop uses wide layouts; phone mission content scrolls while launch stays fixed. Airframes: FALCON speed +14%, BASTION 4 shields + regen, WRAITH +28% dmg/+40% charge/+1s OD but 2 base shields.
+- **Airframe modeling (`js/aircraft.js`)**: `makeNinja()` builds three original procedural Three.js geometries with forward −Z / up +Y. FALCON has a pointed single-seat fuselage, swept wings, canards, twin canted tails and two engines; BASTION has a broad deep hull, layered shoulder armor, four gun barrels and four engines; WRAITH is a thin blended flying wing with flush canopy and embedded twin engines. Shared helpers generate extruded armor plates, panel strips, circuits, metallic materials, nozzles, shader-faded flames and rotating holographic arcs. `updateNinja()` animates banking, hover, every engine and arc without per-frame vector allocations; `disposeNinja()` releases replaced preview/combat geometries and materials while retaining the shared unit box. `entities.js` re-exports the model API; combat stats remain only in `crafts.js`. Preview scale is 1.42, gameplay scales are FALCON 1.22 / BASTION 1.15 / WRAITH 1.12 to preserve fit and readability; the collision radius stays 0.42.
 - **i18n note**: cyber-kit `i18n.add()` flattens nested tables into [zh, en] pairs and **destroys nested objects** — use dotted flat keys (`techDesc.pulse`, registered as `"techDesc.pulse": [zh, en]`), never `techDesc: { pulse: [...] }`.
 - **Enemy/obstacle readability**: dark-metal enemies (drone, turret, dasher) carry three whitened, slightly scaled additive **line-only** edge passes (`whiteOutline` in js/entities.js) so HIGH bloom creates a glowing silhouette without filling the hull; colourful bodies (weaver/splitter/mite) are untouched. Drifting rocks stay near-black with amber `EdgesGeometry` lines only (no under-glow).
 - **Three weapons × six levels** (`js/weapons.js`): PULSE REPEATER (spread), PHASE LANCE (piercing line), NOVA SURGE (AoE). **W** canisters only drop from elites and bosses; they do **not** magnetise, and switching also raises that weapon by one level. **P** raises the current level.
@@ -68,16 +70,17 @@ js/config.js     difficulty table + constants + authored waveSpec (pure, unit-te
 js/campaign.js   10×5 campaign/maps + validated sequential progression and per-level records
 js/weapons.js    weapon table, level curves, OVERDRIVE solution, pickups
 js/world.js      sky dome, scrolling megacity shader, mission map variations, towers, ruins, lights
-js/entities.js   craft, line-only dark-enemy outlines, enemies, boss, bullet pools, pickups
+js/aircraft.js   three procedural cyberpunk player airframes + engine/holo animation
+js/entities.js   re-exports craft API; line-only dark-enemy outlines, enemies, boss, bullet pools, pickups
 js/audio.js      NinjaAudio (cyber-kit SynthAudio, 'drive' music)
 js/main.js       states, input, combat simulation, campaign/difficulty wiring, real-video previews, ult/OVERDRIVE, ads hooks
 vendor/cyber-kit cyber-kit v0.3.19
 tests/           Node unit tests + browser combat/layout suites + record-previews.py
 ```
-Test hook: `window.__ninja` (state, x, z, score, wave, hp, weapon, power, ult, od, boss, hazards, difficulty, mission; `api.wave/weapon/charge/ult/overdrive/drop/kill/boss/spawn/enemyFire/hazard/bossHurt/difficulty`). Additional guards: `api.progress()` returns validated level records; `api.fx()` returns lance/nova decoration, lightning, beam and corona-ring counts; `api.threat()` includes `bossChapter` / `bossPattern`.
+Test hook: `window.__ninja` (state, x, z, score, wave, hp, weapon, power, ult, od, boss, hazards, difficulty, mission; `api.wave/weapon/charge/ult/overdrive/drop/kill/boss/spawn/enemyFire/hazard/bossHurt/difficulty`). Additional guards: `api.airframe()` returns the live model key, engine/mesh/vertex/holo-arc counts; `api.progress()` returns validated level records; `api.fx()` returns lance/nova decoration, lightning, beam and corona-ring counts; `api.threat()` includes `bossChapter` / `bossPattern`.
 
 ## 5. Tests
-`node --test tests/` · `python tests/weapons.py [url]` · `python tests/core.py [url]` · `python tests/ult-reset.py [url]` · `python tests/brand.py [url]` · `python tests/smoke.py [url] [out|none] [all|mobile|desktop]` — three-page navigation, locked levels, clear/best records, six visual densities per lance/nova, ultimate FX, vent-safe touch target, ten boss families, campaign/endless, real-video switching, movement/pause/gameover/demo/language and zero console errors. Browser waits follow game state rather than wall-clock frame counts under SwiftShader. Last run 2026-11-05: **10 Node tests PASS; weapons/core/ult-reset/brand PASS; complete mobile and desktop smoke suites PASS; all three refreshed 4 s WebM clips decode PASS; mobile/desktop mission layouts inspected with no horizontal overflow; zero console errors**.
+`node --test tests/` · `python tests/aircraft.py [url] [out|none] [all|mobile|desktop]` · `python tests/weapons.py [url]` · `python tests/core.py [url]` · `python tests/ult-reset.py [url]` · `python tests/brand.py [url]` · `python tests/smoke.py [url] [out|none] [all|mobile|desktop]` — distinct airframe geometry/engine/holo layouts, live combat rebuilds and selection persistence; three-page navigation, locked levels, clear/best records, six visual densities per lance/nova, ultimate FX, vent-safe touch target, ten boss families, campaign/endless, real-video switching, movement/pause/gameover/demo/language and zero console errors. Browser waits follow game state rather than wall-clock frame counts under SwiftShader. Last run 2026-11-05 v1.4: **10 Node tests PASS; aircraft mobile + desktop + all three live combat models PASS; weapons/core/ult-reset/brand PASS; complete mobile smoke PASS; every desktop smoke check plus its final demo check PASS; nine new craft/combat screenshots visually inspected; no horizontal overflow; zero console errors**.
 
 ## 6. Android packaging
 As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `hk.fung2222.xenonightmare`; lock portrait).
@@ -91,7 +94,7 @@ As DATA FUSE (Capacitor 8 + `@capacitor-community/admob` v8; app id suggestion `
 Natural break points in endless: the game-over screen (above) and, optionally in future, the milestone banner every 10 waves (never mid-wave).
 
 ## 8. Known issues / ideas
-- Headless SwiftShader ≈ 3 FPS, so tests wait on game state instead of wall time; phones run 60 FPS with auto-quality.
+- Headless SwiftShader ≈ 3 FPS, so tests wait on game state instead of wall time; allow up to 10 minutes for the full desktop smoke suite (a 5-minute external timeout can cut off the final demo step). Phones run 60 FPS with auto-quality.
 - Ideas: distinct boss meshes per species (currently same model, new name/rate + theme shift), weapon-specific models/audio, haptics intensity setting.
 
 ## Audio loudness + glow (cyber-kit v0.3.0, 2026-10-03)

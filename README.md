@@ -4,7 +4,7 @@
 
 **試玩 Play:** https://fung2222.github.io/cyber-ninja/ · **自動示範 Demo:** https://fung2222.github.io/cyber-ninja/?demo=1
 
-![XENO NIGHTMARE](docs/shots/desktop-play.png)
+![XENO NIGHTMARE — FALCON cyberpunk airframe](docs/shots/desktop-craft-falcon-v14.png)
 
 ## 故事 Story
 Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城市、記憶同現實規則逐一被改寫。三位駕駛員——**蒼隼 FALCON、壁壘 BASTION、幽影 WRAITH**——並肩作戰，穿越十個失守區域，奪回世界中樞並重啟黎明。
@@ -14,7 +14,7 @@ Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城�
 ## 出擊流程 Loadout
 主頁保持品牌＋出擊＋紀錄。按 **出擊 LAUNCH** 後：
 
-1. **選擇機體**：全闊 3D 旋轉展示完整機體，配上被動技能、四項屬性、機體介紹同故事簡報。底部水平三掣切換機體。
+1. **選擇機體**：全闊 3D 旋轉展示完整機體，配上被動技能、四項屬性、機體介紹同故事簡報。三部程式生成 cyberpunk 戰機各有獨立結構：**蒼隼**採用後掠主翼、雙引擎及雙垂直尾翼；**壁壘**採用寬體多層裝甲、側掛炮管及四組推進器；**幽影**採用扁平隱形飛翼。金屬分區、座艙、進氣口、霓虹電路、全息環及漸隐能量尾焰會跟隨所選機體，底部水平三掣亦有各自的新縮圖。
 2. **選擇武器**：頂部播放由正式遊戲渲染器錄製嘅**實機滿級戰鬥影片**，每段包括 LV.6、OVERDRIVE 同專屬大招。下方保留性能表、完整六級技能樹、逐級外觀變化、大招說明及操作提示；難度不再佔用此頁。
 3. **章節關卡／難度**：上方切換 10 章及每章 5 關，已完成關卡顯示剔號、完成次數及該關最高分；下一關可挑戰，其後未解鎖關卡變暗且不可進入。中間選故事／標準／凶間，底部 **正式開始突入** 才由所選關卡開始。機體、武器、關卡進度、逐關最高分及難度均保存在目前瀏覽器。
 
@@ -35,7 +35,7 @@ Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城�
 - 無盡模式沿用五十種地圖指紋循環變化，敵人 HP、Boss HP 同射速設有上限；每 10 關有里程碑獎勵及護盾補滿。
 
 ## English
-**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Ouroboros, a digital virus, is devouring the cyber world; three pilots fight through **10 chapters × 5 levels and 50 map variations** before endless mode unlocks. The three-page flow is craft → weapon → mission/difficulty. The mission page locks future levels, shows per-level clears and best scores, and starts directly at the selected sortie. Weapon previews are real recorded LV.6/OVERDRIVE/ultimate gameplay; lance and nova now have six distinct visual levels plus lightning and multi-ring ultimate effects. Each chapter boss uses a different attack family. A charged ultimate works during active OVERDRIVE and its venting cooldown, whose graphics never cover the ultimate touch target. Choices and records persist locally in the current browser.
+**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Ouroboros, a digital virus, is devouring the cyber world; three pilots fight through **10 chapters × 5 levels and 50 map variations** before endless mode unlocks. The three-page flow is craft → weapon → mission/difficulty. FALCON, BASTION and WRAITH now use separate procedural cyberpunk airframes: a swept-wing twin-engine fighter, a four-engine armored gunship and a stealth flying wing, with metallic panels, neon circuitry, holographic arcs and fading engine flames. Their combat stats and passives are unchanged. The mission page locks future levels, shows per-level clears and best scores, and starts directly at the selected sortie. Weapon previews are real recorded LV.6/OVERDRIVE/ultimate gameplay; lance and nova now have six distinct visual levels plus lightning and multi-ring ultimate effects. Each chapter boss uses a different attack family. A charged ultimate works during active OVERDRIVE and its venting cooldown, whose graphics never cover the ultimate touch target. Choices and records persist locally in the current browser.
 
 ## 操作 Controls
 | 動作 | 手機 | 鍵盤 |
@@ -56,6 +56,7 @@ Three.js r169 + vendored cyber-kit v0.3.19，plain HTML/CSS/JS，無 build step�
 ```bash
 python3 -m http.server 18940     # http://127.0.0.1:18940/index.html
 node --test tests/
+python3 tests/aircraft.py http://127.0.0.1:18940/index.html docs/shots
 python3 tests/weapons.py http://127.0.0.1:18940/index.html
 python3 tests/core.py http://127.0.0.1:18940/index.html
 python3 tests/ult-reset.py http://127.0.0.1:18940/index.html

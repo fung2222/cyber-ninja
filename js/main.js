@@ -5,7 +5,7 @@ import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, 
 import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, campaignForWave, campaignLabel, normalizeProgress, isLevelUnlocked, recordLevel } from './campaign.js?v=1.3';
 import './strings.js?v=0.3.26';
 import { World } from './world.js';
-import { makeNinja, updateNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.3';
+import { makeNinja, updateNinja, disposeNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.4';
 import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=0.3.25';
 import { CRAFTS, CRAFT_KEYS, craftOf, craftName, COMBO, comboMult } from './crafts.js?v=1.0';
 import { NinjaAudio } from './audio.js?v=0.3.25';
@@ -42,13 +42,14 @@ function saveLevelResult(wave, score, cleared) {
   missionProgress = recordLevel(missionProgress, wave, score, cleared);
   saveMissionProgress();
 }
-let ninja = makeNinja(craftOf(savedCraft)); ninja.scale.setScalar(1.55); scene.add(ninja);
+const craftModelScale = (key) => key === 'bastion' ? 1.15 : key === 'wraith' ? 1.12 : 1.22;
+let ninja = makeNinja(craftOf(savedCraft)); ninja.scale.setScalar(craftModelScale(savedCraft)); scene.add(ninja);
 function setCraft(key, silent = false) {
   if (!CRAFTS[key]) key = 'falcon';
   S.craft = key;
   store.set('craft', key);
-  scene.remove(ninja);
-  ninja = makeNinja(craftOf(key)); ninja.scale.setScalar(1.55); scene.add(ninja);
+  scene.remove(ninja); disposeNinja(ninja);
+  ninja = makeNinja(craftOf(key)); ninja.scale.setScalar(craftModelScale(key)); scene.add(ninja);
   const C = craftOf(key);
   PLAYER.maxHp = C.hp + D().bonusHp;
   if (!silent && S.state === 'attract') { /* rebuilt under the start screen */ }
@@ -581,9 +582,9 @@ ui.on('btn-resume', resume); ui.on('btn-quit', () => { audio.back(); showAttract
 // ---------------------------------------------------------------- start-screen: craft select + weapon tech tree
 const hex = (n) => '#' + n.toString(16).padStart(6, '0');
 const CRAFT_SVG = {
-  falcon: (c, a) => `<svg viewBox="0 0 96 44"><path d="M48 6 L58 22 L92 34 L58 30 L48 40 L38 30 L4 34 L38 22 Z" fill="none" stroke="${c}" stroke-width="2"/><path d="M48 12 L53 22 L48 32 L43 22 Z" fill="${a}" opacity=".85"/><circle cx="48" cy="22" r="3" fill="${c}"/></svg>`,
-  bastion: (c, a) => `<svg viewBox="0 0 96 44"><path d="M28 10 L68 10 L76 22 L68 34 L28 34 L20 22 Z" fill="none" stroke="${c}" stroke-width="2"/><path d="M40 16 L56 16 L60 22 L56 28 L40 28 L36 22 Z" fill="${a}" opacity=".85"/><path d="M10 22 L20 22 M76 22 L86 22" stroke="${c}" stroke-width="2"/></svg>`,
-  wraith: (c, a) => `<svg viewBox="0 0 96 44"><path d="M48 4 L52 20 L48 38 L44 20 Z" fill="${a}" opacity=".9"/><path d="M16 8 L40 22 L16 36 M80 8 L56 22 L80 36" fill="none" stroke="${c}" stroke-width="2"/><circle cx="48" cy="20" r="2.5" fill="${c}"/></svg>`,
+  falcon: (c, a) => `<svg viewBox="0 0 96 48" aria-hidden="true"><path d="M48 3 L52 15 L61 21 L89 34 L86 39 L59 33 L55 42 L48 45 L41 42 L37 33 L10 39 L7 34 L35 21 L44 15 Z" fill="rgba(8,16,29,.9)" stroke="${c}" stroke-width="1.4"/><path d="M48 7 L51 20 L48 31 L45 20 Z" fill="${a}" opacity=".8"/><path d="M37 19 L24 18 L16 23 M59 19 L72 18 L80 23 M40 32 L38 41 M56 32 L58 41" fill="none" stroke="${c}" stroke-width="1.2"/><circle cx="42" cy="38" r="2" fill="${a}"/><circle cx="54" cy="38" r="2" fill="${a}"/></svg>`,
+  bastion: (c, a) => `<svg viewBox="0 0 96 48" aria-hidden="true"><path d="M48 4 L59 10 L64 15 L77 13 L86 22 L84 38 L66 41 L58 45 L38 45 L30 41 L12 38 L10 22 L19 13 L32 15 L37 10 Z" fill="rgba(8,16,29,.92)" stroke="${c}" stroke-width="1.5"/><path d="M48 8 L58 16 L56 32 L48 37 L40 32 L38 16 Z" fill="${a}" opacity=".32" stroke="${a}"/><path d="M18 20 L29 22 L28 35 L17 33 Z M78 20 L67 22 L68 35 L79 33 Z" fill="none" stroke="${c}"/><path d="M14 15 L14 29 M82 15 L82 29" stroke="${a}" stroke-width="2"/><circle cx="35" cy="40" r="2" fill="${a}"/><circle cx="43" cy="42" r="2" fill="${c}"/><circle cx="53" cy="42" r="2" fill="${c}"/><circle cx="61" cy="40" r="2" fill="${a}"/></svg>`,
+  wraith: (c, a) => `<svg viewBox="0 0 96 48" aria-hidden="true"><path d="M48 3 L55 15 L91 35 L90 40 L58 32 L53 44 L48 40 L43 44 L38 32 L6 40 L5 35 L41 15 Z" fill="rgba(8,12,25,.94)" stroke="${c}" stroke-width="1.4"/><path d="M48 7 L51 22 L48 35 L45 22 Z" fill="${a}" opacity=".55"/><path d="M44 17 L17 34 M52 17 L79 34 M39 29 L20 36 M57 29 L76 36" fill="none" stroke="${a}" stroke-width="1" opacity=".85"/><path d="M43 37 L46 36 M50 36 L53 37" stroke="${c}" stroke-width="2.5"/></svg>`,
 };
 const statBars = (n) => `<span class="bars">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
 function renderCraftSelect() {
@@ -671,8 +672,8 @@ function ensurePreview() {
 }
 function pvSetModel(c) {
   if (!pv) return;
-  if (pv.model) pv.sc.remove(pv.model);
-  const m = makeNinja(c); m.scale.setScalar(1.65); m.rotation.y = 0.6; pv.sc.add(m); pv.model = m;
+  if (pv.model) { pv.sc.remove(pv.model); disposeNinja(pv.model); }
+  const m = makeNinja(c); m.scale.setScalar(1.42); m.rotation.y = Math.PI + 0.55; pv.sc.add(m); pv.model = m;
   pv.disc.material.color.setHex(c.color);
 }
 function sizePreview() {
@@ -823,6 +824,11 @@ S.api = {
   ult: () => { S.ult = 100; doUlt(); },
   overdrive: () => { S.od = 100; doOverdrive(); },
   craft: (key) => setCraft(key),
+  airframe: () => {
+    let meshes = 0, vertices = 0;
+    ninja.traverse(o => { if (o.isMesh) { meshes++; vertices += o.geometry.attributes.position.count; } });
+    return { key: ninja.userData.airframe, engines: ninja.userData.engineCount, meshes, vertices, holoArcs: ninja.userData.spinners.length };
+  },
   weapon: (key, level = 1) => { if (!WEAPONS[key]) return; S.ults[S.weapon] = S.ult; S.weapon = key; S.weaponLevels[key] = Math.max(1, Math.min(6, level)); S.power = S.weaponLevels[key]; S.ult = S.ults[key]; S.fireT = 0; updateHUD(); },
   difficulty: (key) => { if (!DIFFICULTIES[key]) return; selDifficulty = key; S.difficulty = key; PLAYER.maxHp = C().hp + D().bonusHp; S.hp = Math.min(S.hp, PLAYER.maxHp); renderDifficulty(); updateHUD(); },
   drop: (kind, key) => dropPickup(S.x, S.z - 1.2, kind, key),
