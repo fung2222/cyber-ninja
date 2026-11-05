@@ -139,6 +139,24 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 
 /* menu meta */
 .menu-meta { margin-top: 18px; }
+
+/* One-tap launch (2026-11-05): START opens the remembered loadout; 配置 is the quiet way
+   back to the airframe / weapon / chapter pages. Id-level so the generic .neon-btn
+   min-width 240 + pulse animation do not make the secondary compete with the primary. */
+#screen-start #btn-loadout {
+  min-width: 172px;
+  min-height: 44px;
+  padding: 6px 22px;
+  font-size: 13px;
+  letter-spacing: 4px;
+  opacity: .78;
+  animation: none !important;
+  box-shadow: none;
+  background: rgba(10, 4, 30, .28);
+}
+#screen-start #btn-loadout small { font-size: 8px; letter-spacing: 2px; opacity: .9; }
+#screen-start #btn-loadout:hover,
+#screen-start #btn-loadout:focus-visible { transform: none; opacity: 1; box-shadow: 0 0 12px color-mix(in srgb, var(--c2) 40%, transparent); }
 .hi-line b { font-family: 'Orbitron', sans-serif; color: var(--c3); }
 
 /* ---------------- misc screens ---------------- */

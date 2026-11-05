@@ -17,7 +17,7 @@ with sync_playwright() as p:
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto(URL + '?lang=zh&reset=1', wait_until='domcontentloaded'); pg.wait_for_timeout(1200)
-    pg.click('#btn-start'); pg.wait_for_timeout(300)
+    pg.click('#btn-loadout'); pg.wait_for_timeout(300)
     pg.click('#btn-hangar-next'); pg.wait_for_timeout(400)
     pg.click('#btn-weapon-go'); pg.wait_for_timeout(200)
     pg.click('#btn-mission-go'); pg.wait_for_timeout(300)
@@ -37,8 +37,13 @@ with sync_playwright() as p:
     print('gems', gem_before, '->', gem_after)
     check(gem_after > gem_before, 'enemy death drops gems')
     pg.evaluate("() => { for (const g of __ninja.gems) { g.t = 1; g.x = __ninja.x; g.z = __ninja.z - 0.2; } }")
-    pg.wait_for_timeout(1600)
-    check(pg.evaluate("() => __ninja.api.threat().gems") < gem_after, 'gems fly into the craft automatically')
+    # software WebGL can advance game time at ~0.1x: poll the state instead of a fixed sleep
+    picked = True
+    try:
+        pg.wait_for_function(f"() => __ninja.api.threat().gems < {gem_after}", timeout=12000)
+    except Exception:
+        picked = False
+    check(picked, 'gems fly into the craft automatically')
 
     pg.evaluate("() => { __ninja.z = -20; __ninja.tz = -20; }")
     pg.wait_for_timeout(400)
@@ -54,10 +59,14 @@ with sync_playwright() as p:
     # stationary pressure: a max-level pulse still has to dodge aimed fire
     pg.evaluate("() => { __ninja.api.wave(1); __ninja.x = 0; __ninja.z = 1; __ninja.tx = 0; __ninja.tz = 1; __ninja.hp = 3; __ninja.invuln = 0; __ninja.api.weapon('pulse', 6); }")
     pg.evaluate("() => { __ninja.api.enemyFire(0, -0.2, 0, 9); }")
-    pg.wait_for_timeout(1800)
+    was_hit = True
+    try:
+        pg.wait_for_function("() => __ninja.hp < 3 || __ninja.state !== 'playing'", timeout=12000)
+    except Exception:
+        was_hit = False
     press = pg.evaluate("() => ({hp:__ninja.hp,bullets:__ninja.api.threat().bullets,state:__ninja.state})")
     print('stationary', press)
-    check(press['hp'] < 3 or press['state'] != 'playing', 'stationary max-level player can be hit')
+    check(was_hit, 'stationary max-level player can be hit')
 
     pg.evaluate("() => { __ninja.api.boss(); __ninja.boss.entering = false; __ninja.boss.z = -15; __ninja.boss.phase = 1; }")
     pg.wait_for_timeout(400)

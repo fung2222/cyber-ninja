@@ -73,6 +73,14 @@ i18n.add({
 "LAUNCH · ENTER",
 "ENTER"
 ],
+"loadoutBtn": [
+"配置",
+"LOADOUT"
+],
+"loadoutBtnS": [
+"機體 · 武器 · 章節",
+"CRAFT · GUN · CHAPTER"
+],
 "touchHint": [
 "手機：喺任何位置拖動（手指唔會遮住戰機）",
 "Touch: drag anywhere (your finger never covers the craft)"

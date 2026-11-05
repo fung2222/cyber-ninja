@@ -11,7 +11,7 @@ def check(ok, msg):
     if not ok: fails.append(msg)
 
 def open_mission(pg):
-    pg.click('#btn-start'); pg.click('#btn-hangar-next'); pg.click('#btn-weapon-go')
+    pg.click('#btn-loadout'); pg.click('#btn-hangar-next'); pg.click('#btn-weapon-go')
     pg.wait_for_function("() => !document.querySelector('#screen-mission').classList.contains('hidden')")
 
 def clear_chapter(pg, score):

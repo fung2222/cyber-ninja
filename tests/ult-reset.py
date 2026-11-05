@@ -20,7 +20,7 @@ with sync_playwright() as p:
     pg.goto(URL + '?lang=zh&reset=1', wait_until='domcontentloaded')
     pg.wait_for_timeout(2200)
     pg.evaluate("() => { __ninja.ultReadyShown = true; __ninja.ult = 100; }")
-    pg.click('#btn-start')
+    pg.click('#btn-loadout')
     pg.click('#btn-hangar-next')
     pg.click('#btn-weapon-go')
     pg.click('#btn-mission-go')

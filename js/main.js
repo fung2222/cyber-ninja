@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, DIFFICULTIES, difficultyOf, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
 import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, DIFFICULTY_ORDER, campaignForWave, campaignLabel, normalizeProgress, chapterRecord, chapterBest, chapterClears, isChapterUnlocked, isDifficultyUnlocked, recordLevel, recordChapter } from './campaign.js?v=1.5';
-import './strings.js?v=1.5';
+import './strings.js?v=1.5a';
 import { World } from './world.js';
 import { makeNinja, updateNinja, disposeNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.4';
 import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=1.5';
@@ -607,6 +607,34 @@ const endDrag = (e) => { if (drag && e.pointerId === drag.id) drag = null; };
 cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
 
 // ——— Hangar: craft page → weapon page → mission / difficulty → launch ———
+const LOADOUT_KEY = 'lastLoadout';
+const readLoadout = () => {
+  const v = store.getJSON(LOADOUT_KEY, null);
+  if (!v || !CRAFTS[v.craft] || !WEAPON_KEYS.includes(v.weapon)) return null;
+  return v;
+};
+const saveLoadout = () => store.setJSON(LOADOUT_KEY, { craft: S.craft, weapon: selWeapon, chapter: selChapter, difficulty: selDifficulty });
+/** One-tap launch: reuse the saved airframe / weapon / chapter without the three pages.
+ *  Returns false when nothing valid is stored yet, so the first run still shows the pages. */
+function quickStart() {
+  const v = readLoadout();
+  if (!v) return false;
+  let ch = Math.max(1, Math.min(CHAPTER_COUNT, Math.round(v.chapter) || 1));
+  if (!isChapterUnlocked(missionProgress, ch)) return false;
+  // if that chapter is already cleared but progress has moved on, continue where the player is now
+  const ahead = Math.max(1, Math.min(CHAPTER_COUNT, Math.ceil(missionProgress.unlocked / LEVELS_PER_CHAPTER)));
+  if (ahead > ch && chapterClears(missionProgress, ch) > 0 && isChapterUnlocked(missionProgress, ahead)) ch = ahead;
+  let diff = DIFFICULTIES[v.difficulty] ? v.difficulty : 'story';
+  if (!isDifficultyUnlocked(missionProgress, ch, diff)) diff = 'story';
+  if (!isDifficultyUnlocked(missionProgress, ch, diff)) return false;
+  setCraft(v.craft, true);
+  selWeapon = v.weapon; store.set('startWeapon', selWeapon);
+  selDifficulty = diff; store.set('difficulty', diff); S.difficulty = diff;
+  PLAYER.maxHp = C().hp + D().bonusHp;
+  selChapter = ch; selWave = (ch - 1) * LEVELS_PER_CHAPTER + 1;
+  startSelectedMission();
+  return true;
+}
 const hangarOpen = () => !$('screen-hangar').classList.contains('hidden');
 const weaponOpen = () => !$('screen-weapon').classList.contains('hidden');
 const missionOpen = () => !$('screen-mission').classList.contains('hidden');
@@ -619,6 +647,7 @@ function confirmWeapon() { closeWeapon(); closeHangar(); openMission(); }
 function startSelectedMission() {
   if (!isChapterUnlocked(missionProgress, selChapter) || !isDifficultyUnlocked(missionProgress, selChapter, selDifficulty)) return;
   selWave = (selChapter - 1) * LEVELS_PER_CHAPTER + 1;
+  saveLoadout();
   closeMission(); closeWeapon(); closeHangar(); beginRun();
 }
 
@@ -626,7 +655,7 @@ createInput({
   anyGesture() { audio.init(); audio.startMusic(); },
   action(a) {
     if (ui.modalOpen) { if (a === 'pause') ui.closeModal(); return; }
-    if (a === 'primary') { if (S.state === 'attract') { if (missionOpen()) startSelectedMission(); else if (weaponOpen()) confirmWeapon(); else if (hangarOpen()) openWeapon(); else openHangar(); } else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
+    if (a === 'primary') { if (S.state === 'attract') { if (missionOpen()) startSelectedMission(); else if (weaponOpen()) confirmWeapon(); else if (hangarOpen()) openWeapon(); else if (!quickStart()) openHangar(); } else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
     else if (a === 'pause') { if (missionOpen()) { closeMission(); openWeapon(); } else if (weaponOpen()) { closeWeapon(); openHangar(); } else if (hangarOpen()) closeHangar(); else if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
     else if (a === 'mute') { audio.init(); ui.setMuted(audio.toggleMute()); }
     else if (a === 'ult') doUlt();
@@ -635,7 +664,8 @@ createInput({
     else if (a === 'fps') $('fps').classList.toggle('hidden');
   },
 }, { swipe: 'once', actions: { KeyX: 'ult', KeyJ: 'ult', KeyK: 'ult', KeyQ: 'overdrive', KeyO: 'overdrive' } });
-ui.on('btn-start', () => { audio.init(); if (S.demo || flags.autostart) beginRun(); else openHangar(); });
+ui.on('btn-start', () => { audio.init(); if (S.demo || flags.autostart) beginRun(); else if (!quickStart()) openHangar(); });
+ui.on('btn-loadout', () => { audio.init(); try { audio.select(); } catch (_) {} openHangar(); });
 ui.on('btn-hangar-next', () => { audio.init(); try { audio.click(); } catch (_) {} openWeapon(); });
 ui.on('btn-hangar-back', () => { audio.back(); closeHangar(); });
 ui.on('btn-weapon-back', () => { audio.back(); closeWeapon(); openHangar(); });

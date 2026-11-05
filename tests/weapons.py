@@ -18,7 +18,7 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto(URL + '?lang=zh&reset=1', wait_until='domcontentloaded')
     pg.wait_for_timeout(1300)
-    pg.click('#btn-start'); pg.wait_for_timeout(350)
+    pg.click('#btn-loadout'); pg.wait_for_timeout(350)
     pg.click('#btn-hangar-next'); pg.wait_for_timeout(400)
     pg.click('#btn-weapon-go'); pg.wait_for_timeout(250)
     pg.click('#btn-mission-go'); pg.wait_for_timeout(350)

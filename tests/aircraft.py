@@ -32,7 +32,7 @@ def run(p, name, width, height, mobile):
     pg.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
     pg.on('pageerror', lambda e: errors.append(str(e)))
     pg.goto(BASE + '?lang=zh&reset=1', wait_until='domcontentloaded', timeout=120000)
-    pg.wait_for_timeout(1300); pg.click('#btn-start'); pg.wait_for_timeout(650)
+    pg.wait_for_timeout(1300); pg.click('#btn-loadout'); pg.wait_for_timeout(650)
     signatures = []
     for key, expected in EXPECTED.items():
         # The reset save has no explicit craft key until the player changes it.

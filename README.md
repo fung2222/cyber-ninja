@@ -12,7 +12,7 @@ Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城�
 主線有 **10 章、每章 5 關，共 50 關**。每章有雙語劇情簡報、獨立名稱、主題配色及場景配置；每關嘅城市網格、道路、塔樓密度、遺跡方向、霧度及障礙節奏都有變化。每章第 5 關係 Boss 戰；完成第 50 關後進入無盡模式。
 
 ## 出擊流程 Loadout
-主頁保持品牌＋出擊＋紀錄。按 **出擊 LAUNCH** 後：
+主頁保持品牌＋出擊＋紀錄。**第一次玩**按 **出擊 LAUNCH** 會行以下三頁；**之後再撳出擊就一撳直接開打**，用返上次嘅機體、武器同章節。想改配置，撳出擊下面嘅 **配置 LOADOUT** 入返三頁（`lastLoadout` 記住 craft／weapon／chapter／difficulty）。三頁內容：
 
 1. **選擇機體**：全闊 3D 旋轉展示完整機體，配上被動技能、四項屬性、機體介紹同故事簡報。三部程式生成 cyberpunk 戰機各有獨立結構：**蒼隼**採用後掠主翼、雙引擎及雙垂直尾翼；**壁壘**採用寬體多層裝甲、側掛炮管及四組推進器；**幽影**採用扁平隱形飛翼。金屬分區、座艙、進氣口、霓虹電路、全息環及漸隐能量尾焰會跟隨所選機體，底部水平三掣亦有各自的新縮圖。
 2. **選擇武器**：頂部播放由正式遊戲渲染器錄製嘅**實機滿級戰鬥影片**。下方依序顯示性能、三級附加能力、大招及六級技能樹；已刪除長篇介紹與重複操作提示，手機一頁可睇晒，毋須滾動。
@@ -35,7 +35,7 @@ Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城�
 - 無盡模式沿用五十種地圖指紋循環變化，敵人 HP、Boss HP 同射速設有上限；每 10 關有里程碑獎勵及護盾補滿。
 
 ## English
-**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Ouroboros, a digital virus, is devouring the cyber world; three pilots fight through **10 chapters × 5 levels and 50 map variations**. The three-page flow is craft → weapon → chapter/difficulty. FALCON, BASTION and WRAITH use separate procedural cyberpunk airframes. The mission page now has a touch-scrollable chapter rail and one large entry per chapter, launching all five stages consecutively. Clearing a chapter opens the next; Story → Normal → Nightmare unlock in sequence, with separate best scores and clears saved as JSON in the current browser. The weapon page fits its key stats, LV.3 special, ultimate and six-level tree on one phone screen. Pulse gains two damaging homing missiles at LV.3; lance keeps pierce at lower damage and gains two non-piercing support drones; nova detonates on impact without pierce and every tenth LV.3+ shot has a larger blast. Both skill cooldowns are numeric countdowns inside their circular buttons, with no external bars blocking touch.
+**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Ouroboros, a digital virus, is devouring the cyber world; three pilots fight through **10 chapters × 5 levels and 50 map variations**. First launch walks the three pages (craft → weapon → chapter/difficulty); afterwards LAUNCH starts the remembered loadout in one tap and the LOADOUT button reopens the pages (`lastLoadout` keeps craft/weapon/chapter/difficulty). FALCON, BASTION and WRAITH use separate procedural cyberpunk airframes. The mission page now has a touch-scrollable chapter rail and one large entry per chapter, launching all five stages consecutively. Clearing a chapter opens the next; Story → Normal → Nightmare unlock in sequence, with separate best scores and clears saved as JSON in the current browser. The weapon page fits its key stats, LV.3 special, ultimate and six-level tree on one phone screen. Pulse gains two damaging homing missiles at LV.3; lance keeps pierce at lower damage and gains two non-piercing support drones; nova detonates on impact without pierce and every tenth LV.3+ shot has a larger blast. Both skill cooldowns are numeric countdowns inside their circular buttons, with no external bars blocking touch.
 
 ## 操作 Controls
 | 動作 | 手機 | 鍵盤 |
