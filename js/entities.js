@@ -141,38 +141,121 @@ export const PICKUPS = {
   P: { color: 0xfff35c, zh: '火力', en: 'POWER' },
   S: { color: 0x3bff8a, zh: '護盾', en: 'SHIELD' },
   E: { color: 0x00e5ff, zh: '能量', en: 'ENERGY' },
+  H: { color: 0xff5c6e, zh: '回血', en: 'REPAIR' },
   W: { color: 0xffffff, zh: '武器', en: 'WEAPON' },
 };
+// ---- pickup silhouettes -------------------------------------------------------
+// Every drop is a recognisable 3D object, not a generic gem: medkit = repair,
+// shield = shield, bolt = energy, chevrons = power, and weapon canisters show the
+// weapon's own shape (chevrons / needle / ring) so the player reads the drop at a glance.
+const extrude = (shape, depth, color, emissive = 1.0) => {
+  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelSize: .03, bevelThickness: .03, bevelSegments: 2, curveSegments: 10 });
+  geo.center();
+  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(emissive) });
+  const mesh = new THREE.Mesh(geo, mat);
+  return { geo, mesh };
+};
+function shieldShape() {
+  const s = new THREE.Shape();
+  s.moveTo(0, .58); s.lineTo(.46, .36); s.lineTo(.4, -.1);
+  s.quadraticCurveTo(.32, -.52, 0, -.66); s.quadraticCurveTo(-.32, -.52, -.4, -.1);
+  s.lineTo(-.46, .36); s.closePath(); return s;
+}
+function boltShape() {
+  const s = new THREE.Shape();
+  s.moveTo(.1, .58); s.lineTo(-.32, .04); s.lineTo(-.03, .04); s.lineTo(-.14, -.58);
+  s.lineTo(.32, -.02); s.lineTo(.03, -.02); s.closePath(); return s;
+}
+function chevronShape() {
+  const s = new THREE.Shape();
+  s.moveTo(-.44, .16); s.lineTo(0, .5); s.lineTo(.44, .16); s.lineTo(.44, -.06);
+  s.lineTo(0, .28); s.lineTo(-.44, -.06); s.closePath(); return s;
+}
+function crossShape() {
+  const s = new THREE.Shape(); const a = .13, b = .42;
+  s.moveTo(-a, b); s.lineTo(a, b); s.lineTo(a, a); s.lineTo(b, a); s.lineTo(b, -a);
+  s.lineTo(a, -a); s.lineTo(a, -b); s.lineTo(-a, -b); s.lineTo(-a, -a); s.lineTo(-b, -a);
+  s.lineTo(-b, a); s.lineTo(-a, a); s.closePath(); return s;
+}
+function medkit(color) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(.92, .66, .34), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x2a0b12) }));
+  g.add(body);
+  const { geo, mesh } = extrude(crossShape(), .1, 0xff5c6e, 1.15); mesh.position.z = .2; g.add(mesh);
+  const crossEdge = neonEdges(geo, 0xffd7de, 3); crossEdge.position.z = .2; g.add(crossEdge);
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(.2, .035, 6, 16, Math.PI), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff8fa0).multiplyScalar(1.6) }));
+  handle.position.set(0, .34, 0); g.add(handle);
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(body.geometry, 18), new THREE.LineBasicMaterial({ color: new THREE.Color(0xff5c6e).multiplyScalar(1.8) }));
+  g.add(edge);
+  return g;
+}
+function shieldIcon(color) {
+  const g = new THREE.Group();
+  const { geo, mesh } = extrude(shieldShape(), .18, color, 1.0); g.add(mesh);
+  g.add(neonEdges(geo, 0xe8fff1, 3));
+  const inner = extrude(shieldShape(), .05, 0xffffff, 1.2).mesh; inner.scale.setScalar(.55); inner.position.z = .12; g.add(inner);
+  return g;
+}
+function boltIcon(color) {
+  const g = new THREE.Group();
+  const { geo, mesh } = extrude(boltShape(), .16, color, 1.1); g.add(mesh);
+  g.add(neonEdges(geo, 0xd9fbff, 3));
+  return g;
+}
+function powerIcon(color) {
+  const g = new THREE.Group();
+  const { geo, mesh } = extrude(chevronShape(), .14, color, 1.05); mesh.position.y = .16; g.add(mesh);
+  const lower = extrude(chevronShape(), .14, color, 0.8).mesh; lower.position.y = -.22; lower.scale.setScalar(.78); g.add(lower);
+  g.add(neonEdges(geo, 0xfff8d0, 3));
+  return g;
+}
 export function makePickup(kind, weaponKey) {
   const g = new THREE.Group();
   const w = kind === 'W' ? WEAPONS[weaponKey] : null;
   const c = w ? w.color : PICKUPS[kind].color;
-  let geo;
-  if (kind === 'W' && weaponKey === 'pulse') {
-    // pulse = three compact chevron shards, reads as a bullet cluster
-    geo = new THREE.TetrahedronGeometry(0.34, 0);
+  let geo = null;
+  if (kind === 'H') {
+    g.add(medkit(c));
+  } else if (kind === 'S') {
+    g.add(shieldIcon(c));
+  } else if (kind === 'E') {
+    g.add(boltIcon(c));
+  } else if (kind === 'P') {
+    g.add(powerIcon(c));
+  } else if (kind === 'W' && weaponKey === 'pulse') {
+    // pulse = three forward arrowheads, the same chevron language as its shots
     for (let i = 0; i < 3; i++) {
-      const shard = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.72), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.4) }));
-      shard.position.set((i - 1) * 0.28, 0, 0); shard.rotation.y = (i - 1) * 0.08; g.add(shard);
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(.17, .52, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.2) }));
+      arrow.rotation.x = Math.PI / 2; arrow.rotation.y = Math.PI / 4;
+      arrow.position.set((i - 1) * .26, 0, 0); g.add(arrow);
     }
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(.78, .12, .12), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(1.4) }));
+    bar.position.y = -.26; g.add(bar);
   } else if (kind === 'W' && weaponKey === 'lance') {
-    // lance = a long needle with a bright core
-    geo = new THREE.OctahedronGeometry(0.22, 0);
-    const needle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.5, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.4) }));
+    // lance = a long needle with two fins
+    const needle = new THREE.Mesh(new THREE.CylinderGeometry(.075, .075, 1.6, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.4) }));
     needle.rotation.z = Math.PI / 2; g.add(needle);
+    for (const s of [-1, 1]) {
+      const fin = new THREE.Mesh(new THREE.ConeGeometry(.16, .42, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(1.8) }));
+      fin.rotation.z = s > 0 ? -Math.PI / 2 : Math.PI / 2; fin.position.x = s * .62; g.add(fin);
+    }
   } else if (kind === 'W' && weaponKey === 'nova') {
-    // nova = a ring with a heavy core
-    geo = new THREE.IcosahedronGeometry(0.3, 0);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.09, 8, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.2) }));
+    // nova = a heavy core inside a wide ring, its blast in 3D
+    const core = new THREE.Mesh(new THREE.IcosahedronGeometry(.3, 0), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.2) }));
+    g.add(core);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(.62, .085, 8, 26), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2.2) }));
     ring.rotation.x = Math.PI / 2; g.add(ring);
   } else {
-    geo = kind === 'W' ? new THREE.IcosahedronGeometry(0.5, 0) : new THREE.OctahedronGeometry(0.42, 0);
+    geo = new THREE.IcosahedronGeometry(.5, 0);
   }
-  g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(0.5), transparent: true, opacity: 0.6 })));
-  g.add(neonEdges(geo, c, 3));
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(kind === 'W' ? 0.72 : 0.6, 0.03, 6, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2) }));
-  ring.rotation.x = Math.PI / 2; g.add(ring);
+  if (geo) {
+    g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(0.5), transparent: true, opacity: 0.6 })));
+    g.add(neonEdges(geo, c, 3));
+  }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.72, .028, 6, 26), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(2), transparent: true, opacity: .8 }));
+  ring.rotation.x = Math.PI / 2; ring.position.y = -.4; g.add(ring);
   g.userData.kind = kind; g.userData.weapon = weaponKey || null;
+  g.scale.setScalar(kind === 'H' ? .92 : 1);
   return g;
 }
 

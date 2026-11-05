@@ -5,7 +5,7 @@ import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, 
 import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, DIFFICULTY_ORDER, campaignForWave, campaignLabel, normalizeProgress, chapterRecord, chapterBest, chapterClears, isChapterUnlocked, isDifficultyUnlocked, recordLevel, recordChapter } from './campaign.js?v=1.5';
 import './strings.js?v=1.5a';
 import { World } from './world.js';
-import { makeNinja, updateNinja, disposeNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.4';
+import { makeNinja, updateNinja, disposeNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.6';
 import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=1.5';
 import { CRAFTS, CRAFT_KEYS, craftOf, craftName, COMBO, comboMult } from './crafts.js?v=1.0';
 import { NinjaAudio } from './audio.js?v=0.3.25';
@@ -187,7 +187,9 @@ function updateHUD() {
   const ultCooling = S.ultT >= 0;
   $('ult-label').textContent = ultShort(S.weapon, lang);
   $('ult-sub').textContent = ultCooling ? Math.max(0, Math.ceil(ultDur - S.ultT)) + 's' : S.ult >= 100 ? (lang === 'zh' ? '就緒' : 'READY') : Math.round(S.ult) + '%';
-  setRing($('btn-ult'), ultCooling ? Math.max(0, 100 - (S.ultT / ultDur) * 100) : S.ult);
+  const ultLeftPct = ultCooling ? Math.max(0, 100 - (S.ultT / ultDur) * 100) : 0;
+  setRing($('btn-ult'), ultCooling ? ultLeftPct : S.ult);
+  $('btn-ult').style.setProperty('--cool', ultLeftPct.toFixed(1));
   $('btn-ult').classList.toggle('ready', S.ult >= 100 && !ultCooling);
   $('btn-ult').classList.toggle('cooling', ultCooling);
   const odReady = S.od >= 100 && S.odT < 0 && S.noFireT <= 0 && S.ultT < 0;
@@ -197,6 +199,8 @@ function updateHUD() {
   const odDur = OD.duration + C().odBonus;
   const odPct = S.odT >= 0 ? Math.max(0, 100 - (S.odT / odDur) * 100) : S.noFireT > 0 ? 0 : S.od;
   setRing($('btn-od'), odPct);
+  const odLeftPct = S.odT >= 0 ? Math.max(0, 100 - (S.odT / odDur) * 100) : S.noFireT > 0 ? Math.max(0, (S.noFireT / OD.noFire) * 100) : 0;
+  $('btn-od').style.setProperty('--cool', odLeftPct.toFixed(1));
   $('od-label').textContent = S.noFireT > 0 ? t('odVent') : S.odT >= 0 ? t('odActive') : t('odShort');
   $('od-sub').textContent = S.noFireT > 0 ? Math.ceil(S.noFireT) + 's' : S.odT >= 0 ? Math.max(0, Math.ceil(odDur - S.odT)) + 's' : Math.min(100, S.od).toFixed(0) + '%';
   // craft badge
@@ -243,7 +247,18 @@ function resetRun() {
 }
 function nextWave() {
   if (S.state === 'playing' && !S.demo && S.wave >= S.runStartWave && S.wave <= CAMPAIGN_LEVELS) saveLevelResult(S.wave, S.score - (S.levelStartScore || 0), true);
-  if (S.state === 'playing' && !S.demo && S.wave >= S.runStartWave && S.wave <= CAMPAIGN_LEVELS && S.wave % LEVELS_PER_CHAPTER === 0) { finishChapter(); return; }
+  if (S.state === 'playing' && !S.demo && S.wave >= S.runStartWave && S.wave <= CAMPAIGN_LEVELS && S.wave % LEVELS_PER_CHAPTER === 0) {
+    const ch = Math.ceil(S.wave / LEVELS_PER_CHAPTER);
+    missionProgress = recordChapter(missionProgress, ch, selDifficulty, S.score, true);
+    saveMissionProgress();
+    store.setJSON(RESUME_KEY, { chapter: Math.min(CHAPTER_COUNT, ch + 1), difficulty: selDifficulty, at: Date.now() });
+    if (ch >= CHAPTER_COUNT) { finishChapter(); return; }
+    // Continuous campaign (Roy 2026-11-05): clearing a chapter heals and rolls straight
+    // into the next chapter instead of ending the run; only chapter 10 shows the result.
+    S.hp = PLAYER.maxHp; S.sinceHit = 99;
+    ui.toast(t('chapterClearToast', { chapter: ch }), 2200);
+    audio.ready(); Platform.haptic('success'); fx.kick({ aberr: .5 }); updateHUD();
+  }
   S.wave++; S.spec = waveSpec(S.wave); S.waveT = 0; S.nextEv = 0; S.betweenT = 0; S.levelStartScore = S.score;
   const m = campaignForWave(S.wave); S.mission = m;
   const changed = world.setMission(m);
@@ -431,8 +446,15 @@ function dropGems(e, boss = false) {
   for (let i = 0; i < count; i++) spawnGem(e.x, e.z, tier);
 }
 function dropPickup(x, z, kind, weaponKey) {
-  kind = kind || (S.power < 6 && Math.random() < 0.55 ? 'P' : Math.random() < 0.5 ? 'S' : 'E');
-  const g = makePickup(kind, weaponKey); g.scale.setScalar(1.4); g.position.set(x, 0, z); scene.add(g); S.pickups.push({ g, kind, weaponKey, x, z, t: 0 });
+  if (!kind) {
+    const r = Math.random();
+    // repair packs are rarer than power/shield, and only when the player is actually hurt
+    if (r < 0.40) kind = S.power < 6 ? 'P' : 'E';
+    else if (r < 0.66) kind = 'S';
+    else if (r < 0.86) kind = 'E';
+    else kind = S.hp < PLAYER.maxHp ? 'H' : 'S';
+  }
+  const g = makePickup(kind, weaponKey); g.scale.setScalar(1.55); g.position.set(x, 0, z); scene.add(g); S.pickups.push({ g, kind, weaponKey, x, z, t: 0 });
 }
 function spawnHazard() {
   let x = (Math.random() * 2 - 1) * (FIELD.halfW - 1);
@@ -614,21 +636,35 @@ const readLoadout = () => {
   return v;
 };
 const saveLoadout = () => store.setJSON(LOADOUT_KEY, { craft: S.craft, weapon: selWeapon, chapter: selChapter, difficulty: selDifficulty });
+// Save point (Roy 2026-11-05): abandoning mid-run stores the chapter being played, and the
+// next launch restarts that chapter from its first stage. `resume` wins over `lastLoadout`.
+const RESUME_KEY = 'resume';
+const readResume = () => {
+  const v = store.getJSON(RESUME_KEY, null);
+  return v && Number.isFinite(v.chapter) ? v : null;
+};
+function saveResume() {
+  if (S.demo || flags.autostart) return;
+  const ch = Math.max(1, Math.min(CHAPTER_COUNT, Math.ceil(Math.min(S.wave, CAMPAIGN_LEVELS) / LEVELS_PER_CHAPTER)));
+  store.setJSON(RESUME_KEY, { chapter: ch, difficulty: selDifficulty, at: Date.now() });
+}
 /** One-tap launch: reuse the saved airframe / weapon / chapter without the three pages.
  *  Returns false when nothing valid is stored yet, so the first run still shows the pages. */
 function quickStart() {
   const v = readLoadout();
-  if (!v) return false;
-  let ch = Math.max(1, Math.min(CHAPTER_COUNT, Math.round(v.chapter) || 1));
+  const r = readResume();
+  if (!v && !r) return false;
+  let ch = Math.max(1, Math.min(CHAPTER_COUNT, Math.round((r && r.chapter) || (v && v.chapter) || 1)));
+  if (!isChapterUnlocked(missionProgress, ch)) ch = Math.max(1, Math.min(CHAPTER_COUNT, Math.round((v && v.chapter) || 1)));
   if (!isChapterUnlocked(missionProgress, ch)) return false;
   // if that chapter is already cleared but progress has moved on, continue where the player is now
   const ahead = Math.max(1, Math.min(CHAPTER_COUNT, Math.ceil(missionProgress.unlocked / LEVELS_PER_CHAPTER)));
   if (ahead > ch && chapterClears(missionProgress, ch) > 0 && isChapterUnlocked(missionProgress, ahead)) ch = ahead;
-  let diff = DIFFICULTIES[v.difficulty] ? v.difficulty : 'story';
+  let diff = DIFFICULTIES[(r && r.difficulty) || (v && v.difficulty)] ? ((r && r.difficulty) || v.difficulty) : 'story';
   if (!isDifficultyUnlocked(missionProgress, ch, diff)) diff = 'story';
   if (!isDifficultyUnlocked(missionProgress, ch, diff)) return false;
-  setCraft(v.craft, true);
-  selWeapon = v.weapon; store.set('startWeapon', selWeapon);
+  setCraft((v && v.craft) || S.craft, true);
+  selWeapon = (v && v.weapon) || selWeapon; store.set('startWeapon', selWeapon);
   selDifficulty = diff; store.set('difficulty', diff); S.difficulty = diff;
   PLAYER.maxHp = C().hp + D().bonusHp;
   selChapter = ch; selWave = (ch - 1) * LEVELS_PER_CHAPTER + 1;
@@ -647,7 +683,7 @@ function confirmWeapon() { closeWeapon(); closeHangar(); openMission(); }
 function startSelectedMission() {
   if (!isChapterUnlocked(missionProgress, selChapter) || !isDifficultyUnlocked(missionProgress, selChapter, selDifficulty)) return;
   selWave = (selChapter - 1) * LEVELS_PER_CHAPTER + 1;
-  saveLoadout();
+  saveLoadout(); saveResume();
   closeMission(); closeWeapon(); closeHangar(); beginRun();
 }
 
@@ -677,7 +713,9 @@ const __hub = readHub();
 if (shouldShowArcadeMenu(__hub)) { const b = document.getElementById('btn-arcade-menu'); if (b) b.classList.remove('hidden'); }
 ui.on('btn-arcade-menu', () => { try { audio.back(); } catch {} returnToHub({ gameId: 'cyber-ninja', openStore: false }); });
 
-ui.on('btn-resume', resume); ui.on('btn-quit', () => { audio.back(); showAttract(); });
+ui.on('btn-resume', resume); ui.on('btn-quit', () => { if (S.state === 'playing' || S.state === 'paused') saveResume(); audio.back(); showAttract(); });
+addEventListener('pagehide', () => { if (S.state === 'playing' || S.state === 'paused') saveResume(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && (S.state === 'playing' || S.state === 'paused')) saveResume(); });
 
 // ---------------------------------------------------------------- start-screen: craft select + weapon tech tree
 const hex = (n) => '#' + n.toString(16).padStart(6, '0');
@@ -889,6 +927,11 @@ function renderMission() {
   $('mission-clear').textContent = clears ? t('clearedCount', { n: clears }) : t('notCleared');
   $('mission-clear').classList.toggle('done', clears > 0);
   $('chapter-entry-best').textContent = chapterBest(missionProgress, selChapter).toLocaleString('en-US');
+  const stageStrip = $('chapter-stages');
+  if (stageStrip) {
+    const done = clears > 0 ? 'done' : '';
+    stageStrip.innerHTML = Array.from({ length: LEVELS_PER_CHAPTER }, (_, i) => `<i class="${done}">${i + 1}</i>`).join('');
+  }
   $('chapter-entry-status').textContent = t('chapterFiveStages');
   $('chapter-entry-action').textContent = clears ? t('chapterReplay') : t('chapterDeploy');
   $('mission-loadout').innerHTML = `<span>${t('loadout')}</span><b>${craftName(S.craft, lang)} · ${WEAPONS[selWeapon].name[lang]}</b>`;
@@ -1334,12 +1377,27 @@ function sim(dt) {
       p.x += (S.x - p.x) * dt * 6; p.z += (S.z - p.z) * dt * 6;
       d = Math.hypot(p.x - S.x, p.z - S.z);
     } else p.z += 2.4 * dt;
+    // weapon canisters expire: 10 s lifetime, the last 2 s blink so the player knows it is going
+    if (p.kind === 'W') {
+      const W_LIFE = 10, W_BLINK = 2;
+      if (p.t >= W_LIFE) { scene.remove(p.g); S.pickups.splice(i, 1); continue; }
+      const left = W_LIFE - p.t;
+      if (left <= W_BLINK) {
+        const fast = left < 1 ? 18 : 10;
+        p.g.visible = Math.sin(p.t * fast) > -0.15;
+        p.g.scale.setScalar(1.55 * (0.86 + 0.14 * (left / W_BLINK)));
+      } else p.g.visible = true;
+    }
     p.g.position.set(p.x, 0.3 + Math.sin(p.t * 4) * 0.15, p.z); p.g.rotation.y = p.t * 2;
     if (d < (p.kind === 'W' ? 1.05 : 0.9)) {
       scene.remove(p.g); S.pickups.splice(i, 1);
       if (p.kind === 'P') {
         if (S.power < 6) { S.power++; S.weaponLevels[S.weapon] = S.power; } else { S.od = Math.min(100, S.od + 12); }
       } else if (p.kind === 'S') { S.hp = Math.min(PLAYER.maxHp, S.hp + 1); audio.shieldUp(); }
+      else if (p.kind === 'H') {
+        if (S.hp < PLAYER.maxHp) { S.hp = Math.min(PLAYER.maxHp, S.hp + 2); audio.shieldUp(); }
+        else { S.ult = Math.min(100, S.ult + chargeGain(18)); S.ults[S.weapon] = S.ult; }
+      }
       else if (p.kind === 'E') { S.ult = Math.min(100, S.ult + chargeGain(35)); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + chargeGain(10)); }
       else if (p.kind === 'W' && p.weaponKey) {
         S.ults[S.weapon] = S.ult;

@@ -73,6 +73,10 @@ i18n.add({
 "LAUNCH · ENTER",
 "ENTER"
 ],
+"chapterClearToast": [
+"第 {chapter} 章完成 · 繼續下一章",
+"CHAPTER {chapter} CLEAR · NEXT CHAPTER"
+],
 "loadoutBtn": [
 "配置",
 "LOADOUT"
@@ -248,6 +252,10 @@ i18n.add({
 "E": [
 "能量",
 "ENERGY"
+],
+"H": [
+"回血",
+"REPAIR"
 ],
 "W": [
 "武器",

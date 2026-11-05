@@ -15,11 +15,12 @@ def open_mission(pg):
     pg.wait_for_function("() => !document.querySelector('#screen-mission').classList.contains('hidden')")
 
 def clear_chapter(pg, score):
+    """Clear five stages. Since 2026-11-05 a chapter clear rolls into the next chapter,
+    so the run stays alive at wave 6 of chapter 2 unless this is chapter 10."""
     for stage in range(1, 6):
         pg.evaluate(f'() => {{ __ninja.score={score}; __ninja.api.clearStage(); }}')
-        if stage < 5:
-            pg.wait_for_function(f'() => __ninja.wave === {stage + 1}')
-    pg.wait_for_function("() => __ninja.state === 'over' && __ninja.chapterClear")
+        pg.wait_for_function(f'() => __ninja.wave === {stage + 1} || __ninja.state !== "playing"', timeout=20000)
+    pg.wait_for_function("() => __ninja.state === 'playing' || (__ninja.state === 'over' && __ninja.chapterClear)", timeout=20000)
 
 with sync_playwright() as p:
     browser = p.chromium.launch(args=ARGS)
@@ -44,10 +45,12 @@ with sync_playwright() as p:
 
     pg.click('#chapter-entry'); pg.wait_for_function("() => __ninja.state === 'playing'")
     clear_chapter(pg, 1500)
-    result = pg.evaluate("""() => ({title:document.querySelector('#over-title').textContent,p:__ninja.api.progress(),stored:JSON.parse(localStorage.getItem('cyber.cyber-ninja.missionProgress'))})""")
+    result = pg.evaluate("""() => ({state:__ninja.state,wave:__ninja.wave,chapter:__ninja.mission.chapter,p:__ninja.api.progress(),stored:JSON.parse(localStorage.getItem('cyber.cyber-ninja.missionProgress')),resume:JSON.parse(localStorage.getItem('cyber.cyber-ninja.resume')||'null')})""")
     story = result['p']['chapters']['1']['difficulties']['story']
-    check(result['title'] == '章節完成' and story == {'best':1500,'clears':1}, 'five stages end in chapter completion and save story score/clear')
-    check(not result['p']['chapters']['2'] or result['p']['unlocked'] == 6, 'chapter two unlocks only after stage five')
+    check(result['state'] == 'playing' and result['wave'] == 6 and result['chapter'] == 2, f'chapter clear rolls straight into chapter 2 ({result["state"]}, wave {result["wave"]})')
+    check(story == {'best':1500,'clears':1}, 'chapter completion saves the story score/clear')
+    check(result['p']['unlocked'] == 6, 'chapter two unlocks only after stage five')
+    check(result['resume'] and result['resume'].get('chapter') == 2, f'resume save point follows the live chapter ({result["resume"]})')
     check(result['stored']['chapters']['1']['difficulties']['story']['best'] == 1500, 'chapter record is written to current-browser storage')
 
     pg.goto(URL + '?lang=zh', wait_until='domcontentloaded'); pg.wait_for_function('() => window.__ninja'); open_mission(pg); pg.click('[data-chapter="1"]')
@@ -55,6 +58,7 @@ with sync_playwright() as p:
     check(unlocked == {'chapter2':True,'normal':True,'nightmare':False,'best':'1,500'}, f'reload restores chapter score and unlocks Normal only ({unlocked})')
     pg.click('[data-diff="normal"]'); pg.click('#btn-mission-go'); pg.wait_for_function("() => __ninja.state === 'playing'")
     clear_chapter(pg, 2500)
+    check(pg.evaluate("() => __ninja.state === 'playing'"), 'Normal clear also continues into the next chapter')
     pg.goto(URL + '?lang=zh', wait_until='domcontentloaded'); pg.wait_for_function('() => window.__ninja'); open_mission(pg); pg.click('[data-chapter="1"]')
     final = pg.evaluate("""() => ({normal:__ninja.api.progress().chapters[1].difficulties.normal,nightmare:!document.querySelector('[data-diff="nightmare"]').disabled})""")
     check(final['normal'] == {'best':2500,'clears':1} and final['nightmare'], f'Normal clear unlocks Nightmare and preserves its own record ({final})')

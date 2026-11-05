@@ -9,7 +9,7 @@
 <title data-i18n="doc.title">XENO NIGHTMARE</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%2305010f%22/%3E%3Cpath d=%22M16 4l4 9 9 3-9 3-4 9-4-9-9-3 9-3z%22 fill=%22none%22 stroke=%22%2300e5ff%22 stroke-width=%222%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222.5%22 fill=%22%23ff2bd6%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="./vendor/cyber-kit/ui/hud.css?v=0.3.17">
-<link rel="stylesheet" href="./css/game.css?v=1.5a">
+<link rel="stylesheet" href="./css/game.css?v=1.5f">
 <script type="importmap">
 {
   "imports": {
@@ -62,9 +62,11 @@
   </div>
   <div class="action-dock">
     <button id="btn-od" class="od-btn" data-i18n-attr="aria-label:od" data-no-input>
+      <i class="cd-fill" aria-hidden="true"></i>
       <span class="od-txt"><b id="od-label" data-i18n="od">最大火力</b><small id="od-sub" data-i18n="odS">昇華</small></span>
     </button>
     <button id="btn-ult" class="ult-btn" data-i18n-attr="aria-label:ultName" data-no-input>
+      <i class="cd-fill" aria-hidden="true"></i>
       <span class="ult-txt"><b id="ult-label" data-i18n="ult"></b><small id="ult-sub" data-i18n="ultS"></small></span>
     </button>
   </div>
@@ -162,6 +164,7 @@
         <div class="mission-brief-top"><span class="info-kicker" id="mission-code">CH.01</span><span class="mission-clear" id="mission-clear"></span></div>
         <h2 id="mission-name"></h2>
         <p id="mission-story"></p>
+        <div class="chapter-stages" id="chapter-stages" aria-hidden="true"></div>
         <button type="button" class="chapter-entry" id="chapter-entry">
           <span class="chapter-entry-status" id="chapter-entry-status"></span>
           <strong id="chapter-entry-action"></strong>
@@ -213,6 +216,6 @@
   </div>
 </div>
 
-<script type="module" src="./js/main.js?v=1.5a"></script>
+<script type="module" src="./js/main.js?v=1.5g"></script>
 </body>
 </html>

@@ -98,7 +98,8 @@ export function waveSpec(n, rng = Math.random) {
   return { boss: false, events, recipe };
 }
 export const speedScale = (n) => 1 + Math.min(0.85, (n - 1) * 0.05);
-export const hpScale = (n) => 1 + Math.min(2.2, Math.floor((n - 1) / 5) * 0.4);   // capped at ×3.2 (endless stays playable)
+// Smooth per-wave curve (no +40% cliff at every chapter start). Chapter 10 still lands at ×3.2.
+export const hpScale = (n) => 1 + Math.min(2.2, Math.max(0, n - 1) * 0.045);   // capped at ×3.2 (endless stays playable)
 
 export const ADS = { interstitialCooldownSec: 200, breaksBetweenInterstitials: 3, graceSec: 150, units: { android: {} } };
 

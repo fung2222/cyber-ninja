@@ -89,6 +89,17 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .od-txt { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1.1; }
 .od-txt b { font-family: var(--font-zh); font-size: 10px; letter-spacing: 1px; text-shadow: 0 0 8px #ff7a3b; }
 .od-txt small { font-family: 'Orbitron', sans-serif; font-size: 7px; letter-spacing: 1px; color: #ffb38a; }
+/* Cooldown readout (2026-11-05): a water-level drain inside the button plus a large
+   numeric countdown, so "recharging" never reads as "covered / not tappable".
+   The fill only shrinks during a cooldown/active window; charging still uses the ring. */
+.action-dock .ult-btn, .action-dock .od-btn { --cool: 0; }
+.action-dock .cd-fill { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--cool) * 1%); pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c1) 55%, transparent), color-mix(in srgb, var(--c1) 18%, transparent)); opacity: .62; transition: height .12s linear; }
+.action-dock .od-btn .cd-fill { background: linear-gradient(180deg, rgba(255,122,59,.55), rgba(255,122,59,.16)); }
+.action-dock .ult-btn.cooling { border-color: color-mix(in srgb, var(--c1) 70%, #fff); }
+.action-dock .ult-btn.cooling .ult-txt b { font-size: 9px; letter-spacing: 1px; opacity: .8; }
+.action-dock .ult-btn.cooling #ult-sub { font-size: 22px; letter-spacing: 0; color: #fff; font-weight: 700; }
+.action-dock .od-btn.active .od-txt b, .action-dock .od-btn.venting .od-txt b { font-size: 9px; opacity: .8; }
 .od-btn.ready { border-color: #fff; animation: odPulse .9s ease-in-out infinite; box-shadow: 0 0 18px #ff7a3b, 0 0 34px rgba(255,43,214,.6); }
 .od-btn.active { border-color: #fff; box-shadow: 0 0 22px #ff7a3b, inset 0 0 18px rgba(255,122,59,.5); }
 .od-btn.venting { border-color: rgba(255,255,255,.35); opacity: .72; }
@@ -192,6 +203,12 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .hi-line .hi { white-space: nowrap; }
 
 /* ---------------- full-width loadout: real craft / real combat footage ---------------- */
+
+/* Weapon page (2026-11-05): the tech tree sits low in the info column so the six
+   diamonds no longer leave a dead band under them. */
+.weapon-main { flex: 1 1 auto; min-height: 0; }
+.weapon-info { display: flex; flex-direction: column; min-height: 0; }
+.weapon-info .tech-tree { margin-top: auto; margin-bottom: auto; }
 #screen-hangar, #screen-weapon { z-index: 40; padding: 0; background: radial-gradient(110% 90% at 50% 12%, #1b1040 0%, #09051a 52%, #03010c 100%); }
 #screen-hangar::before, #screen-weapon::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .18; background-image: linear-gradient(rgba(0,229,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,.09) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(to bottom, black, transparent 72%); }
 .hangar { position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; max-width: 1180px; margin: 0 auto; padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
@@ -301,8 +318,9 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   .ci-blurb { font-size: 11px; margin-top: 6px; }
   .ci-stats { padding: 7px 0; }
   .td-desc { font-size: 11px; margin-bottom: 6px; }
-  .td-node .nd { width: 26px; height: 26px; font-size: 9px; }
-  .td-node small { margin-top: 5px; font-size: 8px; }
+  .td-node .nd { width: 34px; height: 34px; font-size: 10px; }
+  .td-node small { margin-top: 10px; font-size: 9px; line-height: 1.5; }
+  .td-nodes { gap: 8px; margin-bottom: 14px; }
   .td-ult { padding-top: 5px; padding-bottom: 5px; }
   .td-ult small { font-size: 10px; }
   .td-foot { font-size: 9px; }
@@ -339,7 +357,13 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .chapter-entry-score b { font: 18px/1 'Orbitron', sans-serif; color: var(--c3); }
 .chapter-btn.done b::after { content: ' ✓'; color: var(--c3); font-size: 10px; }
 .diff-btn:disabled { opacity: .3; cursor: not-allowed; filter: saturate(.2); }
-.mission-tuning { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(180px, .7fr); gap: 18px; align-items: end; padding: 8px 0 4px; margin-top: auto; margin-bottom: auto; }
+.mission-main > .mission-brief { flex: 0 0 auto; }
+.mission-brief .chapter-entry { min-height: 150px; }
+/* Five-stage strip: gives the middle band real information instead of dead space. */
+.chapter-stages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 10px; }
+.chapter-stages i { display: flex; align-items: center; justify-content: center; height: 34px; font: 11px/1 'Orbitron', sans-serif; letter-spacing: 1px; color: #8d9ec4; border: 1px solid rgba(0,229,255,.22); background: rgba(10,6,28,.6); font-style: normal; }
+.chapter-stages i.done { color: #06131a; background: linear-gradient(180deg, #6ff2ff, #14b7d6); border-color: #bff9ff; box-shadow: 0 0 12px rgba(0,229,255,.35); }
+.mission-tuning { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(180px, .7fr); gap: 18px; align-items: end; padding: 8px 0 4px; margin-top: auto; margin-bottom: 10px; }
 .difficulty-block { padding: 4px 0; }
 .difficulty-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 7px; }
 .difficulty-head > span { font-size: 14px; letter-spacing: 2px; color: #fff; }
@@ -367,8 +391,8 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .action-dock .ult-btn::before, .action-dock .od-btn::before,
 .action-dock .ult-btn::after, .action-dock .od-btn::after { pointer-events: none; }
 .action-dock .ult-txt, .action-dock .od-txt { pointer-events: none; }
-.action-dock .cooling .ult-sub, .action-dock .ult-btn.cooling #ult-sub,
-.action-dock .od-btn.active #od-sub, .action-dock .od-btn.venting #od-sub { font-size: 16px; letter-spacing: 0; color: #fff; text-shadow: 0 0 9px currentColor; }
+.action-dock .cooling .ult-sub, .action-dock .ult-btn.cooling #ult-sub { font-size: 22px; letter-spacing: 0; color: #fff; font-weight: 700; text-shadow: 0 0 10px currentColor; }
+.action-dock .od-btn.active #od-sub, .action-dock .od-btn.venting #od-sub { font-size: 17px; letter-spacing: 0; color: #fff; text-shadow: 0 0 9px currentColor; }
 .action-dock .od-btn.venting { opacity: .88; pointer-events: auto; }
 .action-dock .od-btn.venting::after { content: ''; position: absolute; inset: 6px; border: 1px dashed rgba(255,180,130,.38); border-radius: 50%; animation: ventSpin 3s linear infinite; }
 @keyframes ventSpin { to { transform: rotate(360deg); } }
