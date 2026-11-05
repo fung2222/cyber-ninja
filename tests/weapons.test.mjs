@@ -27,6 +27,21 @@ test('weapon levels scale damage and never lose fire rate', () => {
   }
 });
 
+test('LV.3 special mechanics and the new balance contract are explicit', () => {
+  for (let lv = 1; lv <= 6; lv++) {
+    const pulse = levelOf('pulse', lv), lance = levelOf('lance', lv), nova = levelOf('nova', lv);
+    assert.ok(pulse.shots.every(([, angle]) => angle === 0), `pulse L${lv} main bolts are straight`);
+    assert.equal(pulse.homing || 0, lv >= 3 ? 2 : 0);
+    assert.equal(lance.drones || 0, lv >= 3 ? 2 : 0);
+    assert.ok(lance.pierce >= 2, 'main lance keeps piercing');
+    assert.equal(nova.pierce, 0, 'nova never pierces');
+    assert.ok(nova.aoe <= 2.4, 'ordinary nova blast stays local');
+    assert.equal(nova.bigEvery || 0, lv >= 3 ? 10 : 0);
+  }
+  assert.ok(levelOf('lance', 6).dmg < 3, 'lance damage is reduced from the old 3.0–5.2 table');
+  assert.ok(levelOf('pulse', 1).dmg > 1, 'pulse base damage is improved');
+});
+
 test('overdrive raises the effective level and keeps the 4s/3s contract', () => {
   assert.equal(OD.duration, 4);
   assert.equal(OD.noFire, 3);

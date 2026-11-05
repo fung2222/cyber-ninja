@@ -15,8 +15,8 @@ Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城�
 主頁保持品牌＋出擊＋紀錄。按 **出擊 LAUNCH** 後：
 
 1. **選擇機體**：全闊 3D 旋轉展示完整機體，配上被動技能、四項屬性、機體介紹同故事簡報。三部程式生成 cyberpunk 戰機各有獨立結構：**蒼隼**採用後掠主翼、雙引擎及雙垂直尾翼；**壁壘**採用寬體多層裝甲、側掛炮管及四組推進器；**幽影**採用扁平隱形飛翼。金屬分區、座艙、進氣口、霓虹電路、全息環及漸隐能量尾焰會跟隨所選機體，底部水平三掣亦有各自的新縮圖。
-2. **選擇武器**：頂部播放由正式遊戲渲染器錄製嘅**實機滿級戰鬥影片**，每段包括 LV.6、OVERDRIVE 同專屬大招。下方保留性能表、完整六級技能樹、逐級外觀變化、大招說明及操作提示；難度不再佔用此頁。
-3. **章節關卡／難度**：上方切換 10 章及每章 5 關，已完成關卡顯示剔號、完成次數及該關最高分；下一關可挑戰，其後未解鎖關卡變暗且不可進入。中間選故事／標準／凶間，底部 **正式開始突入** 才由所選關卡開始。機體、武器、關卡進度、逐關最高分及難度均保存在目前瀏覽器。
+2. **選擇武器**：頂部播放由正式遊戲渲染器錄製嘅**實機滿級戰鬥影片**。下方依序顯示性能、三級附加能力、大招及六級技能樹；已刪除長篇介紹與重複操作提示，手機一頁可睇晒，毋須滾動。
+3. **章節／難度**：上方 1–10 章支援真正橫向觸控滑動。每章只有一個大型統一入口，顯示劇情、章節最高分及完成次數；進入後連續突破五關。完成整章才開下一章；每章依次完成故事 → 標準 → 凶間來解鎖更高難度。機體、武器、章節、各難度最高分與完成紀錄均以 JSON 保存在目前瀏覽器。
 
 ### 難度 Difficulty
 - **故事 STORY**：額外 2 格護盾、敵彈速度 ×0.72、敵人射速 ×0.62、較多道具、受擊無敵 2.2 秒；適合新手同欣賞劇情。
@@ -26,16 +26,16 @@ Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城�
 ## 玩法 How to play
 - 喺畫面**任何位置拖動**移動戰機（相對拖動，手指唔會遮住角色）；戰機會**自動開火**，亦可飛到全版圖上方。
 - **三種機體**：蒼隼速度 +14%；壁壘 4 格護盾兼 8 秒無傷回復 1 格；幽影傷害 +28%、充能 +40%、OVERDRIVE +1 秒，但只有 2 格基礎護盾。
-- **三種武器、每種 6 級**：脈衝連發（散射）、相位長槍（貫穿）、星爆震波（範圍爆炸）。**W** 即時換槍並升該武器 1 級；**P** 提升目前武器一級。各武器保留獨立等級及儲能。鐳射逐級增加束寬、雙軌、電弧、分裂閃電；光圈逐級增加環層、脈衝、旋渦粒子與星冕。
+- **三種武器、每種 6 級**：**脈衝**改為筆直彈道並提高傷害，LV.3 起每輪附加兩粒有真實爆炸傷害的追蹤爆彈；**鐳射**保留貫穿但降低單發傷害，LV.3 起有兩座浮遊炮陪伴機身，發射無貫穿鐳射；**震波**不再貫穿，命中後造成小範圍爆炸，LV.3 起每第 10 發變成大範圍震波。**W** 即時換槍並升該武器 1 級；**P** 提升目前武器一級。各武器保留獨立等級及儲能。
 - **專屬大招**：彈幕洪流（180° 向前掃射）、稜鏡貫穿（多束直線光束＋連鎖雷擊）、奇點爆發（擴散衝擊波＋五重旋轉星環＋隕星粒子兼消彈）。大招期間無敵。
-- **OVERDRIVE**：武器昇華 4 秒；**超載生效及完結散熱期間，只要能量已滿都可插入武器大招**。超載完結後強制普通開火停火散熱 3 秒；散熱圖只留在橙色掣內，不會遮擋藍色大招觸控。
+- **OVERDRIVE**：武器昇華 4 秒；**超載生效及完結散熱期間，只要能量已滿都可插入武器大招**。超載完結後強制普通開火停火散熱 3 秒。武器大招與 OVERDRIVE 的冷卻秒數都直接顯示在各自圓形技能球內，沒有外部冷卻條，裝飾層亦不會攔截觸控。
 - 敵人使用編排隊形、瞄準彈及衝鋒；地圖有預警激光欄同漂移隕石。全黑敵機只加強發光輪廓線，唔會高亮整個機身；彩色敵人維持原設計。
 - 每 5 關迎戰三階段星海魔獸。十章分別使用追蹤扇射、雙螺旋、交叉火網、鏡像夾擊、收縮圓環、預警雷射、花瓣綻放、反向彈輪、追蹤齊射及最終混合模式。粉紅彈殼配白色彈心，並控制高畫質光暈融合，保持彈道可讀。
 - 擊破敵人跌出金色／白色晶石，自動飛向戰機，提供分數及充能。被擊中會失去 1 格護盾及 1 級目前武器；護盾歸零可復活一次。
 - 無盡模式沿用五十種地圖指紋循環變化，敵人 HP、Boss HP 同射速設有上限；每 10 關有里程碑獎勵及護盾補滿。
 
 ## English
-**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Ouroboros, a digital virus, is devouring the cyber world; three pilots fight through **10 chapters × 5 levels and 50 map variations** before endless mode unlocks. The three-page flow is craft → weapon → mission/difficulty. FALCON, BASTION and WRAITH now use separate procedural cyberpunk airframes: a swept-wing twin-engine fighter, a four-engine armored gunship and a stealth flying wing, with metallic panels, neon circuitry, holographic arcs and fading engine flames. Their combat stats and passives are unchanged. The mission page locks future levels, shows per-level clears and best scores, and starts directly at the selected sortie. Weapon previews are real recorded LV.6/OVERDRIVE/ultimate gameplay; lance and nova now have six distinct visual levels plus lightning and multi-ring ultimate effects. Each chapter boss uses a different attack family. A charged ultimate works during active OVERDRIVE and its venting cooldown, whose graphics never cover the ultimate touch target. Choices and records persist locally in the current browser.
+**XENO NIGHTMARE** is a one-thumb 3D cyberpunk vertical shooter. Ouroboros, a digital virus, is devouring the cyber world; three pilots fight through **10 chapters × 5 levels and 50 map variations**. The three-page flow is craft → weapon → chapter/difficulty. FALCON, BASTION and WRAITH use separate procedural cyberpunk airframes. The mission page now has a touch-scrollable chapter rail and one large entry per chapter, launching all five stages consecutively. Clearing a chapter opens the next; Story → Normal → Nightmare unlock in sequence, with separate best scores and clears saved as JSON in the current browser. The weapon page fits its key stats, LV.3 special, ultimate and six-level tree on one phone screen. Pulse gains two damaging homing missiles at LV.3; lance keeps pierce at lower damage and gains two non-piercing support drones; nova detonates on impact without pierce and every tenth LV.3+ shot has a larger blast. Both skill cooldowns are numeric countdowns inside their circular buttons, with no external bars blocking touch.
 
 ## 操作 Controls
 | 動作 | 手機 | 鍵盤 |
@@ -58,6 +58,7 @@ python3 -m http.server 18940     # http://127.0.0.1:18940/index.html
 node --test tests/
 python3 tests/aircraft.py http://127.0.0.1:18940/index.html docs/shots
 python3 tests/weapons.py http://127.0.0.1:18940/index.html
+python3 tests/campaign.py http://127.0.0.1:18940/index.html
 python3 tests/core.py http://127.0.0.1:18940/index.html
 python3 tests/ult-reset.py http://127.0.0.1:18940/index.html
 python3 tests/brand.py http://127.0.0.1:18940/index.html

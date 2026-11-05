@@ -62,20 +62,73 @@ export function campaignLabel(m, lang = 'zh') {
   return `CH.${String(m.chapter).padStart(2, '0')}-${m.stage} · ${m.place[lang] || m.place.zh}`;
 }
 
-// Defensive local progression. Records are per sortie; a clear unlocks only the
-// next sortie, so chapter buttons can never bypass the campaign sequence.
+// Defensive local progression. Sortie records are retained for migration and
+// detailed statistics, but sorties are no longer separate menu destinations.
+// A chapter is one five-stage run; each chapter and threat level has its own
+// best score and clear count. All of this lives in the current browser only.
+export const DIFFICULTY_ORDER = ['story', 'normal', 'nightmare'];
+const cleanScore = (v) => Math.max(0, Math.floor(Number(v) || 0));
+const cleanRecord = (r) => ({
+  best: cleanScore(r && typeof r === 'object' ? r.best : 0),
+  clears: cleanScore(r && typeof r === 'object' ? r.clears : 0),
+});
+
 export function normalizeProgress(raw) {
   const records = {};
   const source = raw && typeof raw === 'object' && raw.records && typeof raw.records === 'object' ? raw.records : {};
   for (let wave = 1; wave <= CAMPAIGN_LEVELS; wave++) {
     const key = campaignForWave(wave).key;
-    const r = source[key];
-    if (!r || typeof r !== 'object') continue;
-    const best = Math.max(0, Math.floor(Number(r.best) || 0));
-    const clears = Math.max(0, Math.floor(Number(r.clears) || 0));
-    if (best || clears) records[key] = { best, clears };
+    const r = cleanRecord(source[key]);
+    if (r.best || r.clears) records[key] = r;
   }
-  return { unlocked: Math.max(1, Math.min(CAMPAIGN_LEVELS, Math.floor(Number(raw?.unlocked) || 1))), records };
+  const chapters = {};
+  const hasChapterData = !!(raw && typeof raw === 'object' && raw.chapters && typeof raw.chapters === 'object');
+  const oldChapters = hasChapterData ? raw.chapters : {};
+  for (let chapter = 1; chapter <= CHAPTER_COUNT; chapter++) {
+    const old = oldChapters[chapter] && typeof oldChapters[chapter] === 'object' ? oldChapters[chapter] : {};
+    const difficulties = {};
+    for (const difficulty of DIFFICULTY_ORDER) difficulties[difficulty] = cleanRecord(old.difficulties?.[difficulty]);
+    // Migrate a completed old-style chapter without inventing higher-difficulty
+    // clears. Its story best is the sum of the five retained sortie records.
+    const first = (chapter - 1) * LEVELS_PER_CHAPTER + 1;
+    const oldClear = Array.from({ length: LEVELS_PER_CHAPTER }, (_, i) => records[campaignForWave(first + i).key]?.clears > 0).every(Boolean);
+    if (!hasChapterData && oldClear && difficulties.story.clears === 0) {
+      difficulties.story.clears = 1;
+      difficulties.story.best = Math.max(difficulties.story.best, Array.from({ length: LEVELS_PER_CHAPTER }, (_, i) => records[campaignForWave(first + i).key]?.best || 0).reduce((a, b) => a + b, 0));
+    }
+    chapters[chapter] = { difficulties };
+  }
+  return {
+    unlocked: Math.max(1, Math.min(CAMPAIGN_LEVELS, Math.floor(Number(raw?.unlocked) || 1))),
+    records, chapters,
+  };
+}
+
+export function chapterRecord(progress, chapter, difficulty = 'story') {
+  const p = normalizeProgress(progress);
+  return p.chapters[chapter]?.difficulties[difficulty] || { best: 0, clears: 0 };
+}
+
+export function chapterBest(progress, chapter) {
+  const p = normalizeProgress(progress);
+  return Math.max(0, ...DIFFICULTY_ORDER.map(d => p.chapters[chapter]?.difficulties[d]?.best || 0));
+}
+
+export function chapterClears(progress, chapter) {
+  const p = normalizeProgress(progress);
+  return DIFFICULTY_ORDER.reduce((n, d) => n + (p.chapters[chapter]?.difficulties[d]?.clears || 0), 0);
+}
+
+export function isChapterUnlocked(progress, chapter) {
+  const p = normalizeProgress(progress);
+  if (!Number.isInteger(chapter) || chapter < 1 || chapter > CHAPTER_COUNT) return false;
+  return chapter === 1 || p.unlocked >= (chapter - 1) * LEVELS_PER_CHAPTER + 1 || chapterClears(p, chapter - 1) > 0;
+}
+
+export function isDifficultyUnlocked(progress, chapter, difficulty) {
+  if (!isChapterUnlocked(progress, chapter) || !DIFFICULTY_ORDER.includes(difficulty)) return false;
+  const index = DIFFICULTY_ORDER.indexOf(difficulty);
+  return index === 0 || chapterRecord(progress, chapter, DIFFICULTY_ORDER[index - 1]).clears > 0;
 }
 
 export function isLevelUnlocked(progress, wave) {
@@ -88,7 +141,19 @@ export function recordLevel(progress, wave, score, cleared) {
   if (!Number.isInteger(wave) || wave < 1 || wave > CAMPAIGN_LEVELS) return p;
   const key = campaignForWave(wave).key;
   const old = p.records[key] || { best: 0, clears: 0 };
-  p.records[key] = { best: Math.max(old.best, Math.max(0, Math.floor(Number(score) || 0))), clears: old.clears + (cleared ? 1 : 0) };
+  p.records[key] = { best: Math.max(old.best, cleanScore(score)), clears: old.clears + (cleared ? 1 : 0) };
   if (cleared) p.unlocked = Math.max(p.unlocked, Math.min(CAMPAIGN_LEVELS, wave + 1));
+  return p;
+}
+
+export function recordChapter(progress, chapter, difficulty, score, cleared = true) {
+  const p = normalizeProgress(progress);
+  if (!Number.isInteger(chapter) || chapter < 1 || chapter > CHAPTER_COUNT || !DIFFICULTY_ORDER.includes(difficulty)) return p;
+  const old = p.chapters[chapter].difficulties[difficulty];
+  p.chapters[chapter].difficulties[difficulty] = {
+    best: Math.max(old.best, cleanScore(score)),
+    clears: old.clears + (cleared ? 1 : 0),
+  };
+  if (cleared && chapter < CHAPTER_COUNT) p.unlocked = Math.max(p.unlocked, chapter * LEVELS_PER_CHAPTER + 1);
   return p;
 }

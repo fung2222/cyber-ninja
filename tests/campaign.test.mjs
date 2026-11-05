@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CHAPTER_COUNT, LEVELS_PER_CHAPTER, CAMPAIGN_LEVELS, campaignForWave, campaignLabel, normalizeProgress, isLevelUnlocked, recordLevel } from '../js/campaign.js';
+import { CHAPTER_COUNT, LEVELS_PER_CHAPTER, CAMPAIGN_LEVELS, campaignForWave, campaignLabel, normalizeProgress, isLevelUnlocked, recordLevel, recordChapter, chapterRecord, chapterBest, chapterClears, isChapterUnlocked, isDifficultyUnlocked } from '../js/campaign.js';
 import { DIFFICULTIES, difficultyOf } from '../js/config.js';
 
 test('campaign has ten chapters, five sorties each and fifty distinct maps', () => {
@@ -45,6 +45,45 @@ test('level records retain best scores and clears unlock only the next sortie', 
   assert.equal(safe.unlocked, 50);
   assert.deepEqual(safe.records['1-1'], { best: 0, clears: 2 });
   assert.equal(safe.records.bad, undefined);
+});
+
+test('chapter entry unlocks only after all five stages, with per-difficulty records', () => {
+  let p = normalizeProgress(null);
+  assert.equal(isChapterUnlocked(p, 1), true);
+  assert.equal(isChapterUnlocked(p, 2), false);
+  assert.equal(isDifficultyUnlocked(p, 1, 'story'), true);
+  assert.equal(isDifficultyUnlocked(p, 1, 'normal'), false);
+  assert.equal(isDifficultyUnlocked(p, 1, 'nightmare'), false);
+  for (let wave = 1; wave <= 4; wave++) p = recordLevel(p, wave, 100 * wave, true);
+  assert.equal(isChapterUnlocked(p, 2), false, 'four stages do not open chapter two');
+  p = recordLevel(p, 5, 500, true);
+  p = recordChapter(p, 1, 'story', 1500, true);
+  assert.equal(isChapterUnlocked(p, 2), true);
+  assert.equal(chapterRecord(p, 1, 'story').best, 1500);
+  assert.equal(chapterRecord(p, 1, 'story').clears, 1);
+  assert.equal(isDifficultyUnlocked(p, 1, 'normal'), true);
+  assert.equal(isDifficultyUnlocked(p, 1, 'nightmare'), false);
+  p = recordChapter(p, 1, 'normal', 1300, true);
+  assert.equal(isDifficultyUnlocked(p, 1, 'nightmare'), true);
+  assert.equal(chapterBest(p, 1), 1500);
+  assert.equal(chapterClears(p, 1), 2);
+  p = recordChapter(p, 1, 'nightmare', 2400, false);
+  assert.equal(chapterRecord(p, 1, 'nightmare').best, 2400, 'failed attempts still retain a best score');
+  assert.equal(chapterRecord(p, 1, 'nightmare').clears, 0);
+});
+
+test('legacy completed chapters migrate without granting higher-difficulty clears', () => {
+  const records = {};
+  for (let wave = 1; wave <= 5; wave++) records[`1-${wave}`] = { best: wave * 100, clears: 1 };
+  const p = normalizeProgress({ unlocked: 6, records });
+  assert.equal(isChapterUnlocked(p, 2), true);
+  assert.equal(chapterRecord(p, 1, 'story').best, 1500);
+  assert.equal(chapterRecord(p, 1, 'story').clears, 1);
+  assert.equal(isDifficultyUnlocked(p, 1, 'normal'), true);
+  assert.equal(isDifficultyUnlocked(p, 1, 'nightmare'), false);
+  const safe = normalizeProgress({ chapters: { 1: { difficulties: { story: { best: -50, clears: '2' }, bad: { best: 99 } } } } });
+  assert.deepEqual(chapterRecord(safe, 1, 'story'), { best: 0, clears: 2 });
+  assert.equal(chapterRecord(safe, 1, 'bad').best, 0);
 });
 
 test('three difficulty contracts are ordered and fall back safely', () => {
