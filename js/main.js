@@ -6,7 +6,7 @@ import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, DIFFICULTY_ORDER, c
 import './strings.js?v=1.5a';
 import { World } from './world.js';
 import { makeNinja, updateNinja, disposeNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.6';
-import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=1.5';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=1.5a';
 import { CRAFTS, CRAFT_KEYS, craftOf, craftName, COMBO, comboMult } from './crafts.js?v=1.0';
 import { NinjaAudio } from './audio.js?v=0.3.25';
 
