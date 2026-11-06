@@ -16,6 +16,8 @@ test('ability buttons show only a static ring plus the numeric readout', () => {
   assert.match(css, /\.ult-btn\.cooling::after,\s*\n\.action-dock \.od-btn\.active::after,\s*\n\.action-dock \.od-btn\.venting::after \{ content: none; \}/);
   assert.match(css, /\.ult-btn\.cooling #ult-sub \{ font-size: 22px/);
   assert.ok(!main.includes("setProperty('--cool'"), 'no cooldown fill value should be written');
+  assert.match(css, /\.ult-btn::after \{ content: none; \}/);
+  assert.match(css, /\.od-btn::after \{ content: none; \}/);
 });
 
 test('pickups are distinct 3D silhouettes, including the repair medkit', () => {

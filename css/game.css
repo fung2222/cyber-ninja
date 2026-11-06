@@ -76,10 +76,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   border: 2px solid color-mix(in srgb, var(--c1) 55%, transparent);
   background: none;
   box-shadow: 0 0 12px color-mix(in srgb, var(--c1) 35%, transparent); }
-.ult-btn::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; pointer-events: none;
-  background: conic-gradient(color-mix(in srgb, var(--c1) 80%, transparent) calc(var(--p) * 1%), transparent 0);
-  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 60%, #000 62%);
-  mask: radial-gradient(circle at 50% 50%, transparent 60%, #000 62%); }
+.ult-btn::after { content: none; }
 /* Button interiors keep a faint skill tint instead of near-black, so an uncharged
    ability never reads as a black blob against the dark floor. */
 .ult-btn::before { content: none; }
@@ -93,10 +90,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   border: 2px solid color-mix(in srgb, #ff7a3b 55%, transparent);
   background: none;
   box-shadow: 0 0 10px rgba(255,122,59,.3); }
-.od-btn::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; pointer-events: none;
-  background: conic-gradient(rgba(255,122,59,.85) calc(var(--p) * 1%), transparent 0);
-  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 60%, #000 62%);
-  mask: radial-gradient(circle at 50% 50%, transparent 60%, #000 62%); }
+.od-btn::after { content: none; }
 .od-btn::before { content: none; }
 .od-txt { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1.1; }
 .od-txt b { font-family: var(--font-zh); font-size: 10px; letter-spacing: 1px; text-shadow: 0 1px 3px #000, 0 0 8px #ff7a3b; }
