@@ -166,6 +166,26 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .chapter-record b { font-family: 'Orbitron', sans-serif; font-size: 20px; color: var(--c3); }
 @media (min-width: 761px) { #difficulty-row2.diff-cards { grid-template-columns: repeat(3, 1fr); } }
 
+/* Bottom-left combat readout (2026-11-05): weapon, level pips, shield pips/value
+   sit with the two ability buttons so everything is on one glance. */
+.combat-readout { width: 152px; padding: 7px 10px 8px; margin-bottom: 2px; pointer-events: none;
+  background: linear-gradient(160deg, rgba(10,5,28,.62), rgba(5,1,15,.5)); border-left: 2px solid var(--c1);
+  box-shadow: 0 0 12px rgba(0,229,255,.12); }
+.combat-readout .cr-row { display: flex; align-items: center; gap: 6px; min-height: 16px; }
+.combat-readout .cr-weapon b { font-family: var(--font-zh); font-size: 14px; letter-spacing: 1px; color: #fff; text-shadow: 0 0 8px var(--c1); }
+.combat-readout .cr-weapon span { font: 8px/1 'Orbitron', sans-serif; color: var(--c3); }
+.combat-readout .lv-pips { margin-left: auto; display: flex; gap: 2px; }
+.combat-readout .lv-pips i { width: 7px; height: 7px; transform: rotate(45deg); border: 1px solid color-mix(in srgb, var(--c3) 55%, transparent); }
+.combat-readout .lv-pips i.on { background: var(--c3); box-shadow: 0 0 6px var(--c3); }
+.combat-readout .hp-label { font-family: var(--font-zh); font-size: 8px; letter-spacing: 1px; color: #9fe8c0; opacity: .85; }
+.combat-readout .hp-pips { display: flex; gap: 3px; }
+.combat-readout .hp-pips i { width: 11px; height: 7px; border: 1px solid rgba(59,255,138,.5); transform: skewX(-20deg); }
+.combat-readout .hp-pips i.on { background: #3bff8a; box-shadow: 0 0 7px #3bff8a; }
+.combat-readout .cr-shield em { margin-left: auto; font: 9px/1 'Orbitron', sans-serif; color: #baf5d2; font-style: normal; }
+.difficulty-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 200px; }
+.difficulty-glyph { font-family: 'Orbitron', sans-serif; font-size: 92px; line-height: 1; color: var(--c1); text-shadow: 0 0 26px var(--c1); }
+.difficulty-info { justify-content: center; gap: 10px; }
+
 /* menu meta */
 .menu-meta { margin-top: 18px; }
 
@@ -363,7 +383,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .mission-brief { padding: 9px 0 12px; border-bottom: 1px solid rgba(166,107,255,.25); }
 .mission-brief-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .mission-brief h2 { margin: 2px 0 5px; font-size: clamp(20px, 4vw, 30px); letter-spacing: 2px; color: #fff; text-shadow: 0 0 14px rgba(0,229,255,.35); }
-.mission-brief p { margin: 0 0 10px; max-width: 920px; color: #acbbe1; font-size: 11px; line-height: 1.55; }
+.mission-brief p { margin: 0 0 12px; max-width: none; color: #c3cfe8; font-size: 13px; line-height: 1.75; white-space: normal; }
 .mission-clear { flex: 0 0 auto; font-size: 10px; letter-spacing: 1px; color: #9aa8c7; }
 .mission-clear.done { color: var(--c3); }
 .chapter-entry { position: relative; width: 100%; min-height: 132px; padding: 18px 22px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 16px; text-align: left; color: #fff; cursor: pointer; overflow: hidden; border: 1px solid rgba(0,229,255,.55); background: radial-gradient(circle at 85% 50%, rgba(166,107,255,.22), transparent 42%), linear-gradient(120deg, rgba(0,229,255,.13), rgba(10,5,30,.88) 55%); box-shadow: inset 0 0 32px rgba(0,229,255,.07), 0 0 24px rgba(0,229,255,.06); }
@@ -375,7 +395,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .chapter-entry-score b { font: 18px/1 'Orbitron', sans-serif; color: var(--c3); }
 .chapter-btn.done b::after { content: ' ✓'; color: var(--c3); font-size: 10px; }
 .diff-btn:disabled { opacity: .3; cursor: not-allowed; filter: saturate(.2); }
-.mission-main > .mission-brief { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+.mission-main > .mission-brief { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 16px; }
 .mission-brief .chapter-entry { min-height: 150px; }
 /* Five-stage strip: gives the middle band real information instead of dead space. */
 .chapter-stages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 10px; }

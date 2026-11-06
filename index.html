@@ -9,7 +9,7 @@
 <title data-i18n="doc.title">XENO NIGHTMARE</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%2305010f%22/%3E%3Cpath d=%22M16 4l4 9 9 3-9 3-4 9-4-9-9-3 9-3z%22 fill=%22none%22 stroke=%22%2300e5ff%22 stroke-width=%222%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222.5%22 fill=%22%23ff2bd6%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="./vendor/cyber-kit/ui/hud.css?v=0.3.17">
-<link rel="stylesheet" href="./css/game.css?v=1.9d">
+<link rel="stylesheet" href="./css/game.css?v=2.0b">
 <script type="importmap">
 {
   "imports": {
@@ -38,11 +38,6 @@
     <div class="hud-center">
       <div class="wave-line"><span data-i18n="wave"></span><b id="hud-wave">1</b></div>
       <div class="mission-line" id="hud-mission">CH.01-1 · 霓虹九龍</div>
-      <div class="hp-line"><span class="hp-label" data-i18n="shield"></span><div class="hp-pips" id="hud-hp"></div></div>
-      <div class="wchip">
-        <div class="wchip-top"><b id="hud-weapon">脈衝</b><span id="hud-wlv">LV.1</span><div class="lv-pips" id="hud-lv"></div></div>
-        <div class="wchip-bar"><i id="hud-wfill"></i><span class="wchip-ult" id="hud-wult">彈幕洪流</span></div>
-      </div>
     </div>
     <div class="hud-right">
       <div class="hud-buttons">
@@ -61,6 +56,10 @@
     <div class="bb-track"><div class="bb-fill" id="boss-fill"></div><i class="bb-seg" style="left:33%"></i><i class="bb-seg" style="left:66%"></i></div>
   </div>
   <div class="action-dock">
+    <div class="combat-readout" id="combat-readout">
+      <div class="cr-row cr-weapon"><b id="cr-weapon">脈衝</b><span id="cr-wlv">LV.1</span><div class="lv-pips" id="cr-lv"></div></div>
+      <div class="cr-row cr-shield"><span class="hp-label" data-i18n="shield"></span><div class="hp-pips" id="cr-hp"></div><em id="cr-hp-num">3/3</em></div>
+    </div>
     <button id="btn-od" class="od-btn" data-i18n-attr="aria-label:od" data-no-input>
       <span class="od-txt"><b id="od-label" data-i18n="od">最大火力</b><small id="od-sub" data-i18n="odS">昇華</small></span>
     </button>
@@ -156,10 +155,17 @@
       <div class="select-title hangar-title"><span data-i18n="selectDifficulty"></span><em data-i18n="selectDifficultyS"></em></div>
       <button type="button" class="hangar-back" id="btn-difficulty-back" data-i18n-attr="aria-label:kit.back">✕</button>
     </div>
-    <div class="difficulty-main">
-      <div class="difficulty-head"><span data-i18n="difficulty"></span><small id="difficulty-desc2"></small></div>
-      <div class="difficulty-row diff-cards" id="difficulty-row2"></div>
-      <div class="difficulty-note" data-i18n="difficultyNote"></div>
+    <div class="hangar-main">
+      <div class="hangar-stage difficulty-stage">
+        <div class="difficulty-glyph" id="difficulty-glyph">◇</div>
+        <div class="stage-index">THREAT LEVEL / 01—03</div>
+        <div class="hangar-craft-id" id="difficulty-id"></div>
+      </div>
+      <div class="hangar-info difficulty-info">
+        <div class="difficulty-head"><span data-i18n="difficulty"></span><small id="difficulty-desc2"></small></div>
+        <div class="difficulty-row diff-cards" id="difficulty-row2"></div>
+        <div class="difficulty-note" data-i18n="difficultyNote"></div>
+      </div>
     </div>
     <div class="hangar-foot">
       <button class="neon-btn" id="btn-difficulty-go"><span data-i18n="startMission"></span><small data-i18n="startMissionS"></small></button>
@@ -216,6 +222,6 @@
   </div>
 </div>
 
-<script type="module" src="./js/main.js?v=1.8"></script>
+<script type="module" src="./js/main.js?v=1.9"></script>
 </body>
 </html>

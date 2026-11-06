@@ -167,14 +167,12 @@ function updateHUD() {
   ui.setText('hud-best', Math.max(store.best, S.score).toLocaleString('en-US'));
   ui.setText('hud-wave', S.wave);
   ui.setText('hud-mission', campaignLabel(S.mission || campaignForWave(S.wave), lang) + (S.wave > CAMPAIGN_LEVELS ? ' · ∞' : ''));
-  // shield pips (airframe-dependent count)
-  const pips = $('hud-hp'); let h = ''; for (let i = 0; i < PLAYER.maxHp; i++) h += `<i class="${i < S.hp ? 'on' : ''}"></i>`; if (pips.innerHTML !== h) pips.innerHTML = h;
-  // weapon chip: name + six level diamonds + ult charge
-  $('hud-weapon').textContent = weaponShort(S.weapon, lang);
-  $('hud-wlv').textContent = 'LV.' + S.power;
-  const lv = $('hud-lv'); if (lv) { let lh = ''; for (let i = 1; i <= 6; i++) lh += `<i class="${i <= S.power ? 'on' : ''}"></i>`; if (lv.innerHTML !== lh) lv.innerHTML = lh; }
-  $('hud-wfill').style.width = Math.min(100, S.ult).toFixed(0) + '%';
-  $('hud-wult').textContent = ultName(S.weapon, lang);
+  // Bottom-left combat readout: weapon + level pips + shield pips/value.
+  const pips = $('cr-hp'); let h = ''; for (let i = 0; i < PLAYER.maxHp; i++) h += `<i class="${i < S.hp ? 'on' : ''}"></i>`; if (pips && pips.innerHTML !== h) pips.innerHTML = h;
+  const hpNum = $('cr-hp-num'); if (hpNum) hpNum.textContent = `${Math.max(0, S.hp)}/${PLAYER.maxHp}`;
+  const wName = $('cr-weapon'); if (wName) wName.textContent = weaponShort(S.weapon, lang);
+  const wLv = $('cr-wlv'); if (wLv) wLv.textContent = 'LV.' + S.power;
+  const lv = $('cr-lv'); if (lv) { let lh = ''; for (let i = 1; i <= 6; i++) lh += `<i class="${i <= S.power ? 'on' : ''}"></i>`; if (lv.innerHTML !== lh) lv.innerHTML = lh; }
   // combo chip
   const combo = $('combo-chip');
   if (combo) {
@@ -893,6 +891,9 @@ function renderDifficultyCards() {
     return `<button type="button" class="diff-btn ${selDifficulty === k ? 'sel' : ''}" data-diff="${k}" ${unlocked ? '' : 'disabled'}><b>${unlocked ? t('diff.' + k) : '◇ ' + t('diff.' + k)}</b><small>${unlocked ? t('diffTag.' + k) : t('difficultyLocked')}</small></button>`;
   }).join('');
   const desc = $('difficulty-desc2'); if (desc) desc.textContent = t('diffDesc.' + selDifficulty);
+  const glyph = $('difficulty-glyph'); if (glyph) glyph.textContent = selDifficulty === 'story' ? '◇' : selDifficulty === 'normal' ? '◈' : '◆';
+  const idEl = $('difficulty-id');
+  if (idEl) idEl.innerHTML = `<b>${t('diff.' + selDifficulty)}</b><span>${t('diffTag.' + selDifficulty)}</span>`;
   for (const b of row.querySelectorAll('[data-diff]')) b.addEventListener('click', () => {
     const key = b.dataset.diff;
     if (!difficultyAnywhere(key) || selDifficulty === key) return;
