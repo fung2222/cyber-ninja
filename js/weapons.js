@@ -58,10 +58,7 @@ export const WEAPONS = {
 export const OD = {
   duration: 4.0,        // seconds of ascended fire
   noFire: 3.0,          // forced cease-fire afterwards
-  perKill: 3.5,
-  perBossHit: 0.25,
-  perWeaponPickup: 18,
-  perEnergy: 20,
+  cooldown: 8.0,        // fixed cooldown from activation (Roy 2026-11-05: no charge meter)
 };
 
 export const WEAPON_ULT = {

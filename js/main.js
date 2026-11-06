@@ -145,7 +145,7 @@ const S = {
   state: 'attract', demo: !!flags.demo,
   x: 0, z: 1, vx: 0, hp: 3, invuln: 0, power: 1, fireT: 0, ult: 0, ultT: -1,
   weapon: 'pulse', weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 },
-  od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0,
+  odT: -1, odCd: 0, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0,
   novaShots: 0, novaBigShots: 0, homingShots: 0, droneShots: 0, droneFireT: 0, chapterClear: false,
   score: 0, wave: 1, spec: null, waveT: 0, nextEv: 0, enemies: [], boss: null, pickups: [], kills: 0,
   continued: false, betweenT: 0, t: 0, newRecord: false,
@@ -191,15 +191,14 @@ function updateHUD() {
   setRing($('btn-ult'), ultCooling ? ultLeftPct : S.ult);
   $('btn-ult').classList.toggle('ready', S.ult >= 100 && !ultCooling);
   $('btn-ult').classList.toggle('cooling', ultCooling);
-  const odReady = S.od >= 100 && S.odT < 0 && S.noFireT <= 0 && S.ultT < 0;
+  const odReady = S.odCd <= 0 && S.odT < 0 && S.noFireT <= 0 && S.ultT < 0;
   $('btn-od').classList.toggle('ready', odReady);
   $('btn-od').classList.toggle('active', S.odT >= 0);
   $('btn-od').classList.toggle('venting', S.noFireT > 0);
   const odDur = OD.duration + C().odBonus;
-  const odPct = S.odT >= 0 ? Math.max(0, 100 - (S.odT / odDur) * 100) : S.noFireT > 0 ? 0 : S.od;
-  setRing($('btn-od'), odPct);
+  setRing($('btn-od'), S.odCd > 0 ? Math.max(0, 100 - (S.odCd / OD.cooldown) * 100) : 100);
   $('od-label').textContent = S.noFireT > 0 ? t('odVent') : S.odT >= 0 ? t('odActive') : t('odShort');
-  $('od-sub').textContent = S.noFireT > 0 ? Math.ceil(S.noFireT) + 's' : S.odT >= 0 ? Math.max(0, Math.ceil(odDur - S.odT)) + 's' : Math.min(100, S.od).toFixed(0) + '%';
+  $('od-sub').textContent = S.odCd > 0 ? Math.ceil(S.odCd) + 's' : (lang === 'zh' ? '就緒' : 'READY');
   // craft badge
   const badge = $('hud-craft'); if (badge) { badge.textContent = C().code[lang] + ' · ' + craftName(S.craft, lang); badge.style.setProperty('--cc', '#' + C().color.toString(16).padStart(6, '0')); }
   // boss bar with phase segments
@@ -236,7 +235,7 @@ function resetRun() {
   clearField();
   const startWave = S.demo || flags.autostart ? 1 : selWave;
   Object.assign(S, { x: 0, z: 1, tx: 0, tz: 1, vx: 0, hp: PLAYER.maxHp, invuln: 1.2, power: 1, fireT: 0, ult: 0, ultT: -1, score: 0, wave: startWave - 1, runStartWave: startWave, kills: 0, continued: false, newRecord: false, ultReadyShown: false, ultBossHit: false,
-    weapon: selWeapon, difficulty: selDifficulty, mission: campaignForWave(startWave), weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, od: 0, odT: -1, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, novaShots: 0, novaBigShots: 0, homingShots: 0, droneShots: 0, droneFireT: 0, chapterClear: false, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
+    weapon: selWeapon, difficulty: selDifficulty, mission: campaignForWave(startWave), weaponLevels: { pulse: 1, lance: 1, nova: 1 }, ults: { pulse: 0, lance: 0, nova: 0 }, odT: -1, odCd: 0, noFireT: 0, ultMode: null, ultFireT: 0, novaR: 0, novaShots: 0, novaBigShots: 0, homingShots: 0, droneShots: 0, droneFireT: 0, chapterClear: false, hazards: [], hazardT: 7, gems: [], rocks: [], rockT: 9, district: 'city',
     combo: { chain: 0, timer: 0, mult: 1 }, gemChain: 0, gemChainT: 0, sinceHit: 99 });
   world.setDistrict('city');
   beam.visible = false; beam.material.opacity = 0;
@@ -413,7 +412,6 @@ function killEnemy(e, i) {
   const pts = Math.round((e.score || e.def.score) * S.combo.mult * D().score);
   S.score += pts; S.kills++;
   S.ult = Math.min(100, S.ult + chargeGain(ULT.perKill)); S.ults[S.weapon] = S.ult;
-  S.od = Math.min(100, S.od + chargeGain(OD.perKill));
   if (S.ult >= 100 && !S.ultReadyShown) { S.ultReadyShown = true; if (S.state === 'playing') { audio.ready(); ui.toast(t('ultReady'), 1300); } }
   if (S.state !== 'attract') {
     audio.boom(big);
@@ -479,7 +477,7 @@ function hurtEnemy(e, i, dmg) {
 function hurtBoss(dmg) {
   const B = S.boss; if (!B || B.entering || B.hp <= 0) return;
   B.hp -= dmg * C().dmg; B.g.userData.eyeU.uHurt.value = 0.4;
-  S.ult = Math.min(100, S.ult + chargeGain(ULT.perBossHit)); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + chargeGain(OD.perBossHit));
+  S.ult = Math.min(100, S.ult + chargeGain(ULT.perBossHit)); S.ults[S.weapon] = S.ult;
   particles.emit(new THREE.Vector3(B.x, 0.5, B.z + 0.5), new THREE.Vector3((Math.random() - 0.5) * 4, 2, 3), new THREE.Color(0xa66bff), { life: 0.3, size: 0.7 });
   if (B.hp <= 0) bossDown();
 }
@@ -554,8 +552,8 @@ function doUlt() {
   updateHUD();
 }
 function doOverdrive() {
-  if (S.od < 100 || S.odT >= 0 || S.noFireT > 0 || S.ultT >= 0 || !(S.state === 'playing' || S.state === 'attract')) return;
-  S.od = 0; S.odT = 0; S.fireT = 0; S.invuln = Math.max(S.invuln, 0.6);
+  if (S.odCd > 0 || S.odT >= 0 || S.noFireT > 0 || S.ultT >= 0 || !(S.state === 'playing' || S.state === 'attract')) return;
+  S.odCd = OD.cooldown; S.odT = 0; S.fireT = 0; S.invuln = Math.max(S.invuln, 0.6);
   if (S.state !== 'attract') { audio.ready(); ui.banner(t('odActive'), '', t('odS')); Platform.haptic('heavy'); }
   particles.burst(new THREE.Vector3(S.x, 0.5, S.z), new THREE.Color(0xff8a4d), 70, { speed: 10, up: 3, life: 0.8, size: 1.2, grav: 0 }); fx.kick({ aberr: 1, fovKick: 0.8, trauma: 0.2 }); ui.flash('rgba(255,122,59,0.32)', 420);
   updateHUD();
@@ -602,7 +600,7 @@ async function revive() {
   if (S.state !== 'over' || S.continued) return; audio.click();
   const r = await ads.rewarded('continue'); if (!r.rewarded) { ui.toast(t('noReward')); return; }
   S.continued = true; S.hp = PLAYER.maxHp; S.sinceHit = 99; S.invuln = 3; ebullets.clear(); ninja.visible = true;
-  S.ult = 100; S.ults[S.weapon] = 100; S.od = 100;
+  S.ult = 100; S.ults[S.weapon] = 100;
   // clean restart of the power systems: no stale overdrive / cease-fire / ult
   S.odT = -1; S.noFireT = 0; S.ultT = -1; S.ultMode = null; S.ultFireT = 0; S.novaR = 0;
   beam.visible = false; beam.material.opacity = 0; novaUlt.visible = false; for (const m of beamExtras) { m.visible = false; m.material.opacity = 0; }
@@ -967,7 +965,7 @@ S.api = {
   wave: (n) => { clearField(); const state = S.state; S.state = 'attract'; S.wave = n - 1; nextWave(); S.state = state; },
   clearStage: () => { if (S.state !== 'playing') return; for (const e of S.enemies) scene.remove(e.g); S.enemies = []; if (S.boss) { scene.remove(S.boss.g); S.boss = null; } nextWave(); },
   ult: () => { S.ult = 100; doUlt(); },
-  overdrive: () => { S.od = 100; doOverdrive(); },
+  overdrive: () => { S.odCd = 0; doOverdrive(); },
   craft: (key) => setCraft(key),
   airframe: () => {
     let meshes = 0, vertices = 0;
@@ -992,7 +990,7 @@ S.api = {
   killOne: () => { const e = S.enemies[0]; if (e) { e.hp = 0; killEnemy(e, 0); } },
   enemyFire: (x, z, ang, speed) => enemyFire(x, z, ang, speed),
   bossHurt: (dmg) => hurtBoss(dmg),
-  charge: (n = 100) => { S.ult = Math.min(100, S.ult + n); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + n); updateHUD(); },
+  charge: (n = 100) => { S.ult = Math.min(100, S.ult + n); S.ults[S.weapon] = S.ult; updateHUD(); },
   kill: () => { S.hp = 1; S.invuln = 0; hurtPlayer(); },
   boss: () => { clearField(); S.wave = 4; nextWave(); },
 };
@@ -1045,6 +1043,7 @@ function sim(dt) {
     }
   }
   S.noFireT = Math.max(0, S.noFireT - dt);
+  S.odCd = Math.max(0, S.odCd - dt);   // fixed 8s overdrive cooldown, no charge meter
   // auto-fire through the current weapon
   S.fireT -= dt;
   if (S.fireT <= 0 && S.noFireT <= 0 && S.ultT < 0) {
@@ -1158,7 +1157,7 @@ function sim(dt) {
         S.score += gm.value * S.combo.mult;
         S.gemChain = Math.min(24, S.gemChain + 1); S.gemChainT = 0.9;
         S.ult = Math.min(100, S.ult + chargeGain(gm.energy)); S.ults[S.weapon] = S.ult;
-        S.od = Math.min(100, S.od + chargeGain(gm.energy * 0.6));
+        
         if (S.state === 'playing' && (gm.tier === 2 || Math.random() < 0.22)) audio.gem(S.gemChain);
         particles.emit(new THREE.Vector3(gm.x, 0.3, gm.z), new THREE.Vector3(0, 1.5, 0), new THREE.Color(gm.tier === 2 ? 0xffc22b : gm.tier === 1 ? 0xff2bd6 : 0x00e5ff), { life: 0.3, size: 0.5 });
         scene.remove(gm.g); S.gems.splice(i, 1); continue;
@@ -1389,13 +1388,13 @@ function sim(dt) {
     if (d < (p.kind === 'W' ? 1.05 : 0.9)) {
       scene.remove(p.g); S.pickups.splice(i, 1);
       if (p.kind === 'P') {
-        if (S.power < 6) { S.power++; S.weaponLevels[S.weapon] = S.power; } else { S.od = Math.min(100, S.od + 12); }
+        if (S.power < 6) { S.power++; S.weaponLevels[S.weapon] = S.power; } 
       } else if (p.kind === 'S') { S.hp = Math.min(PLAYER.maxHp, S.hp + 1); audio.shieldUp(); }
       else if (p.kind === 'H') {
         if (S.hp < PLAYER.maxHp) { S.hp = Math.min(PLAYER.maxHp, S.hp + 2); audio.shieldUp(); }
         else { S.ult = Math.min(100, S.ult + chargeGain(18)); S.ults[S.weapon] = S.ult; }
       }
-      else if (p.kind === 'E') { S.ult = Math.min(100, S.ult + chargeGain(35)); S.ults[S.weapon] = S.ult; S.od = Math.min(100, S.od + chargeGain(10)); }
+      else if (p.kind === 'E') { S.ult = Math.min(100, S.ult + chargeGain(35)); S.ults[S.weapon] = S.ult; }
       else if (p.kind === 'W' && p.weaponKey) {
         S.ults[S.weapon] = S.ult;
         if (p.weaponKey === S.weapon) {
@@ -1406,7 +1405,7 @@ function sim(dt) {
           S.weaponLevels[S.weapon] = S.power;
           S.ult = S.ults[S.weapon] || 0;
         }
-        S.fireT = 0; S.od = Math.min(100, S.od + chargeGain(OD.perWeaponPickup));
+        S.fireT = 0;
         if (S.state === 'playing') ui.banner(WEAPONS[S.weapon].name[i18n.isZh() ? 'zh' : 'en'], `LV.${S.power}`, t('weaponSwap'));
       }
       if (S.state === 'playing') { audio.pickup(); const sp = stage.toScreen(new THREE.Vector3(S.x, 0.8, S.z)); ui.popup(sp.x, sp.y - 30, t(p.kind), ''); Platform.haptic('light'); }

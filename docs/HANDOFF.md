@@ -11,6 +11,7 @@ Series rules: `fung2222/cyber-arcade/docs/ARCADE-HANDOFF.md`. Concept only from 
 ## 1. Design
 - Vertical shooter seen from a high chase camera: a cyberpunk combat aircraft flies above a neon megacity that scrolls far below (haze layer keeps gameplay readable), side towers give parallax, speed streaks.
 - **Relative drag** anywhere moves the craft (finger never covers it), keyboard alternative. **Auto-fire** always on.
+- **2026-11-05 skill recovery (Roy)**: 超載/OVERDRIVE no longer charges from kills or pickups — it is a fixed **8 s cooldown** from activation (`OD.cooldown`, `S.odCd`), counted down in the button and shared by the 4 s ascend + 3 s cease-fire window. The weapon ultimate keeps the **charge meter (%)**. Buttons show only a hollow ring + label + readout (no dark disc, no water fill, no conic wedge).
 - **2026-11-05 pass (Roy feedback)**:
   - Cooldown UI: `.cd-fill` inside `#btn-ult` / `#btn-od` drains as a water level (`--cool` %), with a large numeric countdown (22px ult / 17px OD). The buttons stay the topmost hit target (`elementFromPoint` = the button), so a cooldown never reads as "covered".
   - Balance: nova L1 dmg 4.2 (one-shots a chapter-1 drone), L6 7.2; lance 2.0–2.9; pulse homing unchanged. `hpScale` is now smooth per wave (`1 + (n-1)*0.045`, cap 3.2) instead of a +40% cliff every 5 waves. Guard: `tests/balance.test.mjs`.
