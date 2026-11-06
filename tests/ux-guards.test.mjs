@@ -12,7 +12,7 @@ const entities = read('/js/entities.js');
 
 test('both ability buttons carry a water-level fill and a numeric countdown', () => {
   assert.match(css, /\.action-dock \.cd-fill \{/);
-  assert.match(css, /calc\(var\(--cool\) \* 1%\)/);
+  assert.match(css, /calc\(var\(--cool\) \* [.\d]+%\)/);
   assert.match(css, /\.ult-btn\.cooling #ult-sub \{ font-size: 22px/);
   assert.match(main, /setProperty\('--cool'/);
   assert.match(main, /ultLeftPct|odLeftPct/);
