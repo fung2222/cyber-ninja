@@ -350,8 +350,8 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 }
 
 /* ---------------- three-step sortie: chapter / level / difficulty ---------------- */
-#screen-mission { z-index: 40; padding: 0; background: radial-gradient(110% 90% at 50% 8%, #171039 0%, #08051a 52%, #03010c 100%); }
-#screen-mission::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .17; background-image: linear-gradient(rgba(0,229,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,.09) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(to bottom, black, transparent 80%); }
+#screen-mission, #screen-difficulty { z-index: 40; padding: 0; background: radial-gradient(110% 90% at 50% 8%, #171039 0%, #08051a 52%, #03010c 100%); }
+#screen-mission::before, #screen-difficulty::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .17; background-image: linear-gradient(rgba(0,229,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,.09) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(to bottom, black, transparent 80%); }
 .mission-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; padding: 10px 2px 4px; scrollbar-width: thin; }
 .mission-main > .chapter-nav, .mission-main > .mission-brief, .mission-main > .mission-tuning { flex: 0 0 auto; }
 .chapter-nav { display: grid; grid-template-columns: repeat(10, minmax(74px, 1fr)); gap: 5px; width: 100%; min-width: 0; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; scroll-snap-type: x proximity; touch-action: pan-x; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; scrollbar-width: thin; }
