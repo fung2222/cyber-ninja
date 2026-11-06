@@ -9,7 +9,7 @@
 <title data-i18n="doc.title">XENO NIGHTMARE</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%2305010f%22/%3E%3Cpath d=%22M16 4l4 9 9 3-9 3-4 9-4-9-9-3 9-3z%22 fill=%22none%22 stroke=%22%2300e5ff%22 stroke-width=%222%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222.5%22 fill=%22%23ff2bd6%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="./vendor/cyber-kit/ui/hud.css?v=0.3.17">
-<link rel="stylesheet" href="./css/game.css?v=2.1">
+<link rel="stylesheet" href="./css/game.css?v=2.2b">
 <script type="importmap">
 {
   "imports": {
@@ -60,12 +60,14 @@
       <div class="cr-row cr-weapon"><b id="cr-weapon">脈衝</b><span id="cr-wlv">LV.1</span><div class="lv-pips" id="cr-lv"></div></div>
       <div class="cr-row cr-shield"><span class="hp-label" data-i18n="shield"></span><div class="hp-pips" id="cr-hp"></div><em id="cr-hp-num">3/3</em></div>
     </div>
-    <button id="btn-od" class="od-btn" data-i18n-attr="aria-label:od" data-no-input>
-      <span class="od-txt"><b id="od-label" data-i18n="od">最大火力</b><small id="od-sub" data-i18n="odS">昇華</small></span>
-    </button>
-    <button id="btn-ult" class="ult-btn" data-i18n-attr="aria-label:ultName" data-no-input>
-      <span class="ult-txt"><b id="ult-label" data-i18n="ult"></b><small id="ult-sub" data-i18n="ultS"></small></span>
-    </button>
+    <div class="skill-stack">
+      <button id="btn-od" class="od-btn" data-i18n-attr="aria-label:od" data-no-input>
+        <span class="od-txt"><b id="od-label" data-i18n="od">最大火力</b><small id="od-sub" data-i18n="odS">昇華</small></span>
+      </button>
+      <button id="btn-ult" class="ult-btn" data-i18n-attr="aria-label:ultName" data-no-input>
+        <span class="ult-txt"><b id="ult-label" data-i18n="ult"></b><small id="ult-sub" data-i18n="ultS"></small></span>
+      </button>
+    </div>
   </div>
   <div id="demo-tag" class="demo-tag hidden" data-i18n="kit.demo"></div>
   <div id="fps" class="fps hidden">-- FPS</div>
@@ -221,6 +223,6 @@
   </div>
 </div>
 
-<script type="module" src="./js/main.js?v=2.0"></script>
+<script type="module" src="./js/main.js?v=2.1"></script>
 </body>
 </html>

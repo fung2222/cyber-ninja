@@ -168,7 +168,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 
 /* Bottom-left combat readout (2026-11-05): weapon, level pips, shield pips/value
    sit with the two ability buttons so everything is on one glance. */
-.combat-readout { width: 152px; padding: 7px 10px 8px; margin-bottom: 2px; pointer-events: none;
+.combat-readout { width: 146px; padding: 7px 10px 8px; margin-bottom: 0; pointer-events: none;
   background: linear-gradient(160deg, rgba(10,5,28,.62), rgba(5,1,15,.5)); border-left: 2px solid var(--c1);
   box-shadow: 0 0 12px rgba(0,229,255,.12); }
 .combat-readout .cr-row { display: flex; align-items: center; gap: 6px; min-height: 16px; }
@@ -478,3 +478,21 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   .level-card { min-height: 49px; }
   .mission-foot { padding-top: 5px; }
 }
+
+/* 2026-11-05 HUD pass 2 (Roy): one bottom-left cluster — readout bottom-aligned with
+   the lowest skill button, both skills merged into one stack with a shared style,
+   and a bigger combo number. */
+.action-dock { flex-direction: row; align-items: flex-end; gap: 10px; }
+.action-dock .skill-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.action-dock .ult-btn, .action-dock .od-btn {
+  width: 56px; height: 56px; margin-left: 0; border-width: 1.5px;
+  box-shadow: 0 0 10px rgba(0,229,255,.22);
+}
+.action-dock .od-btn { box-shadow: 0 0 10px rgba(255,122,59,.26); }
+.action-dock .ult-txt b { font-size: 10px; letter-spacing: 1px; }
+.action-dock .ult-txt small { font-size: 7px; letter-spacing: .5px; }
+.action-dock .od-txt b { font-size: 9px; letter-spacing: .5px; }
+.action-dock .od-txt small { font-size: 6.5px; letter-spacing: .5px; }
+#combo-chip { padding: 5px 12px; gap: 7px; }
+#combo-chip b { font-size: 26px; line-height: 1; }
+#combo-chip span { font-size: 9px; letter-spacing: 2px; }

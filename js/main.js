@@ -262,11 +262,12 @@ function nextWave() {
   const lang = i18n.isZh() ? 'zh' : 'en';
   if (S.spec.boss) {
     spawnBoss(Math.round(S.spec.hp * D().bossHp), S.spec.variant);
-    if (S.state !== 'attract') { ui.banner(t('bossIncoming', { name: bossName() }), `${campaignLabel(m, lang)} · ${m.stageName[lang]}`, m.stage === 1 ? m.story[lang] : t('warning')); audio.warn(); fx.kick({ glitch: 0.6, aberr: 1 }); }
+    if (S.state !== 'attract') { ui.banner(t('bossIncoming', { name: bossName() }), `${campaignLabel(m, lang)} · ${m.stageName[lang]}`, ''); audio.warn(); fx.kick({ glitch: 0.6, aberr: 1 }); }
   } else if (S.state !== 'attract' && S.wave > 1 && (S.wave - 1) % MILESTONE_EVERY === 0) milestone(S.wave - 1);
   else if (S.state !== 'attract' && S.wave > 1) {
     const title = m.campaign ? t('chapterStage', { chapter: m.chapter, stage: m.stage, name: m.name[lang] }) : t('waveN', { n: S.wave });
-    ui.banner(title, m.stageName[lang], m.stage === 1 ? m.story[lang] : (S.wave % 5 === 4 ? t('bossNext') : m.place[lang]));
+    if (m.stage === 1) ui.banner(lang === 'zh' ? `第 ${m.chapter} 章` : `CHAPTER ${m.chapter}`, m.name[lang], '');
+    else ui.banner(title, m.stageName[lang], S.wave % 5 === 4 ? t('bossNext') : '');
   }
   if (S.wave === CAMPAIGN_LEVELS + 1 && S.state !== 'attract') ui.toast(t('endlessUnlocked'), 2600);
   audio.setBoss(!!S.spec.boss); audio.setLevel(S.spec.boss ? 10 : 1 + Math.floor((S.wave - 1) / 2));
@@ -282,7 +283,7 @@ function beginRun() {
   audio.init(); audio.startMusic(); audio.unduckMusic();
   resetRun(); setState('playing'); audio.confirm();
   const m = S.mission, lang = i18n.isZh() ? 'zh' : 'en';
-  ui.banner(t('chapterStage', { chapter: m.chapter, stage: m.stage, name: m.name[lang] }), m.stage === 1 ? m.story[lang] : m.stageName[lang], t('firstHint'));
+  ui.banner(i18n.isZh() ? `第 ${m.chapter} 章` : `CHAPTER ${m.chapter}`, m.name[lang], '');
 }
 function showAttract() { closeHangar(); closeWeapon(); closeMission(); closeDifficulty(); audio.init(); audio.startMusic(); audio.unduckMusic(); if (!S.demo) { selWave = missionProgress.unlocked; selChapter = Math.ceil(selWave / LEVELS_PER_CHAPTER); } setState('attract'); resetRun(); refreshStart(); }
 
