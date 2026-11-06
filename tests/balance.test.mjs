@@ -5,7 +5,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ENEMIES, hpScale } from '../js/config.js';
-import { WEAPONS } from '../js/weapons.js';
+import { WEAPONS, pierceDamage, novaSplash } from '../js/weapons.js';
+import { readFileSync } from 'node:fs';
+const mainSrc = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
 
 const lvl = (key, n) => WEAPONS[key].levels[n - 1];
 
@@ -53,4 +55,23 @@ test('weapon DPS profile keeps each weapon worth choosing', () => {
   const [p6, l6, n6] = [dps('pulse', 6), dps('lance', 6), dps('nova', 6)];
   assert.ok(p6 > n6 && p6 > l6, `pulse L6 (${p6.toFixed(1)}) leads sustained DPS`);
   assert.ok(n6 > n1 * 1.8, 'nova still scales meaningfully');
+});
+
+test('pierce costs 20% per target with a 40% floor', () => {
+  assert.equal(pierceDamage(2.1, 0), 2.1);
+  assert.ok(Math.abs(pierceDamage(2.1, 1) - 1.68) < 1e-9, 'second target takes 80%');
+  assert.ok(Math.abs(pierceDamage(2.1, 2) - 1.344) < 1e-9, 'third target takes 64%');
+  assert.ok(Math.abs(pierceDamage(2.1, 9) - 2.1 * 0.4) < 1e-9, 'floor stays at 40%');
+});
+
+test('nova splash tapers from 80% centre to under 45% at the edge', () => {
+  const n = lvl('nova', 1);
+  assert.ok(Math.abs(novaSplash(n.dmg, 0, n.aoe) - n.dmg * 0.8) < 1e-9);
+  assert.ok(novaSplash(n.dmg, n.aoe, n.aoe) <= n.dmg * 0.45);
+  assert.ok(novaSplash(n.dmg, n.aoe / 2, n.aoe) > novaSplash(n.dmg, n.aoe, n.aoe));
+});
+
+test('power pity guarantees an upgrade after 8 dry kills', () => {
+  assert.match(mainSrc, /killsSinceP >= 8/);
+  assert.match(mainSrc, /if \(kind === 'P'\) killsSinceP = 0;/);
 });

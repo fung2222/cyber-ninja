@@ -6,7 +6,7 @@ import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, DIFFICULTY_ORDER, c
 import './strings.js?v=1.5a';
 import { World } from './world.js';
 import { makeNinja, updateNinja, disposeNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.6';
-import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon } from './weapons.js?v=1.5a';
+import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon, pierceDamage, novaSplash } from './weapons.js?v=1.6';
 import { CRAFTS, CRAFT_KEYS, craftOf, craftName, COMBO, comboMult } from './crafts.js?v=1.0';
 import { NinjaAudio } from './audio.js?v=0.3.25';
 
@@ -419,8 +419,10 @@ function killEnemy(e, i) {
   }
   dropGems(e);
   const wChance = e.elite ? 0.65 : 0;
+  killsSinceP++;
   if (wChance && Math.random() < wChance) dropPickup(e.x, e.z, 'W', randomOtherWeapon(S.weapon));
   else if (!small && Math.random() < DROP_CHANCE * D().drops) dropPickup(e.x, e.z);
+  else if (S.power < 6 && killsSinceP >= 8) dropPickup(e.x, e.z, 'P');   // pity: never starve the upgrade curve
   fx.kick({ trauma: small ? 0.03 : big ? 0.12 : 0.06 });
   if (big && S.state === 'playing') fx.kick({ slowmo: 0.16, aberr: 0.35 });   // hit-stop on chunky kills
 }
@@ -440,6 +442,7 @@ function dropGems(e, boss = false) {
   const tier = boss ? 2 : e.elite ? 1 : 0;
   for (let i = 0; i < count; i++) spawnGem(e.x, e.z, tier);
 }
+let killsSinceP = 0;   // pity counter: a power pickup is guaranteed after 8 dry kills
 function dropPickup(x, z, kind, weaponKey) {
   if (!kind) {
     const r = Math.random();
@@ -449,6 +452,7 @@ function dropPickup(x, z, kind, weaponKey) {
     else if (r < 0.86) kind = 'E';
     else kind = S.hp < PLAYER.maxHp ? 'H' : 'S';
   }
+  if (kind === 'P') killsSinceP = 0;
   const g = makePickup(kind, weaponKey); g.scale.setScalar(1.55); g.position.set(x, 0, z); scene.add(g); S.pickups.push({ g, kind, weaponKey, x, z, t: 0 });
 }
 function spawnHazard() {
@@ -488,13 +492,16 @@ function detonateBullet(b, primary = null) {
   const p = new THREE.Vector3(b.x, .18, b.z);
   waves.spawn(p, new THREE.Color(b.kind === 'nova' ? WEAPONS.nova.color : 0xffc766), { r0: .25, r1: radius, h: .25, dur: b.novaBig ? .65 : .35, a: b.novaBig ? 2.2 : 1 });
   particles.burst(p, new THREE.Color(b.kind === 'nova' ? 0xffa34d : 0xffd57a), b.novaBig ? 48 : 18, { speed: b.novaBig ? 9 : 5, up: 1.5, life: .45, size: .75, grav: 0 });
-  const splash = b.dmg * (b.kind === 'nova' ? .62 : .5);
+  const splashBase = b.kind === 'nova' ? 'nova' : 'flat';
   for (let i = S.enemies.length - 1; i >= 0; i--) {
     const e = S.enemies[i];
-    if (e !== primary && Math.hypot(e.x - b.x, e.z - b.z) <= radius + e.def.radius * .35) hurtEnemy(e, i, splash);
+    const dist = Math.hypot(e.x - b.x, e.z - b.z);
+    if (e !== primary && dist <= radius + e.def.radius * .35) {
+      hurtEnemy(e, i, splashBase === 'nova' ? novaSplash(b.dmg, dist, radius) : b.dmg * .5);
+    }
   }
   const B = S.boss;
-  if (B && B !== primary && !B.entering && Math.hypot(B.x - b.x, B.z - b.z) <= radius + ENEMIES.boss.radius * .35) hurtBoss(splash);
+  if (B && B !== primary && !B.entering) { const bd = Math.hypot(B.x - b.x, B.z - b.z); if (bd <= radius + ENEMIES.boss.radius * .35) hurtBoss(splashBase === 'nova' ? novaSplash(b.dmg, bd, radius) : b.dmg * .5); }
 }
 function homingTarget(b) {
   let target = null, best = Infinity;
@@ -1285,14 +1292,17 @@ function sim(dt) {
         const e = S.enemies[i];
         const rr = e.def.radius + .4 * (b.scale || 1);
         if (!b.hit.has(e) && Math.hypot(e.z - b.z, e.x - b.x) < rr) {
-          b.hit.add(e); hurtEnemy(e, i, b.dmg);
+          const dmgNow = b.pierce > 0 ? pierceDamage(b.dmg, b.pierceN || 0) : b.dmg;
+          b.hit.add(e); hurtEnemy(e, i, dmgNow);
+          if (b.pierce > 0) b.pierceN = (b.pierceN || 0) + 1;
           if (b.kind === 'nova' || b.explosive) detonateBullet(b, e);
           else if (b.pierce > 0) b.pierce--; else b.dead = true;
           if (b.dead) break;
         }
       }
       if (!b.dead && B && !B.entering && !b.hit.has(B) && Math.hypot(B.x - b.x, B.z - b.z) < ENEMIES.boss.radius + .25 * (b.scale || 1)) {
-        b.hit.add(B); hurtBoss(b.dmg);
+        b.hit.add(B); hurtBoss(b.pierce > 0 ? pierceDamage(b.dmg, b.pierceN || 0) : b.dmg);
+        if (b.pierce > 0) b.pierceN = (b.pierceN || 0) + 1;
         if (b.kind === 'nova' || b.explosive) detonateBullet(b, B);
         else if (b.pierce > 0) b.pierce--; else b.dead = true;
       }

@@ -13,7 +13,7 @@ export const WEAPONS = {
     ult: { zh: '彈幕洪流', en: 'BULLET STORM' },
     ultShort: { zh: '彈幕', en: 'STORM' },
     levels: [
-      { rate: 0.130, dmg: 1.15, speed: 34, pierce: 0, shots: [[0, 0]] },
+      { rate: 0.130, dmg: 1.25, speed: 34, pierce: 0, shots: [[0, 0]] },
       { rate: 0.130, dmg: 1.25, speed: 34, pierce: 0, shots: [[-0.20, 0], [0.20, 0]] },
       { rate: 0.125, dmg: 1.35, speed: 34, pierce: 0, shots: [[-0.30, 0], [0, 0], [0.30, 0]], homing: 2 },
       { rate: 0.120, dmg: 1.45, speed: 35, pierce: 0, shots: [[-0.36, 0], [-0.12, 0], [0.12, 0], [0.36, 0]], homing: 2 },
@@ -29,11 +29,11 @@ export const WEAPONS = {
     ult: { zh: '稜鏡貫穿', en: 'PRISM PIERCE' },
     ultShort: { zh: '稜鏡', en: 'PRISM' },
     levels: [
-      { rate: 0.260, dmg: 2.00, speed: 56, pierce: 2, shots: [[0, 0]] },
-      { rate: 0.250, dmg: 2.20, speed: 57, pierce: 3, shots: [[0, 0]] },
-      { rate: 0.240, dmg: 2.40, speed: 58, pierce: 4, shots: [[0, 0]], drones: 2 },
-      { rate: 0.230, dmg: 2.60, speed: 59, pierce: 5, shots: [[0, 0]], drones: 2 },
-      { rate: 0.220, dmg: 2.80, speed: 60, pierce: 6, shots: [[0, 0]], drones: 2 },
+      { rate: 0.260, dmg: 2.10, speed: 56, pierce: 2, shots: [[0, 0]] },
+      { rate: 0.250, dmg: 2.30, speed: 57, pierce: 3, shots: [[0, 0]] },
+      { rate: 0.240, dmg: 2.50, speed: 58, pierce: 4, shots: [[0, 0]], drones: 2 },
+      { rate: 0.230, dmg: 2.70, speed: 59, pierce: 5, shots: [[0, 0]], drones: 2 },
+      { rate: 0.220, dmg: 2.85, speed: 60, pierce: 6, shots: [[0, 0]], drones: 2 },
       { rate: 0.205, dmg: 2.90, speed: 62, pierce: 7, shots: [[0, 0]], drones: 2 },
     ],
   },
@@ -45,12 +45,12 @@ export const WEAPONS = {
     ult: { zh: '奇點爆發', en: 'SINGULARITY' },
     ultShort: { zh: '奇點', en: 'NOVA' },
     levels: [
-      { rate: 0.600, dmg: 4.2, speed: 16, pierce: 0, aoe: 1.70, shots: [[0, 0]], scale: 1.00 },
-      { rate: 0.580, dmg: 4.8, speed: 16, pierce: 0, aoe: 1.85, shots: [[0, 0]], scale: 1.05 },
-      { rate: 0.560, dmg: 5.4, speed: 17, pierce: 0, aoe: 2.00, shots: [[0, 0]], scale: 1.10, bigEvery: 10 },
-      { rate: 0.540, dmg: 6.0, speed: 17, pierce: 0, aoe: 2.15, shots: [[0, 0]], scale: 1.16, bigEvery: 10 },
-      { rate: 0.520, dmg: 6.6, speed: 18, pierce: 0, aoe: 2.30, shots: [[0, 0]], scale: 1.22, bigEvery: 10 },
-      { rate: 0.500, dmg: 7.2, speed: 18, pierce: 0, aoe: 2.40, shots: [[0, 0]], scale: 1.30, bigEvery: 10 },
+      { rate: 0.520, dmg: 4.2, speed: 16, pierce: 0, aoe: 1.95, shots: [[0, 0]], scale: 1.00 },
+      { rate: 0.505, dmg: 4.8, speed: 16, pierce: 0, aoe: 2.05, shots: [[0, 0]], scale: 1.05 },
+      { rate: 0.490, dmg: 5.4, speed: 17, pierce: 0, aoe: 2.15, shots: [[0, 0]], scale: 1.10, bigEvery: 10 },
+      { rate: 0.478, dmg: 6.0, speed: 17, pierce: 0, aoe: 2.25, shots: [[0, 0]], scale: 1.16, bigEvery: 10 },
+      { rate: 0.466, dmg: 6.6, speed: 18, pierce: 0, aoe: 2.32, shots: [[0, 0]], scale: 1.22, bigEvery: 10 },
+      { rate: 0.455, dmg: 7.2, speed: 18, pierce: 0, aoe: 2.40, shots: [[0, 0]], scale: 1.30, bigEvery: 10 },
     ],
   },
 };
@@ -96,3 +96,12 @@ export function randomOtherWeapon(current, rng = Math.random) {
   const pool = WEAPON_KEYS.filter(k => k !== current);
   return pool[Math.floor(rng() * pool.length)] || 'pulse';
 }
+
+/** Damage of a piercing shot on its Nth target (0 = first). -20% per pierce, floor 40%. */
+export const pierceDamage = (dmg, ordinal) => dmg * Math.max(0.4, Math.pow(0.8, Math.max(0, ordinal)));
+
+/** Nova splash: 80% of the shell at the centre, tapering to 44% at the blast edge. */
+export const novaSplash = (dmg, dist, radius) => {
+  const t = radius > 0 ? Math.min(1, Math.max(0, dist / radius)) : 0;
+  return dmg * 0.8 * (0.55 + 0.45 * (1 - t));
+};

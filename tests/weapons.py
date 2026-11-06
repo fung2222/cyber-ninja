@@ -79,7 +79,7 @@ with sync_playwright() as p:
     pg.wait_for_function("() => __ninja.api.shots().nova > 0", timeout=8000)
     pg.evaluate('__ninja.fireT=999')
     nova_data = pg.evaluate("__ninja.api.bulletData('nova')[0]")
-    check(nova_data['pierce'] == 0 and 0 < nova_data['aoe'] <= 2, 'ordinary nova is non-piercing with a small blast radius')
+    check(nova_data['pierce'] == 0 and 0 < nova_data['aoe'] <= 2.5, 'ordinary nova is non-piercing with a bounded blast radius')
     pg.wait_for_function("() => window.__target.hp < 100 && window.__splash.hp < 100", timeout=12000)
     check(pg.evaluate('__target.hp < 100 && __splash.hp < 100'), 'nova impact directly hits one enemy and splash-damages a nearby enemy')
 
