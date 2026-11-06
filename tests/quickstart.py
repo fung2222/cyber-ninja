@@ -44,6 +44,10 @@ with sync_playwright() as p:
     check(not hidden(pg, '#screen-mission'), 'chapters entry opens the records page')
     check(pg.locator('#chapter-nav .chapter-btn').count() == 10, 'records page lists all ten chapters')
     check(pg.locator('#btn-mission-go, #chapter-entry').count() == 0, 'records page has no launch control')
+    story = pg.evaluate("""() => { const e = document.getElementById('mission-story'); const r = e.getBoundingClientRect(); const s = getComputedStyle(e);
+      return {h: r.height, clamp: s.webkitLineClamp, display: s.display, len: e.textContent.length}; }""")
+    check(story['h'] >= 30 and story['clamp'] == 'none' and story['display'] == 'block' and story['len'] > 40,
+          f'chapter story is visible (not clamped/hidden) ({story})')
     pg.click('#btn-mission-back'); pg.wait_for_timeout(300)
 
     pg.click('#btn-start'); pg.wait_for_timeout(450)
