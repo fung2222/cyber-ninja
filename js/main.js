@@ -915,12 +915,19 @@ function openDifficulty() {
 function closeDifficulty() { $('screen-difficulty').classList.add('hidden'); }
 function startFromDifficulty() {
   if (!difficultyAnywhere(selDifficulty)) return;
-  const scr = $('screen-difficulty');
-  if (scr) {
-    scr.classList.add('deploying');
+  const fx = $('deploy-fx');
+  if (fx) {
+    const color = selDifficulty === 'story' ? '#00e5ff' : selDifficulty === 'normal' ? '#ff5c9a' : '#ff7a3b';
+    const sym = selDifficulty === 'story' ? '◇' : selDifficulty === 'normal' ? '◈' : '◆';
+    fx.style.setProperty('--fx', color);
+    for (const f of fx.querySelectorAll('.df-face')) f.textContent = sym;
+    fx.classList.remove('hidden');
+    // restart every CSS animation so a second deploy replays the full cinematic
+    for (const el of fx.querySelectorAll('.df-face, .df-tunnel i, .df-flash')) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
+    void fx.offsetWidth;
     audio.ready(); try { audio.confirm(); } catch (_) {}
     Platform.haptic('heavy');
-    setTimeout(() => { scr.classList.remove('deploying'); launchFromDifficulty(); }, 520);
+    setTimeout(() => { fx.classList.add('hidden'); launchFromDifficulty(); }, 2800);
     return;
   }
   launchFromDifficulty();

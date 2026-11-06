@@ -523,3 +523,31 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 @keyframes orbBurst { 0% { transform: scale(1); filter: brightness(1); } 55% { transform: scale(1.45); filter: brightness(3); } 100% { transform: scale(.2); filter: brightness(6); opacity: 0; } }
 #screen-difficulty.deploying::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 42%, rgba(255,255,255,.85), transparent 55%); animation: deployFlash .55s ease-out forwards; }
 @keyframes deployFlash { from { opacity: 0; } 35% { opacity: 1; } to { opacity: 0; } }
+
+/* 2026-11-05 deploy cinematic (Roy): fast emblem spin → pieces crash → time tunnel →
+   arrival in the cyber world, 2.6 s, all CSS transforms (no extra WebGL). */
+#deploy-fx { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, #0a1830 0%, #05010f 60%, #000 100%); }
+#deploy-fx.hidden { display: none; }
+.df-mark { position: absolute; left: 50%; top: 45%; width: 0; height: 0; transform-style: preserve-3d;
+  animation: dfMarkSpin 1.15s cubic-bezier(.6,.02,.9,.4) forwards; }
+.df-face { position: absolute; left: -52px; top: -60px; width: 104px; height: 120px; display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', sans-serif; font-style: normal; font-size: 92px; line-height: 1;
+  color: var(--fx, #00e5ff); text-shadow: 0 0 26px var(--fx, #00e5ff), 0 0 60px color-mix(in srgb, var(--fx, #00e5ff) 60%, transparent); }
+.df-face.a { animation: dfCrashA 1.15s cubic-bezier(.5,0,.9,.4) forwards; }
+.df-face.b { animation: dfCrashB 1.15s cubic-bezier(.5,0,.9,.4) forwards; }
+.df-face.c { animation: dfCrashC 1.15s cubic-bezier(.5,0,.9,.4) forwards; }
+@keyframes dfMarkSpin { 0% { transform: rotateY(0) scale(1); } 100% { transform: rotateY(1080deg) scale(.25); opacity: 0; } }
+@keyframes dfCrashA { 0% { transform: translate3d(-150px, 0, 0) rotate(-18deg); opacity: .2; } 70% { transform: translate3d(-30px, 0, 0) rotate(-4deg); opacity: 1; } 100% { transform: translate3d(0,0,0) rotate(0); opacity: 1; } }
+@keyframes dfCrashB { 0% { transform: translate3d(150px, 0, 0) rotate(18deg); opacity: .2; } 70% { transform: translate3d(30px, 0, 0) rotate(4deg); opacity: 1; } 100% { transform: translate3d(0,0,0) rotate(0); opacity: 1; } }
+@keyframes dfCrashC { 0% { transform: translate3d(0, 170px, -60px) scale(1.6); opacity: 0; } 70% { transform: translate3d(0, 20px, 0) scale(1); opacity: .9; } 100% { transform: translate3d(0,0,0) scale(1); opacity: 1; } }
+.df-tunnel { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; perspective: 760px; }
+.df-tunnel i { position: absolute; width: 64vmin; height: 64vmin; border: 2px solid color-mix(in srgb, var(--fx, #00e5ff) 70%, transparent);
+  border-radius: 22%; opacity: 0; transform: translateZ(-900px) rotate(45deg);
+  animation: dfTunnel 1.7s cubic-bezier(.35,.05,.7,.5) forwards; animation-delay: calc(.6s + var(--i, 0) * .11s); }
+.df-tunnel i:nth-child(1) { --i: 0; } .df-tunnel i:nth-child(2) { --i: 1; } .df-tunnel i:nth-child(3) { --i: 2; } .df-tunnel i:nth-child(4) { --i: 3; }
+.df-tunnel i:nth-child(5) { --i: 4; } .df-tunnel i:nth-child(6) { --i: 5; } .df-tunnel i:nth-child(7) { --i: 6; } .df-tunnel i:nth-child(8) { --i: 7; }
+@keyframes dfTunnel { 0% { opacity: 0; transform: translateZ(-760px) rotate(45deg) scale(.7); } 20% { opacity: .95; } 100% { opacity: 0; transform: translateZ(620px) rotate(45deg) scale(1.4); } }
+.df-flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #fff, transparent 60%); opacity: 0;
+  animation: dfFlash 2.6s ease-out forwards; }
+@keyframes dfFlash { 0%, 55% { opacity: 0; } 66% { opacity: 1; } 100% { opacity: 0; } }
