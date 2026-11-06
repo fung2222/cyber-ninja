@@ -9,7 +9,7 @@
 <title data-i18n="doc.title">XENO NIGHTMARE</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%2305010f%22/%3E%3Cpath d=%22M16 4l4 9 9 3-9 3-4 9-4-9-9-3 9-3z%22 fill=%22none%22 stroke=%22%2300e5ff%22 stroke-width=%222%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222.5%22 fill=%22%23ff2bd6%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="./vendor/cyber-kit/ui/hud.css?v=0.3.17">
-<link rel="stylesheet" href="./css/game.css?v=2.3">
+<link rel="stylesheet" href="./css/game.css?v=2.4b">
 <script type="importmap">
 {
   "imports": {
@@ -102,7 +102,7 @@
   <div class="hangar">
     <div class="hangar-head">
       <div class="select-title hangar-title"><span data-i18n="selectCraft"></span><em data-i18n="selectCraftS"></em></div>
-      <button type="button" class="hangar-back" id="btn-hangar-back" data-i18n-attr="aria-label:kit.back" aria-label="返回">✕</button>
+      <button type="button" class="hangar-back" id="btn-hangar-back" data-i18n-attr="aria-label:kit.back" aria-label="返回">←</button>
     </div>
     <div class="hangar-main">
       <div class="hangar-stage craft-stage">
@@ -115,7 +115,6 @@
         <div class="ci-passive" id="craft-passive"></div>
         <div class="ci-stats" id="craft-stats"></div>
         <div class="ci-blurb" id="craft-blurb"></div>
-        <div class="campaign-lore"><b data-i18n="storyTitle"></b><p data-i18n="storyIntro"></p><span data-i18n="campaignScale"></span></div>
       </div>
     </div>
     <div class="hangar-select" id="craft-row"></div>
@@ -129,7 +128,7 @@
   <div class="hangar">
     <div class="hangar-head">
       <div class="select-title hangar-title"><span data-i18n="selectWeapon"></span><em data-i18n="selectWeaponS"></em></div>
-      <button type="button" class="hangar-back" id="btn-weapon-back" data-i18n-attr="aria-label:kit.back" aria-label="返回">✕</button>
+      <button type="button" class="hangar-back" id="btn-weapon-back" data-i18n-attr="aria-label:kit.back" aria-label="返回">←</button>
     </div>
     <div class="hangar-main weapon-main">
       <div class="hangar-stage weapon-stage">
@@ -155,12 +154,13 @@
   <div class="hangar mission-hangar">
     <div class="hangar-head">
       <div class="select-title hangar-title"><span data-i18n="selectDifficulty"></span><em data-i18n="selectDifficultyS"></em></div>
-      <button type="button" class="hangar-back" id="btn-difficulty-back" data-i18n-attr="aria-label:kit.back">✕</button>
+      <button type="button" class="hangar-back" id="btn-difficulty-back" data-i18n-attr="aria-label:kit.back">←</button>
     </div>
-    <div class="hangar-main">
-      <div class="hangar-stage difficulty-stage">
-        <div class="difficulty-glyph" id="difficulty-glyph">◇</div>
-        <div class="stage-index">THREAT LEVEL / 01—03</div>
+    <div class="hangar-main difficulty-main">
+      <div class="difficulty-hero">
+        <div class="diff-orb" id="diff-orb">
+          <i class="face f1">◇</i><i class="face f2">◇</i><i class="face f3">◇</i>
+        </div>
         <div class="hangar-craft-id" id="difficulty-id"></div>
       </div>
       <div class="hangar-info difficulty-info">
@@ -170,7 +170,7 @@
       </div>
     </div>
     <div class="hangar-foot">
-      <button class="neon-btn" id="btn-difficulty-go"><span data-i18n="startMission"></span><small data-i18n="startMissionS"></small></button>
+      <button class="neon-btn" id="btn-difficulty-go"><span data-i18n="deployNow"></span><small data-i18n="deployNowS"></small></button>
     </div>
   </div>
 </div>
@@ -223,6 +223,6 @@
   </div>
 </div>
 
-<script type="module" src="./js/main.js?v=2.1"></script>
+<script type="module" src="./js/main.js?v=2.2"></script>
 </body>
 </html>

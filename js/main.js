@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, DIFFICULTIES, difficultyOf, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js?v=1.6';
 import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, DIFFICULTY_ORDER, campaignForWave, campaignLabel, normalizeProgress, chapterRecord, chapterBest, chapterClears, isChapterUnlocked, isDifficultyUnlocked, recordLevel, recordChapter } from './campaign.js?v=1.5';
-import './strings.js?v=1.8';
+import './strings.js?v=1.9';
 import { World } from './world.js';
 import { makeNinja, updateNinja, disposeNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.6';
 import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon, pierceDamage, novaSplash } from './weapons.js?v=1.6';
@@ -892,7 +892,12 @@ function renderDifficultyCards() {
     return `<button type="button" class="diff-btn ${selDifficulty === k ? 'sel' : ''}" data-diff="${k}" ${unlocked ? '' : 'disabled'}><b>${unlocked ? t('diff.' + k) : '◇ ' + t('diff.' + k)}</b><small>${unlocked ? t('diffTag.' + k) : t('difficultyLocked')}</small></button>`;
   }).join('');
   const desc = $('difficulty-desc2'); if (desc) desc.textContent = t('diffDesc.' + selDifficulty);
-  const glyph = $('difficulty-glyph'); if (glyph) glyph.textContent = selDifficulty === 'story' ? '◇' : selDifficulty === 'normal' ? '◈' : '◆';
+  const orb = $('diff-orb');
+  if (orb) {
+    orb.className = 'diff-orb ' + selDifficulty;
+    const sym = selDifficulty === 'story' ? '◇' : selDifficulty === 'normal' ? '◈' : '◆';
+    for (const f of orb.querySelectorAll('.face')) f.textContent = sym;
+  }
   const idEl = $('difficulty-id');
   if (idEl) idEl.innerHTML = `<b>${t('diff.' + selDifficulty)}</b><span>${t('diffTag.' + selDifficulty)}</span>`;
   for (const b of row.querySelectorAll('[data-diff]')) b.addEventListener('click', () => {
@@ -909,6 +914,18 @@ function openDifficulty() {
 }
 function closeDifficulty() { $('screen-difficulty').classList.add('hidden'); }
 function startFromDifficulty() {
+  if (!difficultyAnywhere(selDifficulty)) return;
+  const scr = $('screen-difficulty');
+  if (scr) {
+    scr.classList.add('deploying');
+    audio.ready(); try { audio.confirm(); } catch (_) {}
+    Platform.haptic('heavy');
+    setTimeout(() => { scr.classList.remove('deploying'); launchFromDifficulty(); }, 520);
+    return;
+  }
+  launchFromDifficulty();
+}
+function launchFromDifficulty() {
   if (!difficultyAnywhere(selDifficulty)) return;
   selChapter = 1; selWave = 1;
   saveLoadout(); saveResume();

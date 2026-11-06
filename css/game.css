@@ -184,7 +184,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .combat-readout .cr-shield em { margin-left: auto; font: 9px/1 'Orbitron', sans-serif; color: #baf5d2; font-style: normal; }
 .difficulty-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 200px; }
 .difficulty-glyph { font-family: 'Orbitron', sans-serif; font-size: 92px; line-height: 1; color: var(--c1); text-shadow: 0 0 26px var(--c1); }
-.difficulty-info { justify-content: center; gap: 10px; }
+.difficulty-info { justify-content: flex-end; gap: 10px; }
 
 /* Chapter records page (2026-11-05): title + story + best in the middle,
    two rows of five chapter cells pinned at the bottom, no stage numbers. */
@@ -499,3 +499,27 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 #combo-chip { padding: 5px 12px; gap: 7px; }
 #combo-chip b { font-size: 26px; line-height: 1; }
 #combo-chip span { font-size: 9px; letter-spacing: 2px; }
+
+/* 2026-11-05 selection-page polish (Roy): back arrows, no story block on the craft page,
+   more room for the 3D craft, and a rotating 3D emblem + deploy flash on the difficulty page. */
+.hangar-back { font-size: 24px; line-height: 1; font-family: 'Orbitron', sans-serif; }
+.craft-stage { flex: 1 1 auto; min-height: 268px; }
+.craft-info { justify-content: flex-start; gap: 8px; }
+.difficulty-main { flex-direction: column; }
+.difficulty-hero { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 18px; gap: 8px; perspective: 700px; }
+.diff-orb { position: relative; width: 156px; height: 156px; transform-style: preserve-3d; animation: orbSpin 7.5s linear infinite; }
+.diff-orb .face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', sans-serif; font-size: 74px; line-height: 1; font-style: normal;
+  color: var(--orb, var(--c1)); text-shadow: 0 0 22px var(--orb, var(--c1)), 0 0 48px color-mix(in srgb, var(--orb, var(--c1)) 60%, transparent);
+  backface-visibility: visible; }
+.diff-orb .f1 { transform: rotateY(0deg) translateZ(68px); }
+.diff-orb .f2 { transform: rotateY(120deg) translateZ(68px); opacity: .8; }
+.diff-orb .f3 { transform: rotateY(240deg) translateZ(68px); opacity: .8; }
+.diff-orb.story { --orb: #00e5ff; }
+.diff-orb.normal { --orb: #ff5c9a; }
+.diff-orb.nightmare { --orb: #ff7a3b; }
+@keyframes orbSpin { from { transform: rotateY(0deg) rotateX(-8deg); } to { transform: rotateY(360deg) rotateX(-8deg); } }
+#screen-difficulty.deploying .diff-orb { animation: orbBurst .55s ease-out forwards; }
+@keyframes orbBurst { 0% { transform: scale(1); filter: brightness(1); } 55% { transform: scale(1.45); filter: brightness(3); } 100% { transform: scale(.2); filter: brightness(6); opacity: 0; } }
+#screen-difficulty.deploying::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 42%, rgba(255,255,255,.85), transparent 55%); animation: deployFlash .55s ease-out forwards; }
+@keyframes deployFlash { from { opacity: 0; } 35% { opacity: 1; } to { opacity: 0; } }
