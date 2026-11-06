@@ -17,10 +17,10 @@ with sync_playwright() as p:
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto(URL + '?lang=zh&reset=1', wait_until='domcontentloaded'); pg.wait_for_timeout(1200)
-    pg.click('#btn-loadout'); pg.wait_for_timeout(300)
+    pg.click('#btn-start'); pg.wait_for_timeout(300)
     pg.click('#btn-hangar-next'); pg.wait_for_timeout(400)
     pg.click('#btn-weapon-go'); pg.wait_for_timeout(200)
-    pg.click('#btn-mission-go'); pg.wait_for_timeout(300)
+    pg.click('#btn-difficulty-go'); pg.wait_for_timeout(300)
     pg.evaluate("() => { __ninja.hp = 3; __ninja.invuln = 999; }")
 
     pg.evaluate("() => { __ninja.api.wave(4); __ninja.api.spawn({type:'drone', x:0, phase:0, pattern:'dive', elite:false}); const e=__ninja.enemies[__ninja.enemies.length-1]; e.z=-8; e.hp=999; e.fireT=0; }")

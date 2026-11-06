@@ -58,12 +58,12 @@ i18n.add({
 "異域凶間"
 ],
 "subtitle": [
-"星海魔獸 · 無盡波數",
-"STAR-SEA MONSTERS · ENDLESS WAVES"
+"三機體 · 三武器 · 十章戰役",
+"3 AIRFRAMES · 3 WEAPONS · 10 CHAPTERS"
 ],
 "tagline": [
-"拖動畫面移動戰機，自動開火。<br>儲滿能量就放「霓虹裂空斬」清場！每 5 波迎戰星海巨獸，波數無盡。",
-"Drag anywhere to fly your craft — auto-fire is always on.<br>Charge up the NEON RIFT SLASH to clear the screen! A star-sea monster every 5 waves, and the waves never end."
+"拖動移動、自動開火。三款機體、三種武器，每種武器有獨立升級同大招。<br>十章連續推進，每 5 波一隻星海巨獸；揀難度由第一關打到第十幕。",
+"Drag to fly, auto-fire always on. Three airframes and three weapons, each with its own upgrades and ultimate.<br>Ten chapters run continuously, a star-sea monster every 5 waves — pick a difficulty and fight from stage one."
 ],
 "launch": [
 "出擊",
@@ -77,6 +77,14 @@ i18n.add({
 "第 {chapter} 章完成 · 繼續下一章",
 "CHAPTER {chapter} CLEAR · NEXT CHAPTER"
 ],
+"chaptersBtn": ["章節紀錄", "CHAPTERS"],
+"chaptersBtnS": ["故事 · 分數", "STORY · SCORES"],
+"chaptersTitle": ["章節紀錄", "CHAPTER RECORDS"],
+"chaptersTitleS": ["故事背景 · 每章分數", "STORY · BEST PER CHAPTER"],
+"chapterRecordsHint": ["只作紀錄，出擊請用主頁", "Records only — launch from home"],
+"selectDifficulty": ["選擇難度", "SELECT DIFFICULTY"],
+"selectDifficultyS": ["由第一關開始", "STARTS AT STAGE ONE"],
+"difficultyNote": ["每種難度都由第一章第一關開始；完成一章會自動接落下一章。", "Every difficulty starts at chapter 1 stage 1; clearing a chapter rolls into the next."],
 "loadoutBtn": [
 "配置",
 "LOADOUT"

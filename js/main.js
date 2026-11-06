@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, DIFFICULTIES, difficultyOf, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js?v=1.6';
 import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, DIFFICULTY_ORDER, campaignForWave, campaignLabel, normalizeProgress, chapterRecord, chapterBest, chapterClears, isChapterUnlocked, isDifficultyUnlocked, recordLevel, recordChapter } from './campaign.js?v=1.5';
-import './strings.js?v=1.5a';
+import './strings.js?v=1.7';
 import { World } from './world.js';
 import { makeNinja, updateNinja, disposeNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.6';
 import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon, pierceDamage, novaSplash } from './weapons.js?v=1.6';
@@ -155,6 +155,7 @@ const S = {
 };
 PLAYER.maxHp = craftOf(S.craft).hp + D().bonusHp;
 window.__ninja = S;  // test hook
+window.__audio = audio;  // music state probe for the home-screen BGM guard
 const C = () => craftOf(S.craft);            // current airframe
 const chargeGain = (n) => n * C().charge;    // wraith charges faster
 
@@ -285,7 +286,7 @@ function beginRun() {
   const m = S.mission, lang = i18n.isZh() ? 'zh' : 'en';
   ui.banner(t('chapterStage', { chapter: m.chapter, stage: m.stage, name: m.name[lang] }), m.stage === 1 ? m.story[lang] : m.stageName[lang], t('firstHint'));
 }
-function showAttract() { closeHangar(); closeWeapon(); closeMission(); if (!S.demo) { selWave = missionProgress.unlocked; selChapter = Math.ceil(selWave / LEVELS_PER_CHAPTER); } setState('attract'); resetRun(); refreshStart(); }
+function showAttract() { closeHangar(); closeWeapon(); closeMission(); closeDifficulty(); audio.init(); audio.startMusic(); audio.unduckMusic(); if (!S.demo) { selWave = missionProgress.unlocked; selChapter = Math.ceil(selWave / LEVELS_PER_CHAPTER); } setState('attract'); resetRun(); refreshStart(); }
 
 // ---------------------------------------------------------------- spawning
 function spawnEnemy(ev) {
@@ -677,12 +678,13 @@ function quickStart() {
 const hangarOpen = () => !$('screen-hangar').classList.contains('hidden');
 const weaponOpen = () => !$('screen-weapon').classList.contains('hidden');
 const missionOpen = () => !$('screen-mission').classList.contains('hidden');
+const difficultyOpen = () => !$('screen-difficulty').classList.contains('hidden');
 function openHangar() { renderCraftSelect(); renderCraftInfo(); ensurePreview(); closeWeapon(); closeMission(); $('screen-hangar').classList.remove('hidden'); }
 function closeHangar() { $('screen-hangar').classList.add('hidden'); }
 function openWeapon() { renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); closeMission(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); syncWeaponVideo(); }
 function closeWeapon() { $('screen-weapon').classList.add('hidden'); const v = $('weapon-video'); if (v) v.pause(); }
 function closeMission() { $('screen-mission').classList.add('hidden'); }
-function confirmWeapon() { closeWeapon(); closeHangar(); openMission(); }
+function confirmWeapon() { closeWeapon(); closeHangar(); openDifficulty(); }
 function startSelectedMission() {
   if (!isChapterUnlocked(missionProgress, selChapter) || !isDifficultyUnlocked(missionProgress, selChapter, selDifficulty)) return;
   selWave = (selChapter - 1) * LEVELS_PER_CHAPTER + 1;
@@ -694,8 +696,8 @@ createInput({
   anyGesture() { audio.init(); audio.startMusic(); },
   action(a) {
     if (ui.modalOpen) { if (a === 'pause') ui.closeModal(); return; }
-    if (a === 'primary') { if (S.state === 'attract') { if (missionOpen()) startSelectedMission(); else if (weaponOpen()) confirmWeapon(); else if (hangarOpen()) openWeapon(); else if (!quickStart()) openHangar(); } else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
-    else if (a === 'pause') { if (missionOpen()) { closeMission(); openWeapon(); } else if (weaponOpen()) { closeWeapon(); openHangar(); } else if (hangarOpen()) closeHangar(); else if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
+    if (a === 'primary') { if (S.state === 'attract') { if (difficultyOpen()) startFromDifficulty(); else if (weaponOpen()) confirmWeapon(); else if (hangarOpen()) openWeapon(); else if (missionOpen()) showAttract(); else openHangar(); } else if (S.state === 'playing') doUlt(); else if (S.state === 'paused') resume(); else if (S.state === 'over') retry(); }
+    else if (a === 'pause') { if (difficultyOpen()) { closeDifficulty(); openWeapon(); } else if (missionOpen()) { showAttract(); } else if (weaponOpen()) { closeWeapon(); openHangar(); } else if (hangarOpen()) closeHangar(); else if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); }
     else if (a === 'mute') { audio.init(); ui.setMuted(audio.toggleMute()); }
     else if (a === 'ult') doUlt();
     else if (a === 'overdrive') doOverdrive();
@@ -703,15 +705,16 @@ createInput({
     else if (a === 'fps') $('fps').classList.toggle('hidden');
   },
 }, { swipe: 'once', actions: { KeyX: 'ult', KeyJ: 'ult', KeyK: 'ult', KeyQ: 'overdrive', KeyO: 'overdrive' } });
-ui.on('btn-start', () => { audio.init(); if (S.demo || flags.autostart) beginRun(); else if (!quickStart()) openHangar(); });
-ui.on('btn-loadout', () => { audio.init(); try { audio.select(); } catch (_) {} openHangar(); });
+ui.on('btn-start', () => { audio.init(); if (S.demo || flags.autostart) beginRun(); else openHangar(); });
+ui.on('btn-chapters', () => { audio.init(); try { audio.select(); } catch (_) {} openChapters(); });
+ui.on('btn-difficulty-back', () => { audio.back(); closeDifficulty(); openWeapon(); });
+ui.on('btn-difficulty-go', () => { audio.init(); try { audio.click(); } catch (_) {} startFromDifficulty(); });
 ui.on('btn-hangar-next', () => { audio.init(); try { audio.click(); } catch (_) {} openWeapon(); });
 ui.on('btn-hangar-back', () => { audio.back(); closeHangar(); });
 ui.on('btn-weapon-back', () => { audio.back(); closeWeapon(); openHangar(); });
 ui.on('btn-weapon-go', () => { audio.init(); audio.click(); confirmWeapon(); });
 ui.on('btn-mission-back', () => { audio.back(); closeMission(); openWeapon(); });
-ui.on('btn-mission-go', () => { audio.init(); startSelectedMission(); });
-ui.on('chapter-entry', () => { audio.init(); startSelectedMission(); });
+ui.on('btn-mission-back', () => { audio.back(); showAttract(); });
 const __hub = readHub();
 if (shouldShowArcadeMenu(__hub)) { const b = document.getElementById('btn-arcade-menu'); if (b) b.classList.remove('hidden'); }
 ui.on('btn-arcade-menu', () => { try { audio.back(); } catch {} returnToHub({ gameId: 'cyber-ninja', openStore: false }); });
@@ -878,35 +881,40 @@ function renderWeaponInfo() {
     ].map(([l, v]) => `<span class="ws-stat"><em>${l}</em><b>${v}</b></span>`).join('');
   }
 }
-function renderDifficulty() {
-  const row = $('difficulty-row'); if (!row) return;
+const difficultyAnywhere = (k) => {
+  if (k === 'story') return true;
+  const need = k === 'normal' ? 'story' : 'normal';
+  return Object.values(missionProgress.chapters).some(c => ((c.difficulties?.[need]?.clears) || 0) > 0);
+};
+function renderDifficultyCards() {
+  const row = $('difficulty-row2'); if (!row) return;
   row.innerHTML = DIFFICULTY_ORDER.map(k => {
-    const unlocked = isDifficultyUnlocked(missionProgress, selChapter, k), rec = chapterRecord(missionProgress, selChapter, k);
-    return `<button type="button" class="diff-btn ${selDifficulty === k ? 'sel' : ''}" data-diff="${k}" ${unlocked ? '' : 'disabled'}><b>${unlocked ? t('diff.' + k) : '◇ ' + t('diff.' + k)}</b><small>${unlocked ? `${t('diffTag.' + k)} · ${rec.best.toLocaleString('en-US')}` : t('difficultyLocked')}</small></button>`;
+    const unlocked = difficultyAnywhere(k);
+    return `<button type="button" class="diff-btn ${selDifficulty === k ? 'sel' : ''}" data-diff="${k}" ${unlocked ? '' : 'disabled'}><b>${unlocked ? t('diff.' + k) : '◇ ' + t('diff.' + k)}</b><small>${unlocked ? t('diffTag.' + k) : t('difficultyLocked')}</small></button>`;
   }).join('');
-  $('difficulty-desc').textContent = t('diffDesc.' + selDifficulty);
+  const desc = $('difficulty-desc2'); if (desc) desc.textContent = t('diffDesc.' + selDifficulty);
   for (const b of row.querySelectorAll('[data-diff]')) b.addEventListener('click', () => {
     const key = b.dataset.diff;
-    if (!isDifficultyUnlocked(missionProgress, selChapter, key) || selDifficulty === key) return;
+    if (!difficultyAnywhere(key) || selDifficulty === key) return;
     audio.init(); audio.select(); selDifficulty = key; S.difficulty = selDifficulty; store.set('difficulty', selDifficulty);
-    PLAYER.maxHp = C().hp + D().bonusHp; renderDifficulty(); renderMissionSelection();
+    PLAYER.maxHp = C().hp + D().bonusHp; renderDifficultyCards();
   });
 }
-function openMission() {
-  selChapter = Math.max(1, Math.min(CHAPTER_COUNT, Math.ceil(selWave / LEVELS_PER_CHAPTER)));
-  if (!isChapterUnlocked(missionProgress, selChapter)) selChapter = 1;
-  if (!isDifficultyUnlocked(missionProgress, selChapter, selDifficulty)) selDifficulty = 'story';
-  selWave = (selChapter - 1) * LEVELS_PER_CHAPTER + 1;
+function openDifficulty() {
+  if (!difficultyAnywhere(selDifficulty)) selDifficulty = 'story';
   S.difficulty = selDifficulty; PLAYER.maxHp = C().hp + D().bonusHp;
-  renderMission(); renderDifficulty(); $('screen-mission').classList.remove('hidden');
-  requestAnimationFrame(() => $('chapter-nav').querySelector('.sel')?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'instant' }));
+  renderDifficultyCards(); $('screen-difficulty').classList.remove('hidden');
 }
-function renderMissionSelection() {
-  const lang = i18n.isZh() ? 'zh' : 'en';
-  const selected = campaignForWave((selChapter - 1) * LEVELS_PER_CHAPTER + 1), rec = chapterRecord(missionProgress, selChapter, selDifficulty);
-  $('mission-selection').innerHTML = `<span>CH.${String(selChapter).padStart(2, '0')} · ${t('diff.' + selDifficulty)}</span><b>${selected.name[lang]} · ${t('levelBest')} ${rec.best.toLocaleString('en-US')}</b>`;
+function closeDifficulty() { $('screen-difficulty').classList.add('hidden'); }
+function startFromDifficulty() {
+  if (!difficultyAnywhere(selDifficulty)) return;
+  selChapter = 1; selWave = 1;
+  saveLoadout(); saveResume();
+  closeDifficulty(); closeWeapon(); closeHangar();
+  beginRun();
 }
-function renderMission() {
+function openChapters() { renderChapters(); $('screen-mission').classList.remove('hidden'); }
+function renderChapters() {
   const nav = $('chapter-nav'); if (!nav) return;
   const lang = i18n.isZh() ? 'zh' : 'en';
   nav.innerHTML = Array.from({ length: CHAPTER_COUNT }, (_, i) => {
@@ -918,10 +926,7 @@ function renderMission() {
   for (const b of nav.querySelectorAll('[data-chapter]')) b.addEventListener('click', () => {
     const chapter = Number(b.dataset.chapter);
     if (!isChapterUnlocked(missionProgress, chapter)) return;
-    audio.select(); selChapter = chapter; selWave = (chapter - 1) * LEVELS_PER_CHAPTER + 1;
-    if (!isDifficultyUnlocked(missionProgress, chapter, selDifficulty)) selDifficulty = 'story';
-    S.difficulty = selDifficulty; PLAYER.maxHp = C().hp + D().bonusHp;
-    renderMission(); renderDifficulty();
+    audio.select(); selChapter = chapter; renderChapters();
   });
   const selected = campaignForWave((selChapter - 1) * LEVELS_PER_CHAPTER + 1), clears = chapterClears(missionProgress, selChapter);
   $('mission-code').textContent = `CH.${String(selected.chapter).padStart(2, '0')} · ${selected.place[lang]}`;
@@ -929,18 +934,14 @@ function renderMission() {
   $('mission-story').textContent = selected.story[lang];
   $('mission-clear').textContent = clears ? t('clearedCount', { n: clears }) : t('notCleared');
   $('mission-clear').classList.toggle('done', clears > 0);
-  $('chapter-entry-best').textContent = chapterBest(missionProgress, selChapter).toLocaleString('en-US');
-  const stageStrip = $('chapter-stages');
-  if (stageStrip) {
+  const best = $('chapter-best'); if (best) best.textContent = chapterBest(missionProgress, selChapter).toLocaleString('en-US');
+  const strip = $('chapter-stages');
+  if (strip) {
     const done = clears > 0 ? 'done' : '';
-    stageStrip.innerHTML = Array.from({ length: LEVELS_PER_CHAPTER }, (_, i) => `<i class="${done}">${i + 1}</i>`).join('');
+    strip.innerHTML = Array.from({ length: LEVELS_PER_CHAPTER }, (_, i) => `<i class="${done}">${i + 1}</i>`).join('');
   }
-  $('chapter-entry-status').textContent = t('chapterFiveStages');
-  $('chapter-entry-action').textContent = clears ? t('chapterReplay') : t('chapterDeploy');
-  $('mission-loadout').innerHTML = `<span>${t('loadout')}</span><b>${craftName(S.craft, lang)} · ${WEAPONS[selWeapon].name[lang]}</b>`;
-  renderMissionSelection();
 }
-renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficulty();
+renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficultyCards();
 ui.on('btn-settings-pause', () => { try { audio.click(); } catch (_) {} ui.settings({ audio, stage, onOpen: () => { try { audio.click(); } catch (_) {} } }); }); ui.on('btn-pause', pause);
 ui.on('btn-mute', () => { audio.init(); ui.setMuted(audio.toggleMute()); });
 $('btn-ult').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); doUlt(); });
@@ -965,7 +966,7 @@ ui.mountSettings({
 });
 
 
-i18n.onChange(() => { refreshBossName(); if (S.state === 'over') showRunResult(S.chapterClear); renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficulty(); renderMission(); });
+i18n.onChange(() => { refreshBossName(); if (S.state === 'over') showRunResult(S.chapterClear); renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficultyCards(); renderChapters(); });
 ui.on('btn-retry', retry); ui.on('btn-menu', overToMenu); ui.on('btn-revive', revive);
 Platform.onBack(() => { if (ui.closeModal()) return true; if (S.state === 'playing') { pause(); return true; } if (S.state === 'paused') { resume(); return true; } if (S.state === 'over') { overToMenu(); return true; } return false; });
 Platform.onPause(() => { if (!S.demo) pause(); });
@@ -981,7 +982,7 @@ S.api = {
     return { key: ninja.userData.airframe, engines: ninja.userData.engineCount, meshes, vertices, holoArcs: ninja.userData.spinners.length };
   },
   weapon: (key, level = 1) => { if (!WEAPONS[key]) return; S.ults[S.weapon] = S.ult; S.weapon = key; S.weaponLevels[key] = Math.max(1, Math.min(6, level)); S.power = S.weaponLevels[key]; S.ult = S.ults[key]; S.fireT = 0; updateHUD(); },
-  difficulty: (key) => { if (!DIFFICULTIES[key]) return; selDifficulty = key; S.difficulty = key; PLAYER.maxHp = C().hp + D().bonusHp; S.hp = Math.min(S.hp, PLAYER.maxHp); renderDifficulty(); updateHUD(); },
+  difficulty: (key) => { if (!DIFFICULTIES[key]) return; selDifficulty = key; S.difficulty = key; PLAYER.maxHp = C().hp + D().bonusHp; S.hp = Math.min(S.hp, PLAYER.maxHp); renderDifficultyCards(); updateHUD(); },
   drop: (kind, key) => dropPickup(S.x, S.z - 1.2, kind, key),
   dropAt: (x, z, kind, key) => dropPickup(x, z, kind, key),
   shots: () => ({ pulse: pools.pulse.list.length, lance: pools.lance.list.length, nova: pools.nova.list.length }),

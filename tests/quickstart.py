@@ -1,8 +1,8 @@
-"""Quick-start guard for XENO NIGHTMARE.
+"""Start-flow guard (Roy 2026-11-05).
 
-Roy 2026-11-05: START must launch the remembered airframe / weapon / chapter in one tap.
-The three selection pages stay reachable through the 配置 (LOADOUT) button, and a
-first-ever launch still walks the three pages.
+Home -> 出擊 -> airframe -> weapon -> difficulty -> play from chapter 1 stage 1.
+The chapter list is records-only: it opens from the home screen, shows each
+chapter's story and best score, and must never launch a run.
 
 Run: python tests/quickstart.py [URL]
 """
@@ -10,7 +10,7 @@ from __future__ import annotations
 import sys
 from playwright.sync_api import sync_playwright
 
-URL = sys.argv[1] if len(sys.argv) > 1 else 'http://127.0.0.1:18941/'
+URL = (sys.argv[1] if len(sys.argv) > 1 else 'http://127.0.0.1:18941/').rstrip('/') + '/'
 ARGS = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
 fails = []
 
@@ -36,61 +36,29 @@ with sync_playwright() as p:
     pg.goto(URL + '?reset=1&lang=zh', wait_until='domcontentloaded')
     pg.wait_for_function('() => window.__ninja')
 
-    # 1. the secondary 配置 entry exists, is tappable and fits the phone
-    box = pg.evaluate("""() => { const e = document.querySelector('#btn-loadout'); if (!e) return null;
-      const r = e.getBoundingClientRect(); return {w:r.width,h:r.height,x:r.x,y:r.y,right:r.right,
-      visible: getComputedStyle(e).display !== 'none' && r.width > 0}; }""")
-    check(bool(box and box['visible']), 'start screen shows a LOADOUT (配置) entry')
-    check(bool(box and box['h'] >= 44 and box['w'] >= 88), f'LOADOUT target is at least 44px tall ({box})')
-    check(bool(box and box['right'] <= 390 and box['x'] >= 0 and box['y'] >= 0), 'LOADOUT stays inside the viewport')
+    box = pg.evaluate("""() => { const e = document.querySelector('#btn-chapters'); if (!e) return null;
+      const r = e.getBoundingClientRect(); return {w:r.width,h:r.height,x:r.x,right:r.right,visible:r.width>0}; }""")
+    check(bool(box and box['visible'] and box['h'] >= 40), f'home shows a chapters entry under LAUNCH ({box})')
+    check(bool(box and box['right'] <= 390 and box['x'] >= 0), 'chapters entry stays inside the viewport')
+    pg.click('#btn-chapters'); pg.wait_for_timeout(400)
+    check(not hidden(pg, '#screen-mission'), 'chapters entry opens the records page')
+    check(pg.locator('#chapter-nav .chapter-btn').count() == 10, 'records page lists all ten chapters')
+    check(pg.locator('#btn-mission-go, #chapter-entry').count() == 0, 'records page has no launch control')
+    pg.click('#btn-mission-back'); pg.wait_for_timeout(300)
 
-    # 2. first-ever launch still walks the three selection pages
-    pg.click('#btn-start')
-    pg.wait_for_timeout(500)
-    check(not hidden(pg, '#screen-hangar'), 'first launch opens the airframe page (onboarding kept)')
-    check(pg.evaluate("() => __ninja.state !== 'playing'"), 'first launch does not skip into play')
+    pg.click('#btn-start'); pg.wait_for_timeout(450)
+    check(not hidden(pg, '#screen-hangar'), 'LAUNCH opens the airframe page')
+    pg.click('#btn-hangar-next'); pg.wait_for_timeout(400)
+    check(not hidden(pg, '#screen-weapon'), 'airframe page leads to the weapon page')
+    pg.click('#btn-weapon-go'); pg.wait_for_timeout(450)
+    check(not hidden(pg, '#screen-difficulty'), 'weapon page leads to the difficulty page')
+    check(pg.locator('#difficulty-row2 .diff-btn').count() == 3, 'difficulty page offers three difficulties')
+    check(pg.evaluate("() => !document.querySelector('#difficulty-row2 .diff-btn').disabled"), 'Story is selectable on a fresh save')
 
-    # 3. the 配置 entry opens the same three-page flow
-    pg.click('#btn-hangar-back')
-    pg.wait_for_timeout(300)
-    pg.click('#btn-loadout')
-    pg.wait_for_timeout(500)
-    check(not hidden(pg, '#screen-hangar'), 'LOADOUT opens the airframe page')
-
-    # 4. walk the pages once, launch, and record the chosen loadout
-    pg.click('#btn-hangar-next')
-    pg.wait_for_timeout(400)
-    check(not hidden(pg, '#screen-weapon'), 'LOADOUT flow reaches the weapon page')
-    pg.click('#btn-weapon-go')
-    pg.wait_for_timeout(400)
-    check(not hidden(pg, '#screen-mission'), 'LOADOUT flow reaches the chapter page')
-    pg.click('#btn-mission-go')
-    pg.wait_for_function("() => __ninja.state === 'playing'", timeout=20000)
-    saved = pg.evaluate("""() => { for (const k of Object.keys(localStorage)) if (k.endsWith('lastLoadout')) return {key:k, v:JSON.parse(localStorage.getItem(k))};
-      return null; }""")
-    check(bool(saved), f'the chosen loadout is stored ({saved})')
-    if saved:
-        v = saved['v']
-        check(v.get('chapter', 0) >= 1 and v.get('weapon') and v.get('craft'),
-              f'stored loadout carries craft / weapon / chapter ({v})')
-
-    # 5. back to the title and one-tap launch
-    pg.goto(URL + '?lang=zh', wait_until='domcontentloaded')
-    pg.wait_for_function('() => window.__ninja')
-    t0 = pg.evaluate('performance.now()')
-    pg.click('#btn-start')
-    pg.wait_for_function("() => __ninja.state === 'playing'", timeout=20000)
-    elapsed = pg.evaluate('performance.now()') - t0
-    check(hidden(pg, '#screen-hangar'), 'one-tap START never shows the airframe page')
-    check(hidden(pg, '#screen-start'), 'one-tap START leaves the title screen')
-    cur = pg.evaluate("() => ({craft: __ninja.craft, wave: __ninja.wave, weapon: __ninja.weapon})")
-    if saved:
-        v = saved['v']
-        check(cur['craft'] == v['craft'], f"one-tap START reuses the saved airframe ({cur['craft']} vs {v['craft']})")
-        check(cur['weapon'] == v['weapon'], f"one-tap START reuses the saved weapon ({cur['weapon']} vs {v['weapon']})")
-        check(cur['wave'] >= (v['chapter'] - 1) * 5 + 1, f"one-tap START starts at the saved chapter ({cur['wave']})")
-    check(elapsed < 15000, f'one tap reaches play in under 15s of page time (software WebGL) ({elapsed:.0f}ms)')
-
+    pg.click('#btn-difficulty-go')
+    pg.wait_for_function("() => __ninja.state === 'playing'", timeout=25000)
+    st = pg.evaluate("() => ({wave: __ninja.wave, chapter: __ninja.mission.chapter, diff: __ninja.difficulty})")
+    check(st['wave'] == 1 and st['chapter'] == 1 and st['diff'] == 'story', f'a difficulty run starts at chapter 1 stage 1 ({st})')
     check(not errors, f'zero console errors ({errors[:3]})')
     ctx.close()
     b.close()

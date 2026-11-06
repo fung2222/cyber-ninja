@@ -155,13 +155,24 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .td-ult small { display: block; font-size: 9px; color: #b9c8ff; line-height: 1.5; margin-top: 2px; }
 .td-foot { margin-top: 8px; font-size: 9px; letter-spacing: 1px; color: color-mix(in srgb, var(--tc) 75%, white); opacity: .85; }
 
+/* chapters + difficulty screens (2026-11-05 flow) */
+.difficulty-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 10px 2px; }
+#difficulty-row2.diff-cards { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.diff-cards .diff-btn { min-height: 76px; text-align: left; padding: 12px 16px; }
+.diff-cards .diff-btn b { font-size: 18px; letter-spacing: 3px; }
+.diff-cards .diff-btn small { font-size: 10px; margin-top: 4px; }
+.difficulty-note { color: #93a4c9; font-size: 11px; line-height: 1.6; }
+.chapter-record { display: flex; align-items: baseline; gap: 10px; padding: 10px 0 2px; color: #93a4c9; font-size: 11px; }
+.chapter-record b { font-family: 'Orbitron', sans-serif; font-size: 20px; color: var(--c3); }
+@media (min-width: 761px) { #difficulty-row2.diff-cards { grid-template-columns: repeat(3, 1fr); } }
+
 /* menu meta */
 .menu-meta { margin-top: 18px; }
 
 /* One-tap launch (2026-11-05): START opens the remembered loadout; 配置 is the quiet way
    back to the airframe / weapon / chapter pages. Id-level so the generic .neon-btn
    min-width 240 + pulse animation do not make the secondary compete with the primary. */
-#screen-start #btn-loadout {
+#screen-start #btn-chapters {
   min-width: 172px;
   min-height: 44px;
   padding: 6px 22px;
@@ -172,9 +183,9 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   box-shadow: none;
   background: rgba(10, 4, 30, .28);
 }
-#screen-start #btn-loadout small { font-size: 8px; letter-spacing: 2px; opacity: .9; }
-#screen-start #btn-loadout:hover,
-#screen-start #btn-loadout:focus-visible { transform: none; opacity: 1; box-shadow: 0 0 12px color-mix(in srgb, var(--c2) 40%, transparent); }
+#screen-start #btn-chapters small { font-size: 8px; letter-spacing: 2px; opacity: .9; }
+#screen-start #btn-chapters:hover,
+#screen-start #btn-chapters:focus-visible { transform: none; opacity: 1; box-shadow: 0 0 12px color-mix(in srgb, var(--c2) 40%, transparent); }
 .hi-line b { font-family: 'Orbitron', sans-serif; color: var(--c3); }
 
 /* ---------------- misc screens ---------------- */
@@ -364,7 +375,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .chapter-entry-score b { font: 18px/1 'Orbitron', sans-serif; color: var(--c3); }
 .chapter-btn.done b::after { content: ' ✓'; color: var(--c3); font-size: 10px; }
 .diff-btn:disabled { opacity: .3; cursor: not-allowed; filter: saturate(.2); }
-.mission-main > .mission-brief { flex: 0 0 auto; }
+.mission-main > .mission-brief { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
 .mission-brief .chapter-entry { min-height: 150px; }
 /* Five-stage strip: gives the middle band real information instead of dead space. */
 .chapter-stages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 10px; }

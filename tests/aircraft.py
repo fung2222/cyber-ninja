@@ -32,7 +32,7 @@ def run(p, name, width, height, mobile):
     pg.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
     pg.on('pageerror', lambda e: errors.append(str(e)))
     pg.goto(BASE + '?lang=zh&reset=1', wait_until='domcontentloaded', timeout=120000)
-    pg.wait_for_timeout(1300); pg.click('#btn-loadout'); pg.wait_for_timeout(650)
+    pg.wait_for_timeout(1300); pg.click('#btn-start'); pg.wait_for_timeout(650)
     signatures = []
     for key, expected in EXPECTED.items():
         # The reset save has no explicit craft key until the player changes it.
@@ -49,7 +49,7 @@ def run(p, name, width, height, mobile):
         snap(pg, f'{name}-craft-{key}-v14')
     check(len(set(signatures)) == 3, f'{name}: all three airframes have distinct mesh signatures')
     if name == 'mobile':
-        pg.click('#btn-hangar-next'); pg.click('#btn-weapon-go'); pg.click('#btn-mission-go')
+        pg.click('#btn-hangar-next'); pg.click('#btn-weapon-go'); pg.click('#btn-difficulty-go')
         pg.wait_for_function("() => __ninja.state === 'playing'", timeout=15000)
         for key, expected in EXPECTED.items():
             pg.evaluate("""key => { __ninja.api.craft(key); __ninja.invuln = 0;
