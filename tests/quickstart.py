@@ -48,6 +48,11 @@ with sync_playwright() as p:
       return {h: r.height, clamp: s.webkitLineClamp, display: s.display, len: e.textContent.length}; }""")
     check(story['h'] >= 30 and story['clamp'] == 'none' and story['display'] == 'block' and story['len'] > 40,
           f'chapter story is visible (not clamped/hidden) ({story})')
+    hit = pg.evaluate("""() => { const b = document.getElementById('btn-mission-back'); const r = b.getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width/2, r.top + r.height/2);
+      return top ? (top.id || top.className) : null; }""")
+    check(hit in ('btn-mission-back', 'hangar-back records-back') or (isinstance(hit, str) and 'hangar-back' in hit),
+          f'records back arrow receives the tap (top element: {hit})')
     pg.click('#btn-mission-back'); pg.wait_for_timeout(300)
 
     pg.click('#btn-start'); pg.wait_for_timeout(450)
@@ -62,6 +67,8 @@ with sync_playwright() as p:
     pg.click('#btn-difficulty-go')
     pg.wait_for_function("() => __ninja.state === 'playing'", timeout=25000)
     st = pg.evaluate("() => ({wave: __ninja.wave, chapter: __ninja.mission.chapter, diff: __ninja.difficulty})")
+    cvs = pg.evaluate("() => ({n: document.querySelectorAll('canvas').length, craft: !!document.getElementById('craft-canvas')})")
+    check(cvs['n'] == 1 and not cvs['craft'], f'the hangar preview canvas is released before playing ({cvs})')
     check(st['wave'] == 1 and st['chapter'] == 1 and st['diff'] == 'story', f'a difficulty run starts at chapter 1 stage 1 ({st})')
     check(not errors, f'zero console errors ({errors[:3]})')
     ctx.close()

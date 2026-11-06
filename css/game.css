@@ -551,3 +551,10 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .df-flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #fff, transparent 60%); opacity: 0;
   animation: dfFlash 2.6s ease-out forwards; }
 @keyframes dfFlash { 0%, 55% { opacity: 0; } 66% { opacity: 1; } 100% { opacity: 0; } }
+
+/* 2026-11-05 records header: the long English subtitle was overlapping the back arrow and
+   swallowing its taps (elementFromPoint hit the <em>). Give the title its own box and let
+   the arrow win the hit test. */
+.hangar-head .hangar-title { flex: 1 1 auto; overflow: hidden; pointer-events: none; }
+.hangar-head .hangar-title em { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hangar-head .hangar-back { position: relative; z-index: 2; }

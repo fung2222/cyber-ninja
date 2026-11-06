@@ -680,7 +680,8 @@ const missionOpen = () => !$('screen-mission').classList.contains('hidden');
 const difficultyOpen = () => !$('screen-difficulty').classList.contains('hidden');
 function openHangar() { renderCraftSelect(); renderCraftInfo(); ensurePreview(); closeWeapon(); closeMission(); $('screen-hangar').classList.remove('hidden'); }
 function closeHangar() { $('screen-hangar').classList.add('hidden'); }
-function openWeapon() { renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); closeMission(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); syncWeaponVideo(); }
+function openWeapon() {
+  releasePreview(); renderWeaponSelect(); renderWeaponInfo(); renderTechTree(); closeMission(); $('screen-hangar').classList.add('hidden'); $('screen-weapon').classList.remove('hidden'); syncWeaponVideo(); }
 function closeWeapon() { $('screen-weapon').classList.add('hidden'); const v = $('weapon-video'); if (v) v.pause(); }
 function closeMission() { $('screen-mission').classList.add('hidden'); }
 function confirmWeapon() { closeWeapon(); closeHangar(); openDifficulty(); }
@@ -796,7 +797,14 @@ function renderTechTree() {
 let pv = null;
 function ensurePreview() {
   if (pv) return pv;
-  const canvas = $('craft-canvas'); if (!canvas) return null;
+  let canvas = $('craft-canvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'craft-canvas';
+    const stageEl = document.querySelector('.craft-stage');
+    if (!stageEl) return null;
+    stageEl.insertBefore(canvas, stageEl.firstChild);
+  }
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   const sc = new THREE.Scene();
@@ -827,6 +835,15 @@ function sizePreview() {
     pv.renderer.setSize(w, h, false);
     pv.cam.aspect = w / h; pv.cam.updateProjectionMatrix();
   }
+}
+// Free the preview GL context as soon as the player leaves the airframe page: phones only
+// get a handful of WebGL contexts, and holding two during a run risks a black screen.
+function releasePreview() {
+  if (!pv) return;
+  try { if (pv.model) { pv.sc.remove(pv.model); disposeNinja(pv.model); } pv.renderer.dispose(); pv.renderer.forceContextLoss(); } catch (_) {}
+  const old = $('craft-canvas');
+  if (old) old.remove();   // no canvas element left during a run
+  pv = null;
 }
 function renderPreview(dt) {
   if (!pv || !hangarOpen()) return;
