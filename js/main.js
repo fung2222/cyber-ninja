@@ -1,7 +1,7 @@
 // XENO NIGHTMARE 異域凶間 — controller: drag-to-move auto-fire shooter, waves, cosmic monster bosses, ultimate, continue.
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
-import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, DIFFICULTIES, difficultyOf, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js';
+import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, DIFFICULTIES, difficultyOf, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js?v=1.6';
 import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, DIFFICULTY_ORDER, campaignForWave, campaignLabel, normalizeProgress, chapterRecord, chapterBest, chapterClears, isChapterUnlocked, isDifficultyUnlocked, recordLevel, recordChapter } from './campaign.js?v=1.5';
 import './strings.js?v=1.5a';
 import { World } from './world.js';
@@ -297,6 +297,7 @@ function spawnEnemy(ev) {
     flash: 0, mode: 0, stopZ: ev.type === 'turret' ? -17 + Math.random() * 4 : -15 + Math.random() * 5,
     vx: 0, vz: def.speed * speedScale(S.wave) * (elite ? 1.12 : 1) * (S.wave <= 2 ? 0.88 : 1),
     pattern: ev.pattern || 'dive', elite, level: S.wave, score: def.score * (elite ? 2.5 : 1),
+    role: ev.role || ((ev.type === 'dasher' || ev.type === 'mite') ? 'rusher' : 'shooter'), telegraphT: 0,
   };
   if (elite && e.g.userData.mat) e.g.userData.mat.emissive = new THREE.Color(def.color).multiplyScalar(0.18);
   g.position.set(e.x, 0, e.z); S.enemies.push(e);
@@ -1187,17 +1188,8 @@ function sim(dt) {
       e.x = THREE.MathUtils.clamp(e.baseX + Math.sin(e.t * 2.6 + e.phase) * 3.0, -FIELD.halfW + 0.5, FIELD.halfW - 0.5);
     } else if (e.type === 'turret') {
       if (e.mode === 0) { e.z += e.vz * dt; if (e.z >= e.stopZ) { e.mode = 1; e.holdT = 0; } }
-      else if (e.mode === 1) {
-        e.holdT += dt;
-        e.fireT -= dt * sc * D().fireRate;
-        if (e.fireT <= 0) {
-          e.fireT = e.def.fire / sc;
-          const a = aimAt(e.x, e.z);
-          for (const o of (e.elite || S.wave > 7 ? [-0.22, -0.11, 0, 0.11, 0.22] : [-0.16, 0, 0.16])) enemyFire(e.x, e.z + 0.5, a + o, ENEMY_BULLET_SPEED * 1.02);
-          if (S.state === 'playing') audio.enemyShot();
-        }
-        if (e.holdT > 7) e.mode = 2;
-      } else e.z += e.vz * 1.5 * dt;
+      else if (e.mode === 1) { e.holdT += dt; if (e.holdT > 7) e.mode = 2; }
+      else e.z += e.vz * 1.5 * dt;
       if (e.g.userData.head) e.g.userData.head.rotation.y = aimAt(e.x, e.z);
     } else if (e.type === 'dasher') {
       if (e.mode === 0) { e.z += e.vz * 0.7 * dt; e.x += (S.x - e.x) * dt * 0.6; if (e.z > -12) { e.mode = 1; e.chargeT = 0.55; } }
@@ -1219,21 +1211,22 @@ function sim(dt) {
         e.g.rotation.y = a; e.g.rotation.x += dt * 9;
       }
     }
-    // Drone/weaver/splitter fire aimed pressure; without this the player only ever dodges Dashers.
-    if ((e.type === 'drone' || e.type === 'weaver' || e.type === 'splitter') && S.state === 'playing' && e.z > FIELD.top + 1 && e.z < S.z + 1) {
-      e.fireT -= dt * sc * D().fireRate;
-      if (e.fireT <= 0) {
-        e.fireT = e.def.fire / sc;
-        const a = aimAt(e.x, e.z);
-        if (e.type === 'weaver') {
-          for (const o of (e.elite ? [-0.24, -0.12, 0, 0.12, 0.24] : [-0.18, 0, 0.18])) enemyFire(e.x, e.z + 0.4, a + o, ENEMY_BULLET_SPEED * 0.95);
-        } else if (e.type === 'splitter') {
-          for (const o of (e.elite ? [-0.2, 0, 0.2] : [-0.12, 0.12])) enemyFire(e.x, e.z + 0.4, a + o, ENEMY_BULLET_SPEED * 0.9);
-        } else {
-          enemyFire(e.x, e.z + 0.4, a, ENEMY_BULLET_SPEED * 1.05);
-          if (e.elite || S.wave > 6) { enemyFire(e.x, e.z + 0.4, a - 0.12, ENEMY_BULLET_SPEED); enemyFire(e.x, e.z + 0.4, a + 0.12, ENEMY_BULLET_SPEED); }
+    // Shooters only: a 0.5 s muzzle telegraph, then a slow 3-shot aimed spread.
+    // Rushers never fire, so the player always has a window where moving is safe and shots still land.
+    if (e.role === 'shooter' && S.state === 'playing' && e.z > FIELD.top + 1 && e.z < S.z + 1) {
+      if (e.telegraphT > 0) {
+        e.telegraphT -= dt;
+        e.flash = Math.max(e.flash, 0.5);
+        if (e.telegraphT <= 0) {
+          const a = aimAt(e.x, e.z);
+          const spread = e.elite ? [-0.22, -0.11, 0, 0.11, 0.22] : [-0.14, 0, 0.14];
+          for (const o of spread) enemyFire(e.x, e.z + 0.4, a + o, ENEMY_BULLET_SPEED);
+          e.fireT = e.def.fire / sc;
+          if (S.state === 'playing') audio.enemyShot();
         }
-        if (S.state === 'playing') audio.enemyShot();
+      } else {
+        e.fireT -= dt * sc * D().fireRate;
+        if (e.fireT <= 0) e.telegraphT = 0.5;
       }
     }
     if (e.g.userData.spin) e.g.userData.spin.rotation.z += dt * 3;
