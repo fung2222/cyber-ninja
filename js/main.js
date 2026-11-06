@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, DIFFICULTIES, difficultyOf, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js?v=1.6';
 import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, DIFFICULTY_ORDER, campaignForWave, campaignLabel, normalizeProgress, chapterRecord, chapterBest, chapterClears, isChapterUnlocked, isDifficultyUnlocked, recordLevel, recordChapter } from './campaign.js?v=1.5';
-import './strings.js?v=1.7';
+import './strings.js?v=1.8';
 import { World } from './world.js';
 import { makeNinja, updateNinja, disposeNinja, makeEnemy, makeBoss, updateBoss, BulletPool, makePickup, makeGem, makeRock } from './entities.js?v=1.6';
 import { WEAPONS, WEAPON_KEYS, OD, WEAPON_ULT, fireSolution, weaponShort, ultName, ultShort, randomOtherWeapon, pierceDamage, novaSplash } from './weapons.js?v=1.6';
@@ -929,18 +929,12 @@ function renderChapters() {
     if (!isChapterUnlocked(missionProgress, chapter)) return;
     audio.select(); selChapter = chapter; renderChapters();
   });
-  const selected = campaignForWave((selChapter - 1) * LEVELS_PER_CHAPTER + 1), clears = chapterClears(missionProgress, selChapter);
-  $('mission-code').textContent = `CH.${String(selected.chapter).padStart(2, '0')} · ${selected.place[lang]}`;
-  $('mission-name').textContent = selected.name[lang];
-  $('mission-story').textContent = selected.story[lang];
-  $('mission-clear').textContent = clears ? t('clearedCount', { n: clears }) : t('notCleared');
-  $('mission-clear').classList.toggle('done', clears > 0);
-  const best = $('chapter-best'); if (best) best.textContent = chapterBest(missionProgress, selChapter).toLocaleString('en-US');
-  const strip = $('chapter-stages');
-  if (strip) {
-    const done = clears > 0 ? 'done' : '';
-    strip.innerHTML = Array.from({ length: LEVELS_PER_CHAPTER }, (_, i) => `<i class="${done}">${i + 1}</i>`).join('');
-  }
+  const selected = campaignForWave((selChapter - 1) * LEVELS_PER_CHAPTER + 1);
+  const idx = $('record-index');
+  if (idx) idx.textContent = lang === 'zh' ? `第 ${selChapter} 章` : `CHAPTER ${selChapter}`;
+  const nameEl = $('mission-name'); if (nameEl) nameEl.textContent = selected.name[lang];
+  const storyEl = $('mission-story'); if (storyEl) storyEl.textContent = selected.story[lang];
+  const bestEl = $('chapter-best'); if (bestEl) bestEl.textContent = chapterBest(missionProgress, selChapter).toLocaleString('en-US');
 }
 renderCraftSelect(); renderCraftInfo(); renderTechTree(); renderWeaponSelect(); renderWeaponInfo(); renderDifficultyCards();
 ui.on('btn-settings-pause', () => { try { audio.click(); } catch (_) {} ui.settings({ audio, stage, onOpen: () => { try { audio.click(); } catch (_) {} } }); }); ui.on('btn-pause', pause);
