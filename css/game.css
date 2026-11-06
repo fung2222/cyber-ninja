@@ -70,32 +70,42 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 /* ---------------- action dock: ring-progress buttons ---------------- */
 .action-dock { position: absolute; left: max(12px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-start; gap: 14px; pointer-events: none; z-index: 4; }
 .action-dock .od-btn, .action-dock .ult-btn { position: static; transform: none; left: auto; right: auto; bottom: auto; pointer-events: auto; touch-action: none; }
-.ult-btn { --p: 0; --rc: var(--c1); width: 72px; height: 72px; border-radius: 50%; cursor: pointer; overflow: hidden; color: #fff; padding: 0; position: relative;
-  border: 2px solid color-mix(in srgb, var(--c1) 45%, transparent);
-  background: conic-gradient(color-mix(in srgb, var(--c1) 75%, transparent) calc(var(--p) * 1%), rgba(10,4,30,.55) 0);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--c1) 30%, transparent), inset 0 0 18px rgba(5,1,15,.8); }
+/* No dark disc: the button is a thin ring + a masked conic gauge, so nothing reads as a
+   black oval over the scene (Roy 2026-11-05). */
+.ult-btn { --p: 0; --rc: var(--c1); width: 72px; height: 72px; border-radius: 50%; cursor: pointer; overflow: visible; color: #fff; padding: 0; position: relative;
+  border: 2px solid color-mix(in srgb, var(--c1) 55%, transparent);
+  background: none;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c1) 35%, transparent); }
+.ult-btn::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(color-mix(in srgb, var(--c1) 80%, transparent) calc(var(--p) * 1%), transparent 0);
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 60%, #000 62%);
+  mask: radial-gradient(circle at 50% 50%, transparent 60%, #000 62%); }
 /* Button interiors keep a faint skill tint instead of near-black, so an uncharged
    ability never reads as a black blob against the dark floor. */
-.ult-btn::before { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: radial-gradient(circle at 50% 30%, rgba(30,64,100,.72), rgba(7,13,32,.86)); box-shadow: inset 0 0 0 1px rgba(0,229,255,.35), inset 0 0 16px rgba(0,229,255,.2); }
-.ult-txt { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1.15; }
+.ult-btn::before { content: none; }
+.ult-txt { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1.15; }
 .ult-txt b { font-family: var(--font-zh); font-size: 15px; letter-spacing: 2px; text-shadow: 0 1px 3px #000, 0 0 8px var(--c1); }
-.ult-txt small { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2px; color: var(--c1); }
+.ult-txt small { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2px; color: #dff8ff; text-shadow: 0 1px 3px #000, 0 0 7px #000; }
 .ult-btn.ready { border-color: #fff; animation: ultPulse .8s ease-in-out infinite;
   box-shadow: 0 0 24px var(--c1), 0 0 46px var(--c2), inset 0 0 20px color-mix(in srgb, var(--c1) 55%, transparent); }
 @keyframes ultPulse { 50% { transform: scale(1.07); } }
-.od-btn { --p: 0; width: 54px; height: 54px; border-radius: 50%; cursor: pointer; overflow: hidden; color: #fff; padding: 0; position: relative; margin-left: 2px;
-  border: 2px solid color-mix(in srgb, #ff7a3b 45%, transparent);
-  background: conic-gradient(rgba(255,122,59,.8) calc(var(--p) * 1%), rgba(24,8,10,.55) 0);
-  box-shadow: 0 0 12px rgba(255,122,59,.28), inset 0 0 14px rgba(5,1,15,.8); }
-.od-btn::before { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: radial-gradient(circle at 50% 30%, rgba(86,40,24,.72), rgba(22,8,10,.86)); box-shadow: inset 0 0 0 1px rgba(255,122,59,.38), inset 0 0 14px rgba(255,122,59,.22); }
-.od-txt { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1.1; }
+.od-btn { --p: 0; width: 54px; height: 54px; border-radius: 50%; cursor: pointer; overflow: visible; color: #fff; padding: 0; position: relative; margin-left: 2px;
+  border: 2px solid color-mix(in srgb, #ff7a3b 55%, transparent);
+  background: none;
+  box-shadow: 0 0 10px rgba(255,122,59,.3); }
+.od-btn::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(rgba(255,122,59,.85) calc(var(--p) * 1%), transparent 0);
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 60%, #000 62%);
+  mask: radial-gradient(circle at 50% 50%, transparent 60%, #000 62%); }
+.od-btn::before { content: none; }
+.od-txt { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1.1; }
 .od-txt b { font-family: var(--font-zh); font-size: 10px; letter-spacing: 1px; text-shadow: 0 1px 3px #000, 0 0 8px #ff7a3b; }
-.od-txt small { font-family: 'Orbitron', sans-serif; font-size: 7px; letter-spacing: 1px; color: #ffb38a; }
+.od-txt small { font-family: 'Orbitron', sans-serif; font-size: 7px; letter-spacing: 1px; color: #ffe0c8; text-shadow: 0 1px 3px #000, 0 0 7px #000; }
 /* Cooldown readout (2026-11-05): a water-level drain inside the button plus a large
    numeric countdown, so "recharging" never reads as "covered / not tappable".
    The fill only shrinks during a cooldown/active window; charging still uses the ring. */
 .action-dock .ult-btn, .action-dock .od-btn { --cool: 0; }
-.action-dock .cd-fill { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--cool) * 1%); pointer-events: none;
+.action-dock .cd-fill { position: absolute; left: 6%; right: 6%; bottom: 6%; height: calc(var(--cool) * .88%); border-radius: 0 0 999px 999px; pointer-events: none;
   background: linear-gradient(180deg, color-mix(in srgb, var(--c1) 55%, transparent), color-mix(in srgb, var(--c1) 18%, transparent)); opacity: .62; transition: height .12s linear; }
 .action-dock .od-btn .cd-fill { background: linear-gradient(180deg, rgba(255,122,59,.55), rgba(255,122,59,.16)); }
 .action-dock .ult-btn.cooling { border-color: color-mix(in srgb, var(--c1) 70%, #fff); }
