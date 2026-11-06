@@ -62,8 +62,8 @@ i18n.add({
 "3 AIRFRAMES · 3 WEAPONS · 10 CHAPTERS"
 ],
 "tagline": [
-"拖動移動、自動開火。三款機體、三種武器，每種武器有獨立升級同大招。<br>十章連續推進，每 5 波一隻星海巨獸；揀難度由第一關打到第十幕。",
-"Drag to fly, auto-fire always on. Three airframes and three weapons, each with its own upgrades and ultimate.<br>Ten chapters run continuously, a star-sea monster every 5 waves — pick a difficulty and fight from stage one."
+"拖動移動，自動開火。<br>三機體、三武器、十章戰役。",
+"Drag to fly. Auto-fire always on.<br>3 airframes · 3 weapons · 10 chapters."
 ],
 "launch": [
 "出擊",
