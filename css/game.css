@@ -202,6 +202,9 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .records-grid .chapter-btn b { font-size: 16px; line-height: 1; }
 .records-grid .chapter-btn span { font-size: 8.5px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 
+.combat-readout .cr-craft b { font-family: 'Orbitron', sans-serif; font-size: 9.5px; letter-spacing: 1px; color: var(--cc, var(--c1)); text-shadow: 0 0 7px var(--cc, var(--c1)); }
+.combat-readout .cr-craft { margin-bottom: 2px; }
+
 /* menu meta */
 .menu-meta { margin-top: 18px; }
 
@@ -482,8 +485,8 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 /* 2026-11-05 HUD pass 2 (Roy): one bottom-left cluster — readout bottom-aligned with
    the lowest skill button, both skills merged into one stack with a shared style,
    and a bigger combo number. */
-.action-dock { flex-direction: row; align-items: flex-end; gap: 10px; }
-.action-dock .skill-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.action-dock { flex-direction: column; align-items: flex-start; gap: 9px; }
+.action-dock .skill-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-left: 2px; }
 .action-dock .ult-btn, .action-dock .od-btn {
   width: 56px; height: 56px; margin-left: 0; border-width: 1.5px;
   box-shadow: 0 0 10px rgba(0,229,255,.22);
