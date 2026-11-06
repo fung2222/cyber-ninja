@@ -62,8 +62,8 @@ i18n.add({
 "3 AIRFRAMES · 3 WEAPONS · 10 CHAPTERS"
 ],
 "tagline": [
-"拖動移動，自動開火。<br>三機體、三武器、十章戰役。",
-"Drag to fly. Auto-fire always on.<br>3 airframes · 3 weapons · 10 chapters."
+"拖動移動，自動開火。<br>每 5 波迎戰星海巨獸。",
+"Drag to fly. Auto-fire always on.<br>A star-sea monster every 5 waves."
 ],
 "launch": [
 "出擊",
