@@ -189,7 +189,6 @@ function updateHUD() {
   $('ult-sub').textContent = ultCooling ? Math.max(0, Math.ceil(ultDur - S.ultT)) + 's' : S.ult >= 100 ? (lang === 'zh' ? '就緒' : 'READY') : Math.round(S.ult) + '%';
   const ultLeftPct = ultCooling ? Math.max(0, 100 - (S.ultT / ultDur) * 100) : 0;
   setRing($('btn-ult'), ultCooling ? ultLeftPct : S.ult);
-  $('btn-ult').style.setProperty('--cool', ultLeftPct.toFixed(1));
   $('btn-ult').classList.toggle('ready', S.ult >= 100 && !ultCooling);
   $('btn-ult').classList.toggle('cooling', ultCooling);
   const odReady = S.od >= 100 && S.odT < 0 && S.noFireT <= 0 && S.ultT < 0;
@@ -199,8 +198,6 @@ function updateHUD() {
   const odDur = OD.duration + C().odBonus;
   const odPct = S.odT >= 0 ? Math.max(0, 100 - (S.odT / odDur) * 100) : S.noFireT > 0 ? 0 : S.od;
   setRing($('btn-od'), odPct);
-  const odLeftPct = S.odT >= 0 ? Math.max(0, 100 - (S.odT / odDur) * 100) : S.noFireT > 0 ? Math.max(0, (S.noFireT / OD.noFire) * 100) : 0;
-  $('btn-od').style.setProperty('--cool', odLeftPct.toFixed(1));
   $('od-label').textContent = S.noFireT > 0 ? t('odVent') : S.odT >= 0 ? t('odActive') : t('odShort');
   $('od-sub').textContent = S.noFireT > 0 ? Math.ceil(S.noFireT) + 's' : S.odT >= 0 ? Math.max(0, Math.ceil(odDur - S.odT)) + 's' : Math.min(100, S.od).toFixed(0) + '%';
   // craft badge

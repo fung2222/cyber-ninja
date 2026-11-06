@@ -104,10 +104,11 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 /* Cooldown readout (2026-11-05): a water-level drain inside the button plus a large
    numeric countdown, so "recharging" never reads as "covered / not tappable".
    The fill only shrinks during a cooldown/active window; charging still uses the ring. */
-.action-dock .ult-btn, .action-dock .od-btn { --cool: 0; }
-.action-dock .cd-fill { position: absolute; left: 6%; right: 6%; bottom: 6%; height: calc(var(--cool) * .88%); border-radius: 0 0 999px 999px; pointer-events: none;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--c1) 55%, transparent), color-mix(in srgb, var(--c1) 18%, transparent)); opacity: .62; transition: height .12s linear; }
-.action-dock .od-btn .cd-fill { background: linear-gradient(180deg, rgba(255,122,59,.55), rgba(255,122,59,.16)); }
+/* No water level and no refilling gauge during a cooldown window: the button shows
+   the static ring plus the numeric readout only (Roy 2026-11-05). */
+.action-dock .ult-btn.cooling::after,
+.action-dock .od-btn.active::after,
+.action-dock .od-btn.venting::after { content: none; }
 .action-dock .ult-btn.cooling { border-color: color-mix(in srgb, var(--c1) 70%, #fff); }
 .action-dock .ult-btn.cooling .ult-txt b { font-size: 9px; letter-spacing: 1px; opacity: .8; }
 .action-dock .ult-btn.cooling #ult-sub { font-size: 22px; letter-spacing: 0; color: #fff; font-weight: 700; }

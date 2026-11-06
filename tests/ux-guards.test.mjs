@@ -10,12 +10,12 @@ const css = read('/css/game.css');
 const main = read('/js/main.js');
 const entities = read('/js/entities.js');
 
-test('both ability buttons carry a water-level fill and a numeric countdown', () => {
-  assert.match(css, /\.action-dock \.cd-fill \{/);
-  assert.match(css, /calc\(var\(--cool\) \* [.\d]+%\)/);
+test('ability buttons show only a static ring plus the numeric readout', () => {
+  // Roy 2026-11-05: no water level and no refilling gauge after using a skill.
+  assert.ok(!css.includes('.cd-fill'), 'water-level fill must stay deleted');
+  assert.match(css, /\.ult-btn\.cooling::after,\s*\n\.action-dock \.od-btn\.active::after,\s*\n\.action-dock \.od-btn\.venting::after \{ content: none; \}/);
   assert.match(css, /\.ult-btn\.cooling #ult-sub \{ font-size: 22px/);
-  assert.match(main, /setProperty\('--cool'/);
-  assert.match(main, /ultLeftPct|odLeftPct/);
+  assert.ok(!main.includes("setProperty('--cool'"), 'no cooldown fill value should be written');
 });
 
 test('pickups are distinct 3D silhouettes, including the repair medkit', () => {
