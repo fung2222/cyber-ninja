@@ -48,6 +48,10 @@ with sync_playwright() as p:
       return {h: r.height, clamp: s.webkitLineClamp, display: s.display, len: e.textContent.length}; }""")
     check(story['h'] >= 30 and story['clamp'] == 'none' and story['display'] == 'block' and story['len'] > 40,
           f'chapter story is visible (not clamped/hidden) ({story})')
+    meta = pg.evaluate("""() => ({robots: (document.querySelector('meta[name=robots]')||{}).content || '', manifest: (document.querySelector('link[rel=manifest]')||{}).href || '',
+      icons: [...document.querySelectorAll('link[rel~=icon],link[rel=apple-touch-icon]')].length})""")
+    check('noindex' not in meta['robots'] and meta['manifest'].endswith('manifest.json') and meta['icons'] >= 2,
+          f'page is indexable and installable (robots/manifest/icons: {meta})')
     hit = pg.evaluate("""() => { const b = document.getElementById('btn-mission-back'); const r = b.getBoundingClientRect();
       const top = document.elementFromPoint(r.left + r.width/2, r.top + r.height/2);
       return top ? (top.id || top.className) : null; }""")
@@ -67,6 +71,8 @@ with sync_playwright() as p:
     pg.click('#btn-difficulty-go')
     pg.wait_for_function("() => __ninja.state === 'playing'", timeout=25000)
     st = pg.evaluate("() => ({wave: __ninja.wave, chapter: __ninja.mission.chapter, diff: __ninja.difficulty})")
+    tap = pg.evaluate("""() => ['btn-pause','btn-mute'].map(id => { const r=document.getElementById(id).getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; })""")
+    check(all(w >= 44 and h >= 44 for w, h in tap), f'HUD utility buttons meet the 44px tap target ({tap})')
     cvs = pg.evaluate("() => ({n: document.querySelectorAll('canvas').length, craft: !!document.getElementById('craft-canvas')})")
     check(cvs['n'] == 1 and not cvs['craft'], f'the hangar preview canvas is released before playing ({cvs})')
     check(st['wave'] == 1 and st['chapter'] == 1 and st['diff'] == 'story', f'a difficulty run starts at chapter 1 stage 1 ({st})')

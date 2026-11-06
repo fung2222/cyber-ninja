@@ -1,0 +1,32 @@
+{
+ "name": "XENO NIGHTMARE 異域凶間",
+ "short_name": "XENO",
+ "description": "3D 賽博朋克直向射擊：三機體、三武器、十章 50 關戰役。",
+ "lang": "zh-Hant",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "portrait",
+ "background_color": "#05010f",
+ "theme_color": "#05010f",
+ "icons": [
+  {
+   "src": "./assets/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "./assets/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "./assets/icon-512-maskable.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
