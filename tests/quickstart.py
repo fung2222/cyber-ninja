@@ -71,6 +71,12 @@ with sync_playwright() as p:
     pg.click('#btn-difficulty-go')
     pg.wait_for_function("() => __ninja.state === 'playing'", timeout=25000)
     st = pg.evaluate("() => ({wave: __ninja.wave, chapter: __ninja.mission.chapter, diff: __ninja.difficulty})")
+    pg.evaluate("() => { __ninja.ult = 100; __ninja.odCd = 0; }")
+    pg.wait_for_timeout(400)
+    ready = pg.evaluate("""() => ['btn-ult','btn-od'].map(id => { const b=document.getElementById(id); const s=getComputedStyle(b);
+      return {id, cls: b.className, anim: s.animationName, dur: s.animationDuration}; })""")
+    check(all(r['anim'] == 'readyGlow' and r['dur'].startswith('2.4') for r in ready),
+          f'a usable skill breathes slowly instead of blinking ({ready})')
     tap = pg.evaluate("""() => ['btn-pause','btn-mute'].map(id => { const r=document.getElementById(id).getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; })""")
     check(all(w >= 44 and h >= 44 for w, h in tap), f'HUD utility buttons meet the 44px tap target ({tap})')
     cvs = pg.evaluate("() => ({n: document.querySelectorAll('canvas').length, craft: !!document.getElementById('craft-canvas')})")

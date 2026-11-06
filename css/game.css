@@ -558,3 +558,15 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 .hangar-head .hangar-title { flex: 1 1 auto; overflow: hidden; pointer-events: none; }
 .hangar-head .hangar-title em { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hangar-head .hangar-back { position: relative; z-index: 2; }
+
+/* 2026-11-05 ready notification (Roy): when a skill is usable it breathes slowly
+   (2.4 s glow), instead of the old 0.8 s scale pulse that read as a blink. */
+.ult-btn.ready { --rd: #00e5ff; border-color: #fff; animation: readyGlow 2.4s ease-in-out infinite; }
+.od-btn.ready { --rd: #ff7a3b; border-color: #fff; animation: readyGlow 2.4s ease-in-out infinite; }
+@keyframes readyGlow {
+  0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--rd) 30%, transparent), inset 0 0 6px color-mix(in srgb, var(--rd) 18%, transparent); filter: brightness(.94); }
+  50% { box-shadow: 0 0 20px var(--rd), 0 0 42px color-mix(in srgb, var(--rd) 55%, transparent), inset 0 0 16px color-mix(in srgb, var(--rd) 40%, transparent); filter: brightness(1.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ult-btn.ready, .od-btn.ready { animation: none; box-shadow: 0 0 18px var(--rd), inset 0 0 12px color-mix(in srgb, var(--rd) 35%, transparent); }
+}
