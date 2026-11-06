@@ -57,7 +57,7 @@ Cyber world 正被數碼病毒 **「噬界 OUROBOROS」**入侵及蠶食，城�
 支援繁體中文（香港）及 English；可喺設定切換並記住選擇。網址參數：`?demo=1` · `?lang=en|zh` · `?fps=1` · `?quality=low` · `?glow=low|high` · `?adsim=1` · `?reset=1` · `?mute=1`。
 
 ## 技術 Tech
-Three.js r169 + vendored cyber-kit v0.3.19，plain HTML/CSS/JS，無 build step。模型、場景、音效及音樂均為程式生成；武器預覽影片由本作正式渲染器實際錄製，保存為 WebM 並附 JPEG poster fallback。
+Three.js r169 + vendored cyber-kit v0.3.22，plain HTML/CSS/JS，無 build step。模型、場景、音效及音樂均為程式生成；武器預覽影片由本作正式渲染器實際錄製，保存為 WebM 並附 JPEG poster fallback。
 
 ## 開發 Development
 ```bash

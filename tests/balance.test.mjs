@@ -40,3 +40,17 @@ test('trash still needs more than one shot later, so levels matter', () => {
   assert.ok(lvl('nova', 1).dmg < ENEMIES.drone.hp * hpScale(21), 'chapter 5 trash survives a base nova');
   assert.ok(lvl('nova', 6).dmg > lvl('nova', 1).dmg * 1.5, 'level-ups remain meaningful');
 });
+
+// Sustained single-target DPS (every projectile of the volley assumed to connect).
+const dps = (key, lv) => { const l = lvl(key, lv); return l.dmg * l.shots.length / l.rate; };
+
+test('weapon DPS profile keeps each weapon worth choosing', () => {
+  const [p1, l1, n1] = [dps('pulse', 1), dps('lance', 1), dps('nova', 1)];
+  assert.ok(p1 > n1, `pulse L1 (${p1.toFixed(1)}) must out-dps nova L1 (${n1.toFixed(1)})`);
+  assert.ok(p1 > l1, `pulse L1 (${p1.toFixed(1)}) must out-dps lance L1 (${l1.toFixed(1)})`);
+  assert.ok(lvl('nova', 1).aoe >= 1.5, 'nova pays for its lower DPS with area damage');
+  assert.ok(lvl('lance', 1).pierce >= 2, 'lance pays for its lower DPS with pierce');
+  const [p6, l6, n6] = [dps('pulse', 6), dps('lance', 6), dps('nova', 6)];
+  assert.ok(p6 > n6 && p6 > l6, `pulse L6 (${p6.toFixed(1)}) leads sustained DPS`);
+  assert.ok(n6 > n1 * 1.8, 'nova still scales meaningfully');
+});
