@@ -95,14 +95,17 @@ export function waveSpec(n, rng = Math.random) {
     const flock = 4 + Math.min(2, Math.floor(n / 8));
     for (let i = 0; i < flock; i++) add('drone', (i - (flock - 1) / 2) * 2.6, 1.4 + i * 0.3, 'dive');
   } else if (recipe === 'weave') {
-    for (let i = 0; i < 3; i++) add('weaver', (i - 1) * 2.6, 0.5 + i * 0.28, 'strafe');
-    for (let i = 0; i < 2; i++) add('drone', -3.2 + i * 6.4, 1.3 + i * 0.25, 'dive');
+    for (let i = 0; i < 3 + (n >= 12 ? 1 : 0); i++) add('weaver', (i - 1) * 2.6, 0.5 + i * 0.4, 'edge');
+    for (let i = 0; i < 3; i++) add('drone', (i - 1) * 3.0, 1.3 + i * 0.25, 'dive');
     rushers(8, 0.9);
   } else if (recipe === 'swarm') {
     const splitters = 2 + Math.min(2, Math.floor(n / 8));
     for (let i = 0; i < splitters; i++) add('splitter', (i - (splitters - 1) / 2) * 3.4, 0.6 + i * 0.5, 'dive', n >= 14 && i === 0);
-    for (let i = 0; i < 2; i++) add('drone', (i - 0.5) * 3.2, 1.2 + i * 0.22, 'dive');
-    rushers(8, 0.9);
+    // A curtain of cheap mites falling in lanes: volume pressure with no aiming at all.
+    const drops = 6 + Math.min(6, Math.floor(n / 3));
+    for (let i = 0; i < drops; i++) add('mite', ((i % 5) - 2) * 2.1, 0.9 + i * 0.28, 'drop', false, 'rusher');
+    for (let i = 0; i < 3; i++) add('drone', (i - 1) * 3.2, 1.2 + i * 0.3, 'dive');
+    rushers(6, 1.0);
   } else {
     add('turret', 0, 0.8, 'hold', true);
     for (let i = 0; i < 2; i++) add('drone', (i - 0.5) * 3.0, 1.0 + i * 0.25, 'dive');

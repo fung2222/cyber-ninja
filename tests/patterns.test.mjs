@@ -90,3 +90,28 @@ test('phase 2 formations use pass-by and cross patterns, not hovering turrets', 
     }
   }
 });
+
+test('phase 3: weave fires from the flanks, swarm drops mites, elites never aim', async () => {
+  const { waveSpec } = await import('../js/config.js');
+  const src = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  let sawWeave = false, sawSwarm = false, sawElite = false;
+  for (let n = 3; n <= 30; n++) {
+    if (n % 5 === 0) continue;
+    for (const rng of [0.1, 0.5, 0.9]) {
+      const w = waveSpec(n, () => rng);
+      if (w.recipe === 'weave') {
+        sawWeave = true;
+        assert.ok(w.events.filter((e) => e.pattern === 'edge').length >= 3, `wave ${n}: weave needs edge snakes`);
+      }
+      if (w.recipe === 'swarm') {
+        sawSwarm = true;
+        assert.ok(w.events.filter((e) => e.pattern === 'drop').length >= 6, `wave ${n}: swarm needs dropping mites`);
+      }
+      if (w.recipe === 'elite') sawElite = true;
+    }
+  }
+  assert.ok(sawWeave && sawSwarm && sawElite, 'all three phase-3 recipes must appear');
+  assert.ok(/e\.elite\)[\s\S]{0,200}withGap\(fan/.test(src), 'elite fires a fixed fan with a gap');
+  assert.ok(src.includes("Math.abs(e.x) > 4.0"), 'weave only fires while hugging the edges');
+  assert.ok(!src.includes('e.elite ? [-0.22, -0.11, 0, 0.11, 0.22]'), 'elite must not use the aimed spread');
+});

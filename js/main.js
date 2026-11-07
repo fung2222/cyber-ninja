@@ -1257,6 +1257,8 @@ function sim(dt) {
       e.z += e.vz * dt;
       e.x += (S.x - e.x) * dt * 0.3 + Math.sin(e.t * 1.8 + e.phase) * dt * 0.9;
       e.x = THREE.MathUtils.clamp(e.x, -FIELD.halfW + 0.5, FIELD.halfW - 0.5);
+    } else if (e.type === 'mite' && e.pattern === 'drop') {
+      e.z += e.vz * 2.1 * dt; e.x += Math.sin(e.t * 3 + e.phase) * dt * 0.6;
     } else if (e.type === 'mite') {
       // burst out of the wreck, then hunt the player with ramping speed
       if (e.t < 0.38) { e.x += e.vx * dt; e.z += e.vz * dt; }
@@ -1278,9 +1280,16 @@ function sim(dt) {
             const base = e.pattern === 'pass' ? e.dir * 0.34 : 0;
             for (const o of [-0.2, 0, 0.2]) enemyFire(e.x, e.z + 0.4, base + o, ENEMY_BULLET_SPEED * 0.9);
             e.firedOnce = true;
+          } else if (e.pattern === 'edge') {
+            enemyFire(e.x, e.z + 0.4, -Math.sign(e.x) * 0.32, ENEMY_BULLET_SPEED * 0.92);
+          } else if (e.elite) {
+            // Elite: two fixed patterns alternating — a fan with a gap, then a ring with a gap.
+            const fanA = [0, Math.PI];
+            if (e.t % 2 < 1) { for (const a of withGap(fan(0, 1.0, 7), 0, 0.16)) enemyFire(e.x, e.z + 0.4, a, ENEMY_BULLET_SPEED * 0.88); }
+            else { for (const a of ringWithGap(12, fanA[0], 0.45, e.t * 0.2)) enemyFire(e.x, e.z, a, ENEMY_BULLET_SPEED * 0.8); }
           } else {
             const a = e.lane !== null ? e.lane : aimAt(e.x, e.z);
-            const spread = e.lane !== null ? [0] : (e.elite ? [-0.22, -0.11, 0, 0.11, 0.22] : [-0.14, 0, 0.14]);
+            const spread = e.lane !== null ? [0] : [-0.14, 0, 0.14];
             for (const o of spread) enemyFire(e.x, e.z + 0.4, a + o, e.lane !== null ? ENEMY_BULLET_SPEED * 0.95 : ENEMY_BULLET_SPEED);
           }
           e.fireT = e.def.fire / sc;
@@ -1290,6 +1299,9 @@ function sim(dt) {
         if (!e.firedOnce) { e.fireT -= dt * sc; if (e.fireT <= 0) e.telegraphT = 0.45; }
       } else if (e.pattern === 'cross') {
         if (!e.firedOnce && Math.abs(e.x) < 1.6) { e.fireT -= dt * sc; if (e.fireT <= 0) e.telegraphT = 0.4; }
+      } else if (e.pattern === 'edge') {
+        // only shoot while hugging the flanks: the middle of the field stays a corridor
+        if (Math.abs(e.x) > 4.0) { e.fireT -= dt * sc; if (e.fireT <= 0) e.telegraphT = 0.45; }
       } else {
         e.fireT -= dt * sc * D().fireRate;
         if (e.fireT <= 0) e.telegraphT = 0.5;
