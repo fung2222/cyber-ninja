@@ -83,11 +83,23 @@ with sync_playwright() as p:
       return {odx: o.x, ody: o.y, ulx: u.x, uly: u.y, right: Math.round(innerWidth - u.right), vw: innerWidth}; }""")
     check(sk['odx'] > sk['vw'] / 2 and sk['ulx'] > sk['odx'] and abs(sk['ody'] - sk['uly']) < 2 and sk['right'] <= 20,
           f'both skills sit in one row at the bottom-right corner ({sk})')
+    # moved buttons sit on a pointer-events:none HUD layer: prove they are still tappable
+    hit = pg.evaluate("""() => { const b=document.getElementById('btn-od'); const r=b.getBoundingClientRect();
+      const top=document.elementFromPoint(r.left + r.width/2, r.top + r.height/2);
+      return {pe: getComputedStyle(b).pointerEvents, inside: !!(top && top.closest('#btn-od'))}; }""")
+    check(hit['pe'] == 'auto' and hit['inside'], f'skills accept taps (pointer-events + hit test: {hit})')
+    pg.evaluate("() => { __ninja.odCd = 0; }")
+    pg.wait_for_timeout(250)
+    pg.tap('#btn-od')
+    pg.wait_for_timeout(500)
+    fired = pg.evaluate("() => ({cls: document.getElementById('btn-od').className, cd: __ninja.odCd})")
+    check('active' in fired['cls'] or fired['cd'] > 5, f'tapping the relocated overdrive button actually fires it ({fired})')
     before = pg.evaluate("() => __ninja.score")
     pg.evaluate("() => __ninja.api.spawn({type:'drone', x:0, t:0, pattern:'dive', phase:0})")
     pg.wait_for_timeout(1200)
     pg.evaluate("() => __ninja.api.killOne()")
-    pg.wait_for_timeout(4000)
+    pg.wait_for_function("() => __ninja.gems.length === 0", timeout=20000)
+    pg.wait_for_timeout(900)
     after = pg.evaluate("() => ({score: __ninja.score, gems: __ninja.gems.length, sparks: document.querySelectorAll('.score-spark').length})")
     check(after['score'] > before and after['gems'] == 0,
           f'crystals are banked into the score counter and leave the field ({before} -> {after})')

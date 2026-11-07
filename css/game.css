@@ -584,3 +584,8 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
   transform: translate(-50%, -50%) rotate(45deg); will-change: transform, opacity;
   transition: transform .44s cubic-bezier(.35,.05,.75,.6), opacity .44s ease-in; }
 .score-spark.big { width: 10px; height: 10px; }
+
+/* the HUD layer is pointer-events:none; the relocated skill buttons must opt back in
+   (they lost the old .action-dock rule when they moved to the bottom-right corner) */
+.skill-stack { pointer-events: none; }
+.skill-stack .od-btn, .skill-stack .ult-btn { pointer-events: auto; touch-action: none; }
