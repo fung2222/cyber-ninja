@@ -1,6 +1,7 @@
 // XENO NIGHTMARE 異域凶間 — controller: drag-to-move auto-fire shooter, waves, cosmic monster bosses, ultimate, continue.
 import * as THREE from 'three';
 import { i18n, t, flags, createStore, createStage, ThemeController, themeFor, U, Particles, Shockwaves, FxState, createInput, CyberUI, Platform, createAds, readHub, returnToHub, shouldShowArcadeMenu} from 'cyber-kit';
+import { fan, withGap, lanes, flankFan, ringWithGap } from './patterns.js?v=1.0';
 import { GAME_ID, FIELD, PLAYER, ULT, ENEMIES, ENEMY_BULLET_SPEED, DROP_CHANCE, DIFFICULTIES, difficultyOf, waveSpec, speedScale, hpScale, ADS, MILESTONE_EVERY, milestoneBonus } from './config.js?v=1.6';
 import { CAMPAIGN_LEVELS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, DIFFICULTY_ORDER, campaignForWave, campaignLabel, normalizeProgress, chapterRecord, chapterBest, chapterClears, isChapterUnlocked, isDifficultyUnlocked, recordLevel, recordChapter } from './campaign.js?v=1.5';
 import './strings.js?v=2.1';
@@ -298,6 +299,7 @@ function spawnEnemy(ev) {
     vx: 0, vz: def.speed * speedScale(S.wave) * (elite ? 1.12 : 1) * (S.wave <= 2 ? 0.88 : 1),
     pattern: ev.pattern || 'dive', elite, level: S.wave, score: def.score * (elite ? 2.5 : 1),
     role: ev.role || ((ev.type === 'dasher' || ev.type === 'mite') ? 'rusher' : 'shooter'), telegraphT: 0,
+    lane: ev.lane === undefined ? null : ev.lane,
   };
   if (elite && e.g.userData.mat) e.g.userData.mat.emissive = new THREE.Color(def.color).multiplyScalar(0.18);
   g.position.set(e.x, 0, e.z); S.enemies.push(e);
@@ -334,10 +336,12 @@ function fireBossPattern(B, p) {
     if (p > 1) enemyFire(B.x, B.z, aimed, speed * 1.15);
     B.atkT = .85;
   } else if (chapter === 4) {
+    // Fixed inward fans from the flanks: the middle of the field stays open, so dodging
+    // never costs the player their firing line.
     const side = seq % 2 ? 1 : -1;
     for (const mirror of [-1, 1]) {
-      const x = B.x + mirror * 2.5, a = aimAt(x, B.z);
-      for (const o of [-.18, 0, .18]) enemyFire(x, B.z + .4, a + o * side, speed * (mirror === side ? 1.08 : .92));
+      const x = B.x + mirror * 2.5;
+      for (const a of flankFan(-mirror, 0.46, 3, 0.34)) enemyFire(x, B.z + .4, a, speed * (mirror === side ? 1.08 : .92));
     }
     B.atkT = .72;
   } else if (chapter === 5) {
@@ -347,7 +351,9 @@ function fireBossPattern(B, p) {
     B.atkT = 1.15;
   } else if (chapter === 6) {
     spawnHazard(); // orange lane telegraphs precede the actual damaging ruin laser
-    for (const o of [-.45, -.22, 0, .22, .45]) enemyFire(B.x, B.z, aimed + o, speed * .9);
+    // Fixed five-shot fan straight down, with one drifting gap to stand in.
+    const gap = Math.sin(B.t * 0.9) * 0.26;
+    for (const a of withGap(fan(0, 0.9, 5), gap, 0.13)) enemyFire(B.x, B.z, a, speed * .9);
     B.atkT = 1.65;
   } else if (chapter === 7) {
     const n = 8 + p * 2;
@@ -364,7 +370,10 @@ function fireBossPattern(B, p) {
   } else {
     if (seq % 3 === 0) for (let i = 0; i < 12 + p * 2; i++) enemyFire(B.x, B.z, i * Math.PI * 2 / (12 + p * 2), speed * .82);
     else {
-      for (const o of [-.28, -.14, 0, .14, .28]) enemyFire(B.x, B.z, aimed + o, speed, o === 0 ? { homing: .8, turn: 1.25 } : {});
+      // Ring with a moving safe wedge; only one slow aimed shot survives, as pressure.
+      const gapA = Math.sin(B.t * 0.5) * 0.6;
+      for (const a of ringWithGap(10, gapA, 0.38, B.t * 0.25)) enemyFire(B.x, B.z, a, speed * .9);
+      if (seq % 4 === 2) enemyFire(B.x, B.z, aimed, speed * 0.75, { scale: 1.2 });
     }
     B.atkT = .95;
   }
@@ -1029,6 +1038,7 @@ S.api = {
   progress: () => JSON.parse(JSON.stringify(missionProgress)),
   pulseVectors: () => pools.pulse.list.map(b => ({ vx: b.vx, vz: b.vz })),
   clearShots: () => { for (const k of WEAPON_KEYS) pools[k].clear(); for (const p of Object.values(decorPools)) p.clear(); },
+  enemyBullets: () => ebullets.list.map((b) => ({ x: b.x, z: b.z, vx: b.vx, vz: b.vz })),
   threat: () => ({ enemies: S.enemies.length, bullets: ebullets.list.length, hazards: S.hazards.length, gems: S.gems.length, rocks: S.rocks.length, bossPhase: S.boss ? S.boss.phase : null, bossChapter: S.boss ? S.boss.chapter : null, bossPattern: S.boss ? S.boss.lastPattern : null }),
   hazard: () => spawnHazard(),
   rock: () => spawnRock(),
@@ -1256,9 +1266,9 @@ function sim(dt) {
         e.telegraphT -= dt;
         e.flash = Math.max(e.flash, 0.5);
         if (e.telegraphT <= 0) {
-          const a = aimAt(e.x, e.z);
-          const spread = e.elite ? [-0.22, -0.11, 0, 0.11, 0.22] : [-0.14, 0, 0.14];
-          for (const o of spread) enemyFire(e.x, e.z + 0.4, a + o, ENEMY_BULLET_SPEED);
+          const a = e.lane !== null ? e.lane : aimAt(e.x, e.z);
+          const spread = e.lane !== null ? [0] : (e.elite ? [-0.22, -0.11, 0, 0.11, 0.22] : [-0.14, 0, 0.14]);
+          for (const o of spread) enemyFire(e.x, e.z + 0.4, a + o, e.lane !== null ? ENEMY_BULLET_SPEED * 0.95 : ENEMY_BULLET_SPEED);
           e.fireT = e.def.fire / sc;
           if (S.state === 'playing') audio.enemyShot();
         }

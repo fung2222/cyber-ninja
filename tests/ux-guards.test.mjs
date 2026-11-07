@@ -39,3 +39,12 @@ test('campaign rolls on and keeps a resume save point', () => {
   assert.match(main, /addEventListener\('pagehide'/);
   assert.match(main, /quickStart\(\)/);
 });
+
+test('both skill buttons breathe on the same slow ready glow', () => {
+  const css = readFileSync(new URL('../css/game.css', import.meta.url), 'utf8');
+  for (const sel of ['.ult-btn.ready', '.od-btn.ready']) {
+    const hits = [...css.matchAll(new RegExp(sel.replace('.', '\\.'), 'g'))].map((m) => css.slice(m.index, m.index + 200));
+    assert.ok(hits.some((b) => /readyGlow 2\.4s/.test(b)), `${sel} must have a 2.4s readyGlow rule`);
+    assert.ok(!/ultPulse|\.odPulse/.test(hits.filter((b) => /readyGlow/.test(b)).join('')), `${sel} must not keep the fast pulse`);
+  }
+});

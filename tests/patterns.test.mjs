@@ -1,0 +1,59 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { fan, withGap, lanes, flankFan, ringWithGap } from '../js/patterns.js';
+import { readFileSync } from 'node:fs';
+
+test('fan is symmetric and spans the requested arc', () => {
+  const f = fan(0, 1, 5);
+  assert.equal(f.length, 5);
+  assert.ok(Math.abs(f[0] + 0.5) < 1e-9 && Math.abs(f[4] - 0.5) < 1e-9);
+  assert.ok(Math.abs(f[2]) < 1e-9);
+});
+
+test('withGap removes the wedge around the gap', () => {
+  const g = withGap(fan(0, 0.9, 5), 0, 0.13);
+  assert.ok(g.every((a) => Math.abs(a) > 0.13));
+  assert.ok(g.length < 5);
+});
+
+test('lanes leaves a walkable hole in the wall', () => {
+  const xs = lanes(6, 1.25, 1.0, 1.2);
+  assert.ok(xs.every((x) => Math.abs(x - 1.0) > 1.2));
+  assert.ok(xs.length >= 6);
+});
+
+test('flankFan tilts one way and mirrors cleanly', () => {
+  // +1 = shots lean right (used on the LEFT flank, so they travel into the middle)
+  const right = flankFan(1, 0.46, 3, 0.34);
+  const left = flankFan(-1, 0.46, 3, 0.34);
+  assert.ok(right.every((a) => a > 0 && a < 0.6));
+  assert.ok(left.every((a) => a < 0 && a > -0.6));
+  const r2 = right.map((a) => -a).sort((x, y) => x - y), l2 = [...left].sort((x, y) => x - y);
+  r2.forEach((a, i) => assert.ok(Math.abs(a - l2[i]) < 1e-9, `${a} vs ${l2[i]}`));
+});
+
+test('ringWithGap always keeps one wedge open', () => {
+  for (const gap of [-1.2, 0, 0.7, 2.5]) {
+    const r = ringWithGap(10, gap, 0.38);
+    assert.ok(r.length >= 7 && r.length <= 9, `kept ${r.length} of 10`);
+    assert.ok(r.every((a) => Math.abs(Math.atan2(Math.sin(a - gap), Math.cos(a - gap))) > 0.38));
+  }
+});
+
+test('boss chapters 4 and 6 fire fixed patterns, not aimed shots', () => {
+  const src = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  const body = src.slice(src.indexOf('function fireBossPattern'), src.indexOf('// ---------------------------------------------------------------- damage / kills'));
+  const ch4 = body.slice(body.indexOf('chapter === 4'), body.indexOf('chapter === 5'));
+  const ch6 = body.slice(body.indexOf('chapter === 6'), body.indexOf('chapter === 7'));
+  assert.ok(!ch4.includes('aimAt('), 'chapter 4 flanks must be a fixed fan');
+  assert.ok(!ch6.includes('aimAt('), 'chapter 6 fan must be a fixed fan with a gap');
+  assert.ok(ch4.includes('flankFan(') && ch6.includes('withGap('));
+});
+
+test('wall and pincer waves fire their own lanes instead of aiming', async () => {
+  const { waveSpec } = await import('../js/config.js');
+  const wall = waveSpec(3, () => 0.99);   // n=3, rng high -> wall/pincer family
+  const laneEvents = wall.events.filter((e) => e.lane !== null && e.lane !== undefined);
+  assert.ok(laneEvents.length >= 2, `expected lane shooters, got ${laneEvents.length}`);
+  assert.ok(laneEvents.every((e) => Math.abs(e.lane) <= 0.3));
+});

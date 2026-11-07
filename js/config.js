@@ -57,10 +57,10 @@ export const DROP_CHANCE = 0.11;      // power-up drop per kill (bosses always d
 export function waveSpec(n, rng = Math.random) {
   if (n % BOSS_EVERY === 0) return { boss: true, hp: bossHp(n), variant: bossVariant(n / BOSS_EVERY), events: [] };
   const events = [];
-  const add = (type, x, t, pattern = 'dive', elite = false, role = null) => {
+  const add = (type, x, t, pattern = 'dive', elite = false, role = null, lane = null) => {
     x = Math.max(-FIELD.halfW + 0.8, Math.min(FIELD.halfW - 0.8, x));
     const r = role || ((type === 'dasher' || type === 'mite') ? 'rusher' : 'shooter');
-    events.push({ t, type, x, phase: rng() * 6.28, pattern, elite, role: r });
+    events.push({ t, type, x, phase: rng() * 6.28, pattern, elite, role: r, lane });
   };
   // Rushers dive straight through and never fire: they are the movement pressure.
   // Shooters hold behind them and fire telegraphed aimed bursts: they are the damage window.
@@ -73,11 +73,11 @@ export function waveSpec(n, rng = Math.random) {
     for (let i = 0; i < 4; i++) add('drone', (i - 1.5) * 2.1, 0.6 + i * 0.3, 'dive');
     rushers(8, 0.9);
   } else if (recipe === 'pincer') {
-    for (let i = 0; i < 2; i++) { add('drone', -4.8 + i * 0.9, 0.5 + i * 0.3, 'dive'); add('drone', 4.8 - i * 0.9, 0.75 + i * 0.3, 'dive'); }
+    for (let i = 0; i < 2; i++) { add('drone', -4.8 + i * 0.9, 0.5 + i * 0.3, 'dive', false, 'shooter', -0.26); add('drone', 4.8 - i * 0.9, 0.75 + i * 0.3, 'dive', false, 'shooter', 0.26); }
     add('weaver', -2.2, 1.4, 'strafe'); add('weaver', 2.2, 1.7, 'strafe');
     rushers(8, 0.8);
   } else if (recipe === 'wall') {
-    for (let i = 0; i < 4; i++) add('drone', (i - 1.5) * 1.9, 0.6 + i * 0.16, 'dive');
+    for (let i = 0; i < 4; i++) add('drone', (i - 1.5) * 1.9, 0.6 + i * 0.16, 'dive', false, 'shooter', 0);
     for (let i = 0; i < 2; i++) add('weaver', -3.5 + i * 7, 1.4 + i * 0.35, 'strafe');
     rushers(10, 0.7);
   } else if (recipe === 'crossfire') {
