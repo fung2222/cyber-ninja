@@ -44,7 +44,7 @@ export const ENEMIES = {
   dasher:   { hp: 4,  speed: 4.2, score: 140, radius: 0.75, color: 0xff3b5c, fire: 0 },
   splitter: { hp: 9,  speed: 3.2, score: 220, radius: 0.95, color: 0x7dff5e, fire: 2.8 },
   mite:     { hp: 1,  speed: 6.4, score: 25,  radius: 0.5,  color: 0xb8ff70, fire: 0 },
-  boss:     { hp: 240, speed: 1.6, score: 3000, radius: 2.5, color: 0xa66bff, fire: 1 },
+  boss:     { hp: 310, speed: 1.6, score: 3000, radius: 2.5, color: 0xa66bff, fire: 1 },
 };
 export const ENEMY_BULLET_SPEED = 6.5;   // aimed fire is slow enough to dodge without leaving your firing line
 export const BOSS_EVERY = 5;
@@ -101,6 +101,24 @@ export function waveSpec(n, rng = Math.random) {
     for (let i = 0; i < 2; i++) add('drone', (i - 0.5) * 3.0, 1.0 + i * 0.25, 'dive');
     rushers(6, 1.1);
   }
+  // A wave is three assaults, not one: the opening formation, then two reinforcement
+  // batches ~16 s apart. This is what gives a 關 its 45–60 s length (Roy: chapters should
+  // last 3–5 minutes, "太快就無野食").
+  const batch = (t, count, withTurret) => {
+    rushers(count, t);
+    add('drone', -2.4, t + 0.5, 'dive');
+    add('drone', 2.4, t + 0.8, 'dive');
+    if (withTurret) add('turret', (rng() > 0.5 ? 1 : -1) * 2.8, t + 1.2, 'hold', n >= 12);
+  };
+  if (n <= 2) {
+    // Chapter 1 must stay readable: same light formation, but its entries are stretched
+    // across ~27 s so the 關 still runs ~30 s instead of ending in one burst.
+    const maxT = Math.max(...events.map((e) => e.t)) || 1;
+    for (const e of events) e.t = 2.5 + (e.t / maxT) * 24;
+  } else {
+    batch(15 + rng() * 2, 5 + (n >= 6 ? 1 : 0), n >= 8);
+    batch(30 + rng() * 3, 6 + (n >= 8 ? 1 : 0), n >= 10);
+  }
   events.sort((a, b) => a.t - b.t);
   return { boss: false, events, recipe };
 }
@@ -112,7 +130,7 @@ export const ADS = { interstitialCooldownSec: 200, breaksBetweenInterstitials: 3
 
 // ---------------------------------------------------------------- endless
 /** boss HP for wave n: +90 per cycle, capped at 1100 so late bosses stay killable */
-export const bossHp = (n) => Math.min(1100, ENEMIES.boss.hp + (n / BOSS_EVERY - 1) * 90);
+export const bossHp = (n) => Math.min(1100, ENEMIES.boss.hp + (n / BOSS_EVERY - 1) * 110);
 const SPECIES = [['星海魔獸', 'COSMIC MONSTER'], ['深淵魔眼', 'ABYSS EYE'], ['等離子海妖', 'PLASMA KRAKEN'], ['虛空水母', 'VOID JELLY'], ['晶棘巨獸', 'CRYSTAL BEHEMOTH'], ['極光龍', 'AURORA WYRM']];
 /** boss species for cycle c (1-based): authored names, then numbered Mk variants forever; fire-rate multiplier capped at 1.6 */
 export function bossVariant(c) {

@@ -57,3 +57,13 @@ test('wall and pincer waves fire their own lanes instead of aiming', async () =>
   assert.ok(laneEvents.length >= 2, `expected lane shooters, got ${laneEvents.length}`);
   assert.ok(laneEvents.every((e) => Math.abs(e.lane) <= 0.3));
 });
+
+test('every non-boss wave keeps spawning for at least ~25 s (chapters run 3–5 min)', async () => {
+  const { waveSpec } = await import('../js/config.js');
+  for (const n of [1, 2, 3, 4, 6, 7, 8, 9, 11]) {
+    const w = waveSpec(n, () => 0.42);
+    const last = Math.max(...w.events.map((e) => e.t));
+    assert.ok(last >= 25, `wave ${n} lasts only ${last.toFixed(1)}s of spawns`);
+  }
+  assert.ok(waveSpec(1, () => 0.42).events.length <= 14, 'wave 1 stays readable');
+});

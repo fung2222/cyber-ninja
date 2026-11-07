@@ -1172,6 +1172,9 @@ function sim(dt) {
   if (!S.spec.boss) {
     const evs = S.spec.events;
     while (S.nextEv < evs.length && evs[S.nextEv].t <= S.waveT) spawnEnemy(evs[S.nextEv++]);
+    // Salvaged the field early? Pull the next reinforcement batch forward instead of
+    // standing around until its scheduled time — keeps the 45–60 s wave from sagging.
+    if (!S.enemies.length && S.nextEv < evs.length && evs[S.nextEv].t - S.waveT > 2.5) S.waveT = evs[S.nextEv].t - 0.4;
     if (S.nextEv >= evs.length && !S.enemies.length) { S.betweenT += dt; if (S.betweenT > 1.4) nextWave(); }
   } else if (!S.boss) { S.betweenT += dt; if (S.betweenT > 2.2) nextWave(); }
   // terrain hazard: a telegraphed vertical sweep cuts one lane of the map
