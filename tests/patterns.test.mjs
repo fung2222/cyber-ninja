@@ -67,3 +67,26 @@ test('every non-boss wave keeps spawning for at least ~25 s (chapters run 3–5 
   }
   assert.ok(waveSpec(1, () => 0.42).events.length <= 14, 'wave 1 stays readable');
 });
+
+test('phase 2 formations use pass-by and cross patterns, not hovering turrets', async () => {
+  const { waveSpec } = await import('../js/config.js');
+  for (let n = 3; n <= 30; n++) {
+    if (n % 5 === 0) continue;
+    for (const rng of [0.1, 0.5, 0.9]) {
+      const w = waveSpec(n, () => rng);
+      if (w.recipe === 'line') {
+        const passers = w.events.filter((e) => e.pattern === 'pass');
+        assert.ok(passers.length >= 4, `wave ${n}: line needs pass-by enemies`);
+      }
+      if (w.recipe === 'crossfire') {
+        assert.ok(w.events.filter((e) => e.pattern === 'cross').length >= 4, `wave ${n}: crossfire needs cross entries`);
+        // reinforcements may add a turret, but the opening wave must be pure crossings
+        assert.ok(!w.events.some((e) => e.type === 'turret' && e.t < 5), `wave ${n}: crossfire must not open with parked turrets`);
+      }
+      if (w.recipe === 'rush') {
+        const rushers = w.events.filter((e) => e.role === 'rusher').length;
+        assert.ok(rushers >= 10, `wave ${n}: rush should be dense`);
+      }
+    }
+  }
+});

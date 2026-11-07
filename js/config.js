@@ -57,10 +57,10 @@ export const DROP_CHANCE = 0.11;      // power-up drop per kill (bosses always d
 export function waveSpec(n, rng = Math.random) {
   if (n % BOSS_EVERY === 0) return { boss: true, hp: bossHp(n), variant: bossVariant(n / BOSS_EVERY), events: [] };
   const events = [];
-  const add = (type, x, t, pattern = 'dive', elite = false, role = null, lane = null) => {
+  const add = (type, x, t, pattern = 'dive', elite = false, role = null, lane = null, dir = 1) => {
     x = Math.max(-FIELD.halfW + 0.8, Math.min(FIELD.halfW - 0.8, x));
     const r = role || ((type === 'dasher' || type === 'mite') ? 'rusher' : 'shooter');
-    events.push({ t, type, x, phase: rng() * 6.28, pattern, elite, role: r, lane });
+    events.push({ t, type, x, phase: rng() * 6.28, pattern, elite, role: r, lane, dir });
   };
   // Rushers dive straight through and never fire: they are the movement pressure.
   // Shooters hold behind them and fire telegraphed aimed bursts: they are the damage window.
@@ -70,8 +70,13 @@ export function waveSpec(n, rng = Math.random) {
   const usable = n >= 6 ? ['line', 'pincer', 'wall', 'crossfire', 'rush', 'weave', 'elite', 'swarm'] : n >= 4 ? ['line', 'pincer', 'wall', 'crossfire', 'rush', 'weave', 'elite'] : n >= 3 ? ['line', 'pincer', 'wall', 'weave'] : ['line', 'pincer'];
   const recipe = n <= 2 ? usable[n - 1] : usable[(n + Math.floor(rng() * usable.length)) % usable.length];
   if (recipe === 'line') {
-    for (let i = 0; i < 4; i++) add('drone', (i - 1.5) * 2.1, 0.6 + i * 0.3, 'dive');
-    rushers(8, 0.9);
+    // Phase 2 (1945 grammar): two diagonal streams cross the field and leave again. Nothing
+    // parks above the player, so the firing line stays usable while they dodge.
+    const per = n <= 2 ? 2 : 4 + Math.min(3, Math.floor(n / 5));
+    for (let i = 0; i < per; i++) add('drone', -FIELD.halfW + 0.9, 0.6 + i * 0.55, 'pass', false, 'shooter', 0, 1);
+    for (let i = 0; i < per; i++) add('drone', FIELD.halfW - 0.9, 1.0 + i * 0.55, 'pass', false, 'shooter', 0, -1);
+    // keep the role split: roughly 1.7 rushers per pass-by shooter
+    rushers(Math.max(6, Math.round(per * 2 * 1.7)), 1.2);
   } else if (recipe === 'pincer') {
     for (let i = 0; i < 2; i++) { add('drone', -4.8 + i * 0.9, 0.5 + i * 0.3, 'dive', false, 'shooter', -0.26); add('drone', 4.8 - i * 0.9, 0.75 + i * 0.3, 'dive', false, 'shooter', 0.26); }
     add('weaver', -2.2, 1.4, 'strafe'); add('weaver', 2.2, 1.7, 'strafe');
@@ -81,12 +86,14 @@ export function waveSpec(n, rng = Math.random) {
     for (let i = 0; i < 2; i++) add('weaver', -3.5 + i * 7, 1.4 + i * 0.35, 'strafe');
     rushers(10, 0.7);
   } else if (recipe === 'crossfire') {
-    add('turret', -4.2, 0.7, 'hold', n >= 8); add('turret', 4.2, 0.9, 'hold', n >= 8);
-    for (let i = 0; i < 3; i++) add('drone', (i - 1) * 2.2, 1.1 + i * 0.22, 'dive');
-    rushers(8, 0.8);
+    // Side entries that fly across and fire ONE fixed volley near the middle — a moving
+    // hazard you can read and step out of, never a chase.
+    for (let i = 0; i < 4 + (n >= 10 ? 2 : 0); i++) add('drone', i % 2 ? FIELD.halfW - 0.9 : -FIELD.halfW + 0.9, 0.9 + i * 0.7, 'cross', false, 'shooter', 0, i % 2 ? -1 : 1);
+    rushers(6, 1.0);
   } else if (recipe === 'rush') {
-    rushers(9, 0.5);
-    for (let i = 0; i < 4; i++) add('drone', (i - 1.5) * 2.0, 1.0 + i * 0.2, 'dive');
+    rushers(10 + Math.min(6, Math.floor(n / 3)), 0.5);
+    const flock = 4 + Math.min(2, Math.floor(n / 8));
+    for (let i = 0; i < flock; i++) add('drone', (i - (flock - 1) / 2) * 2.6, 1.4 + i * 0.3, 'dive');
   } else if (recipe === 'weave') {
     for (let i = 0; i < 3; i++) add('weaver', (i - 1) * 2.6, 0.5 + i * 0.28, 'strafe');
     for (let i = 0; i < 2; i++) add('drone', -3.2 + i * 6.4, 1.3 + i * 0.25, 'dive');

@@ -299,7 +299,7 @@ function spawnEnemy(ev) {
     vx: 0, vz: def.speed * speedScale(S.wave) * (elite ? 1.12 : 1) * (S.wave <= 2 ? 0.88 : 1),
     pattern: ev.pattern || 'dive', elite, level: S.wave, score: def.score * (elite ? 2.5 : 1),
     role: ev.role || ((ev.type === 'dasher' || ev.type === 'mite') ? 'rusher' : 'shooter'), telegraphT: 0,
-    lane: ev.lane === undefined ? null : ev.lane,
+    lane: ev.lane === undefined ? null : ev.lane, dir: ev.dir || 1, firedOnce: false,
   };
   if (elite && e.g.userData.mat) e.g.userData.mat.emissive = new THREE.Color(def.color).multiplyScalar(0.18);
   g.position.set(e.x, 0, e.z); S.enemies.push(e);
@@ -1171,7 +1171,8 @@ function sim(dt) {
   S.waveT += dt;
   if (!S.spec.boss) {
     const evs = S.spec.events;
-    while (S.nextEv < evs.length && evs[S.nextEv].t <= S.waveT) spawnEnemy(evs[S.nextEv++]);
+    const MAX_ACTIVE = 12;
+    while (S.nextEv < evs.length && evs[S.nextEv].t <= S.waveT && S.enemies.length < MAX_ACTIVE) spawnEnemy(evs[S.nextEv++]);
     // Salvaged the field early? Pull the next reinforcement batch forward instead of
     // standing around until its scheduled time — keeps the 45–60 s wave from sagging.
     if (!S.enemies.length && S.nextEv < evs.length && evs[S.nextEv].t - S.waveT > 2.5) S.waveT = evs[S.nextEv].t - 0.4;
@@ -1228,7 +1229,11 @@ function sim(dt) {
   const sc = speedScale(S.wave);
   for (let i = S.enemies.length - 1; i >= 0; i--) {
     const e = S.enemies[i]; e.t += dt; e.flash = Math.max(0, e.flash - dt * 6);
-    if (e.type === 'drone') {
+    if (e.type === 'drone' && e.pattern === 'pass') {
+      e.z += e.vz * 0.5 * dt; e.x += e.dir * e.vz * 1.15 * dt;
+    } else if (e.type === 'drone' && e.pattern === 'cross') {
+      e.z += e.vz * 0.3 * dt; e.x += e.dir * e.vz * 1.3 * dt;
+    } else if (e.type === 'drone') {
       e.z += e.vz * dt;
       const chase = e.pattern === 'dive' ? 0.85 : 0.25;
       e.x += (S.x - e.x) * dt * chase;
@@ -1269,12 +1274,22 @@ function sim(dt) {
         e.telegraphT -= dt;
         e.flash = Math.max(e.flash, 0.5);
         if (e.telegraphT <= 0) {
-          const a = e.lane !== null ? e.lane : aimAt(e.x, e.z);
-          const spread = e.lane !== null ? [0] : (e.elite ? [-0.22, -0.11, 0, 0.11, 0.22] : [-0.14, 0, 0.14]);
-          for (const o of spread) enemyFire(e.x, e.z + 0.4, a + o, e.lane !== null ? ENEMY_BULLET_SPEED * 0.95 : ENEMY_BULLET_SPEED);
+          if (e.pattern === 'pass' || e.pattern === 'cross') {
+            const base = e.pattern === 'pass' ? e.dir * 0.34 : 0;
+            for (const o of [-0.2, 0, 0.2]) enemyFire(e.x, e.z + 0.4, base + o, ENEMY_BULLET_SPEED * 0.9);
+            e.firedOnce = true;
+          } else {
+            const a = e.lane !== null ? e.lane : aimAt(e.x, e.z);
+            const spread = e.lane !== null ? [0] : (e.elite ? [-0.22, -0.11, 0, 0.11, 0.22] : [-0.14, 0, 0.14]);
+            for (const o of spread) enemyFire(e.x, e.z + 0.4, a + o, e.lane !== null ? ENEMY_BULLET_SPEED * 0.95 : ENEMY_BULLET_SPEED);
+          }
           e.fireT = e.def.fire / sc;
           if (S.state === 'playing') audio.enemyShot();
         }
+      } else if (e.pattern === 'pass') {
+        if (!e.firedOnce) { e.fireT -= dt * sc; if (e.fireT <= 0) e.telegraphT = 0.45; }
+      } else if (e.pattern === 'cross') {
+        if (!e.firedOnce && Math.abs(e.x) < 1.6) { e.fireT -= dt * sc; if (e.fireT <= 0) e.telegraphT = 0.4; }
       } else {
         e.fireT -= dt * sc * D().fireRate;
         if (e.fireT <= 0) e.telegraphT = 0.5;
