@@ -436,6 +436,35 @@ function killEnemy(e, i) {
   fx.kick({ trauma: small ? 0.03 : big ? 0.12 : 0.06 });
   if (big && S.state === 'playing') fx.kick({ slowmo: 0.16, aberr: 0.35 });   // hit-stop on chunky kills
 }
+
+// ---------------------------------------------------------------- score sparks
+// A crystal leaves the wreck as a DOM spark that lands in the top-left counter, and the
+// score is only added on arrival so the number and the flight agree.
+function awardGem(gm) {
+  S.score += gm.value * S.combo.mult;
+  S.gemChain = Math.min(24, S.gemChain + 1); S.gemChainT = 0.9;
+  S.ult = Math.min(100, S.ult + chargeGain(gm.energy)); S.ults[S.weapon] = S.ult;
+  if (S.state === 'playing' && (gm.tier === 2 || Math.random() < 0.22)) audio.gem(S.gemChain);
+  const el = $('hud-score');
+  if (el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+}
+function flyGemToScore(gm) {
+  const scoreEl = $('hud-score');
+  const sp = stage.toScreen(new THREE.Vector3(gm.x, 0.45, gm.z));
+  if (!scoreEl || !sp || !isFinite(sp.x) || !isFinite(sp.y) || document.querySelectorAll('.score-spark').length > 26) { awardGem(gm); return; }
+  const t = scoreEl.getBoundingClientRect();
+  const el = document.createElement('i');
+  el.className = 'score-spark' + (gm.tier === 2 ? ' big' : '');
+  el.style.setProperty('--sc', gm.tier === 2 ? '#ffc22b' : gm.tier === 1 ? '#ff2bd6' : '#00e5ff');
+  el.style.left = `${sp.x}px`; el.style.top = `${sp.y}px`;
+  ($('hud') || document.body).appendChild(el);
+  const dx = t.left + t.width / 2 - sp.x, dy = t.top + t.height / 2 - sp.y;
+  requestAnimationFrame(() => {
+    el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.22)`;
+    el.style.opacity = '.15';
+  });
+  setTimeout(() => { el.remove(); awardGem(gm); }, 450);
+}
 function spawnGem(x, z, tier = 0) {
   const g = makeGem(tier); g.scale.setScalar(1.45); g.position.set(x, 0.35, z); scene.add(g);
   S.gems.push({
@@ -1202,29 +1231,18 @@ function sim(dt) {
     if (S.state === 'playing' && Math.hypot(r.x - S.x, r.z - S.z) < r.r + PLAYER.radius) hurtPlayer();
     if (r.z > FIELD.bottom + 3) { scene.remove(r.g); S.rocks.splice(i, 1); }
   }
-  // gems: scatter briefly, then home into the craft automatically
+  // gems: pop out of the wreck, then fly into the score counter (Roy 2026-11-05).
+  // They used to home on the ship, which read as clutter around the craft.
   for (let i = S.gems.length - 1; i >= 0; i--) {
     const gm = S.gems[i]; gm.t += dt;
-    if (gm.t < 0.55) {
+    if (gm.t < 0.45) {
       gm.x += gm.vx * dt; gm.z += gm.vz * dt; gm.vx *= 0.94; gm.vz *= 0.94;
+      gm.g.position.set(gm.x, 0.35 + Math.sin(gm.t * 8) * 0.08, gm.z); gm.g.rotation.y = gm.t * 4; gm.g.rotation.z = gm.t * 2.2;
+      if (gm.g.userData.halo) gm.g.userData.halo.rotation.z = gm.t * 5;
     } else {
-      const dx = S.x - gm.x, dz = S.z - gm.z, d = Math.max(0.001, Math.hypot(dx, dz));
-      const pull = 26 + Math.min(40, gm.t * 10), swirl = gm.tier === 2 ? 3.4 : 2.4;
-      gm.vx += ((dx / d) * pull + (-dz / d) * swirl) * dt; gm.vz += ((dz / d) * pull + (dx / d) * swirl) * dt;
-      gm.vx *= 0.97; gm.vz *= 0.97;
-      gm.x += gm.vx * dt; gm.z += gm.vz * dt;
-      if (d < 0.9) {
-        S.score += gm.value * S.combo.mult;
-        S.gemChain = Math.min(24, S.gemChain + 1); S.gemChainT = 0.9;
-        S.ult = Math.min(100, S.ult + chargeGain(gm.energy)); S.ults[S.weapon] = S.ult;
-        
-        if (S.state === 'playing' && (gm.tier === 2 || Math.random() < 0.22)) audio.gem(S.gemChain);
-        particles.emit(new THREE.Vector3(gm.x, 0.3, gm.z), new THREE.Vector3(0, 1.5, 0), new THREE.Color(gm.tier === 2 ? 0xffc22b : gm.tier === 1 ? 0xff2bd6 : 0x00e5ff), { life: 0.3, size: 0.5 });
-        scene.remove(gm.g); S.gems.splice(i, 1); continue;
-      }
+      flyGemToScore(gm);
+      scene.remove(gm.g); S.gems.splice(i, 1);
     }
-    gm.g.position.set(gm.x, 0.35 + Math.sin(gm.t * 8) * 0.08, gm.z); gm.g.rotation.y = gm.t * 4; gm.g.rotation.z = gm.t * 2.2;
-    if (gm.g.userData.halo) gm.g.userData.halo.rotation.z = gm.t * 5;
   }
   const sc = speedScale(S.wave);
   for (let i = S.enemies.length - 1; i >= 0; i--) {

@@ -486,7 +486,7 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
    the lowest skill button, both skills merged into one stack with a shared style,
    and a bigger combo number. */
 .action-dock { flex-direction: column; align-items: flex-start; gap: 9px; }
-.action-dock .skill-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-left: 2px; }
+
 .action-dock .ult-btn, .action-dock .od-btn {
   width: 56px; height: 56px; margin-left: 0; border-width: 1.5px;
   box-shadow: 0 0 10px rgba(0,229,255,.22);
@@ -570,3 +570,17 @@ html[data-lang="en"] .title-en { font-family: var(--font-zh); letter-spacing: 3p
 @media (prefers-reduced-motion: reduce) {
   .ult-btn.ready, .od-btn.ready { animation: none; box-shadow: 0 0 18px var(--rd), inset 0 0 12px color-mix(in srgb, var(--rd) 35%, transparent); }
 }
+
+/* 2026-11-05 Roy: the two skills live bottom-right in one horizontal row (left thumb-free),
+   the airframe readout stays bottom-left. */
+.skill-stack { position: absolute; right: 14px; bottom: 14px; display: flex; flex-direction: row; align-items: flex-end; gap: 10px; z-index: 6; margin: 0; }
+.skill-stack .od-btn, .skill-stack .ult-btn { margin-left: 0; }
+@media (max-width: 380px) { .skill-stack { right: 10px; bottom: 10px; gap: 8px; } }
+.skill-stack .ult-btn, .skill-stack .od-btn { width: 56px; height: 56px; border-width: 1.5px; margin: 0; }
+
+/* crystals now land in the score counter instead of swarming the craft */
+.score-spark { position: fixed; z-index: 60; width: 7px; height: 7px; border-radius: 2px; pointer-events: none;
+  background: var(--sc, #00e5ff); box-shadow: 0 0 8px var(--sc, #00e5ff), 0 0 16px var(--sc, #00e5ff);
+  transform: translate(-50%, -50%) rotate(45deg); will-change: transform, opacity;
+  transition: transform .44s cubic-bezier(.35,.05,.75,.6), opacity .44s ease-in; }
+.score-spark.big { width: 10px; height: 10px; }

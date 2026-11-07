@@ -79,6 +79,18 @@ with sync_playwright() as p:
     # the ult shares the same rule (both selectors asserted in tests/ux-guards.test.mjs)
     check(odReady['anim'] == 'readyGlow' and odReady['dur'].startswith('2.4'),
           f'a usable skill breathes slowly instead of blinking ({odReady})')
+    sk = pg.evaluate("""() => { const o=document.getElementById('btn-od').getBoundingClientRect(); const u=document.getElementById('btn-ult').getBoundingClientRect();
+      return {odx: o.x, ody: o.y, ulx: u.x, uly: u.y, right: Math.round(innerWidth - u.right), vw: innerWidth}; }""")
+    check(sk['odx'] > sk['vw'] / 2 and sk['ulx'] > sk['odx'] and abs(sk['ody'] - sk['uly']) < 2 and sk['right'] <= 20,
+          f'both skills sit in one row at the bottom-right corner ({sk})')
+    before = pg.evaluate("() => __ninja.score")
+    pg.evaluate("() => __ninja.api.spawn({type:'drone', x:0, t:0, pattern:'dive', phase:0})")
+    pg.wait_for_timeout(1200)
+    pg.evaluate("() => __ninja.api.killOne()")
+    pg.wait_for_timeout(4000)
+    after = pg.evaluate("() => ({score: __ninja.score, gems: __ninja.gems.length, sparks: document.querySelectorAll('.score-spark').length})")
+    check(after['score'] > before and after['gems'] == 0,
+          f'crystals are banked into the score counter and leave the field ({before} -> {after})')
     tap = pg.evaluate("""() => ['btn-pause','btn-mute'].map(id => { const r=document.getElementById(id).getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; })""")
     check(all(w >= 44 and h >= 44 for w, h in tap), f'HUD utility buttons meet the 44px tap target ({tap})')
     cvs = pg.evaluate("() => ({n: document.querySelectorAll('canvas').length, craft: !!document.getElementById('craft-canvas')})")

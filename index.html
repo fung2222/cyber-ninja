@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="./vendor/cyber-kit/ui/hud.css?v=0.3.17">
-<link rel="stylesheet" href="./css/game.css?v=2.8">
+<link rel="stylesheet" href="./css/game.css?v=3.1">
 <script type="importmap">
 {
   "imports": {
@@ -59,19 +59,19 @@
     <div class="bb-track"><div class="bb-fill" id="boss-fill"></div><i class="bb-seg" style="left:33%"></i><i class="bb-seg" style="left:66%"></i></div>
   </div>
   <div class="action-dock">
-    <div class="skill-stack">
-      <button id="btn-od" class="od-btn" data-i18n-attr="aria-label:od" data-no-input>
-        <span class="od-txt"><b id="od-label" data-i18n="od">最大火力</b><small id="od-sub" data-i18n="odS">昇華</small></span>
-      </button>
-      <button id="btn-ult" class="ult-btn" data-i18n-attr="aria-label:ultName" data-no-input>
-        <span class="ult-txt"><b id="ult-label" data-i18n="ult"></b><small id="ult-sub" data-i18n="ultS"></small></span>
-      </button>
-    </div>
     <div class="combat-readout" id="combat-readout">
       <div class="cr-row cr-craft"><b id="hud-craft">VX-01 · 蒼隼</b></div>
       <div class="cr-row cr-weapon"><b id="cr-weapon">脈衝</b><span id="cr-wlv">LV.1</span><div class="lv-pips" id="cr-lv"></div></div>
       <div class="cr-row cr-shield"><span class="hp-label" data-i18n="shield"></span><div class="hp-pips" id="cr-hp"></div><em id="cr-hp-num">3/3</em></div>
     </div>
+  </div>
+  <div class="skill-stack">
+    <button id="btn-od" class="od-btn" data-i18n-attr="aria-label:od" data-no-input>
+      <span class="od-txt"><b id="od-label" data-i18n="od">最大火力</b><small id="od-sub" data-i18n="odS">昇華</small></span>
+    </button>
+    <button id="btn-ult" class="ult-btn" data-i18n-attr="aria-label:ultName" data-no-input>
+      <span class="ult-txt"><b id="ult-label" data-i18n="ult"></b><small id="ult-sub" data-i18n="ultS"></small></span>
+    </button>
   </div>
   <div id="demo-tag" class="demo-tag hidden" data-i18n="kit.demo"></div>
   <div id="fps" class="fps hidden">-- FPS</div>
@@ -237,6 +237,6 @@
   </div>
 </div>
 
-<script type="module" src="./js/main.js?v=3.3"></script>
+<script type="module" src="./js/main.js?v=3.4"></script>
 </body>
 </html>
